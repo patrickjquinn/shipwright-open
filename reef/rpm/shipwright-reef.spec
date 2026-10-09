@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        19
+Release:        20
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -249,6 +249,9 @@ exit 0
 %{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
 
 %changelog
+* Fri Oct 09 2026 Shipwright - 0.1.0-20
+- The progress bar of an install or update moves steadily forward: downloading is its first half and installing its second, across all the packages, instead of jumping between each step's and each package's own percentages.
+
 * Fri Oct 09 2026 Shipwright - 0.1.0-19
 - Removing Reef removes its signing key: the key removal ran with no standard input, and rpm on Sailfish OS cannot open its database then. It now reads from /dev/null.
 

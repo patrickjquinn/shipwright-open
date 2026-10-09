@@ -18,8 +18,8 @@ mod types;
 use std::fmt;
 
 pub use types::{
-    filter_bits, Exit, Filter, Info, PackageId, PackageInfo, Progress, Status,
-    TRANSACTION_FLAG_ONLY_TRUSTED,
+    filter_bits, Exit, Filter, Info, Overall, PackageId, PackageInfo, Progress, Status,
+    SteadyProgress, TRANSACTION_FLAG_ONLY_TRUSTED,
 };
 
 #[derive(Debug)]

@@ -27,8 +27,8 @@ use zbus::{Connection, MatchRule, Message, MessageStream};
 
 use super::types::percentage;
 use super::{
-    filter_bits, Error, Exit, Filter, PackageId, PackageInfo, PackageManager, Progress, Result,
-    Status, TRANSACTION_FLAG_ONLY_TRUSTED,
+    filter_bits, Error, Exit, Filter, Overall, PackageId, PackageInfo, PackageManager, Progress,
+    Result, Status, TRANSACTION_FLAG_ONLY_TRUSTED,
 };
 
 pub const SERVICE: &str = "org.freedesktop.PackageKit";
@@ -196,7 +196,7 @@ struct TransactionState {
     packages: Vec<PackageInfo>,
     error: Option<(u32, String)>,
     status: Option<Status>,
-    percentage: Option<u32>,
+    overall: Overall,
 }
 
 impl TransactionState {
@@ -218,6 +218,7 @@ impl TransactionState {
         match (iface, member) {
             (Some(TRANSACTION_IFACE), "Package") => {
                 if let Ok((info, id, summary)) = body.deserialize::<(u32, String, String)>() {
+                    self.overall.package(info.into(), &id);
                     if let Some(id) = PackageId::parse(&id) {
                         self.packages.push(PackageInfo {
                             info: info.into(),
@@ -228,10 +229,14 @@ impl TransactionState {
                 }
             }
             (Some(TRANSACTION_IFACE), "ItemProgress") => {
+                // One package's own 0 to 100, once to download it and once
+                // to install it: folded into the transaction's (Overall).
                 if let Ok((id, status, pct)) = body.deserialize::<(String, u32, u32)>() {
+                    let status: Status = status.into();
+                    let overall = self.overall.item(&id, status, percentage(pct));
                     progress(Progress {
-                        percentage: percentage(pct),
-                        status: status.into(),
+                        percentage: overall,
+                        status,
                         item: Some(id),
                     });
                 }
@@ -269,18 +274,12 @@ impl TransactionState {
                     return None;
                 };
                 let get = |k: &str| changed.get(k).and_then(|v| u32::try_from(&**v).ok());
-                let mut moved = false;
-                if let Some(p) = get("Percentage") {
-                    self.percentage = percentage(p);
-                    moved = true;
-                }
+                // The transaction's own Percentage restarts for every
+                // preparation step: only its Status is used (Overall).
                 if let Some(s) = get("Status") {
                     self.status = Some(s.into());
-                    moved = true;
-                }
-                if moved {
                     progress(Progress {
-                        percentage: self.percentage,
+                        percentage: self.overall.value(),
                         status: self.status.unwrap_or(Status::Other(0)),
                         item: None,
                     });

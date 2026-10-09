@@ -195,6 +195,97 @@ pub(crate) fn percentage(raw: u32) -> Option<u32> {
     (raw <= 100).then_some(raw)
 }
 
+/// One transaction's progress as a single 0 to 100, from what `PackageKit`'s
+/// zypp backend actually reports: its own `Percentage` restarts for every
+/// preparation step (refresh, dependency resolution) and stays at 0 while
+/// packages download, and each package's `ItemProgress` runs 0 to 100 once
+/// to download it and once more to install it. So: nothing known while
+/// preparing (the bar is busy), downloading is the first half and
+/// installing the second (or all of it, with nothing to download), each
+/// spread across the packages announced for that step.
+#[derive(Debug, Default)]
+pub struct Overall {
+    downloads: Vec<String>,
+    applies: Vec<String>,
+    downloaded_any: bool,
+    value: Option<u32>,
+}
+
+impl Overall {
+    /// A `Package` signal: `info` says which step `id` is in.
+    pub fn package(&mut self, info: Info, id: &str) {
+        let list = match info {
+            Info::Downloading => &mut self.downloads,
+            Info::Installing | Info::Updating | Info::Removing => &mut self.applies,
+            _ => return,
+        };
+        if !list.iter().any(|x| x == id) {
+            list.push(id.to_owned());
+        }
+    }
+
+    /// An `ItemProgress` signal; returns the overall percentage so far.
+    pub fn item(&mut self, id: &str, status: Status, pct: Option<u32>) -> Option<u32> {
+        let Some(pct) = pct else { return self.value };
+        let download = status == Status::Download;
+        let list = if download {
+            self.downloaded_any = true;
+            &mut self.downloads
+        } else {
+            &mut self.applies
+        };
+        let i = list.iter().position(|x| x == id).unwrap_or_else(|| {
+            list.push(id.to_owned());
+            list.len() - 1
+        });
+        let n = list.len();
+        let (base, width) = match (download, self.downloaded_any) {
+            (true, _) => (0, 50),
+            (false, true) => (50, 50),
+            (false, false) => (0, 100),
+        };
+        // Within the step the packages before this one are done: the step
+        // is (i + pct / 100) / n of the way through, rounded to nearest.
+        let done = u64::try_from(i).unwrap_or(u64::MAX) * 100 + u64::from(pct.min(100));
+        let all = u64::try_from(n).unwrap_or(u64::MAX).max(1) * 100;
+        let v = base + (done * width + all / 2) / all;
+        self.value = Some(u32::try_from(v.min(100)).unwrap_or(100));
+        self.value
+    }
+
+    /// The overall percentage so far (`None` while preparing).
+    pub fn value(&self) -> Option<u32> {
+        self.value
+    }
+}
+
+/// What one operation's progress bar shows: `PackageKit`'s overall
+/// percentage, which can step back between its download and install
+/// phases, held so that it only ever moves forward, and only the changes
+/// (`PackageKit` repeats itself a lot). Make one per operation.
+#[derive(Debug, Default)]
+pub struct SteadyProgress {
+    shown: Option<u32>,
+    last: Option<(Option<u32>, Status)>,
+}
+
+impl SteadyProgress {
+    /// The progress to show for `p`, or `None` when nothing visible changed.
+    pub fn next(&mut self, mut p: Progress) -> Option<Progress> {
+        self.shown = match (self.shown, p.percentage) {
+            (Some(a), Some(b)) => Some(a.max(b)),
+            (a, b) => a.or(b),
+        };
+        p.percentage = self.shown;
+        let key = (p.percentage, p.status);
+        if self.last == Some(key) {
+            return None;
+        }
+        self.last = Some(key);
+        Some(p)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,5 +326,49 @@ mod tests {
         assert_eq!(Status::from(14), Status::SigCheck);
         assert_eq!(percentage(101), None);
         assert_eq!(percentage(42), Some(42));
+    }
+
+    #[test]
+    fn overall_is_download_then_install() {
+        let mut o = Overall::default();
+        assert_eq!(o.value(), None);
+        o.package(Info::Downloading, "a");
+        o.package(Info::Downloading, "b");
+        assert_eq!(o.item("a", Status::Download, Some(50)), Some(13));
+        assert_eq!(o.item("a", Status::Download, Some(100)), Some(25));
+        assert_eq!(o.item("b", Status::Download, Some(100)), Some(50));
+        assert_eq!(o.item("a", Status::Install, Some(1)), Some(51));
+        o.package(Info::Installing, "b");
+        assert_eq!(o.item("a", Status::Install, Some(100)), Some(75));
+        assert_eq!(o.item("b", Status::Install, Some(100)), Some(100));
+        // Unknown (101) changes nothing.
+        assert_eq!(o.item("b", Status::Install, None), Some(100));
+    }
+
+    #[test]
+    fn overall_without_downloads_is_all_install() {
+        let mut o = Overall::default();
+        o.package(Info::Removing, "a");
+        assert_eq!(o.item("a", Status::Remove, Some(40)), Some(40));
+    }
+
+    #[test]
+    fn steady_progress_only_moves_forward() {
+        let p = |pct: Option<u32>, status: u32| Progress {
+            percentage: pct,
+            status: status.into(),
+            item: None,
+        };
+        let mut s = SteadyProgress::default();
+        let shown = |s: &mut SteadyProgress, pct, st| s.next(p(pct, st)).map(|x| x.percentage);
+        assert_eq!(shown(&mut s, None, 8), Some(None));
+        assert_eq!(shown(&mut s, Some(10), 8), Some(Some(10)));
+        assert_eq!(shown(&mut s, Some(40), 8), Some(Some(40)));
+        // Back to 5 when installing starts: the bar stays, the status moves.
+        assert_eq!(shown(&mut s, Some(5), 9), Some(Some(40)));
+        // Unknown for a moment, or the same again: nothing new to show.
+        assert_eq!(shown(&mut s, None, 9), None);
+        assert_eq!(shown(&mut s, Some(30), 9), None);
+        assert_eq!(shown(&mut s, Some(70), 9), Some(Some(70)));
     }
 }

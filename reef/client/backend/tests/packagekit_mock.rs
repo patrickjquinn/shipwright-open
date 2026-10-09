@@ -378,12 +378,13 @@ fn resolve_and_install_with_progress() {
             .install(&[REPO_PKG], &mut |p| seen.push(p))
             .await
             .unwrap();
+        // Downloading is the first half: the package 40% downloaded is 20%
+        // overall. The transaction's own Percentage (50) is not used: the
+        // zypp backend restarts it for every preparation step.
         assert!(seen
             .iter()
-            .any(|p| p.item.as_deref() == Some(REPO_PKG) && p.percentage == Some(40)));
-        assert!(seen
-            .iter()
-            .any(|p| p.item.is_none() && p.percentage == Some(50)));
+            .any(|p| p.item.as_deref() == Some(REPO_PKG) && p.percentage == Some(20)));
+        assert!(seen.iter().all(|p| p.percentage != Some(50)));
         assert!(seen.iter().any(|p| p.percentage == Some(100)));
     });
     let log = h.log.lock().unwrap();
@@ -455,8 +456,14 @@ fn store_updates_only_reef_packages_and_refreshes_one_repo() {
         format!("UpdatePackages {TRANSACTION_FLAG_ONLY_TRUSTED:#x} [\"{UPDATE_PKG}\"]")
     );
     assert_eq!(log[2], "RepoSetData shipwright-reef refresh-now true");
-    assert!(log[4].starts_with("RemovePackages 0x0"), "{}", log[4]);
+    // After the lookups the removal makes (how many is the store's business).
+    let remove = log
+        .iter()
+        .skip(3)
+        .find(|l| l.starts_with("RemovePackages"))
+        .unwrap_or_else(|| panic!("no RemovePackages in {log:?}"));
+    assert!(remove.starts_with("RemovePackages 0x0"), "{remove}");
     // The installed copy, which the Reef repository also offers (B-06).
-    assert!(log[4].contains(INSTALLED_PKG), "{}", log[4]);
-    assert!(log[4].ends_with("false false"), "{}", log[4]);
+    assert!(remove.contains(INSTALLED_PKG), "{remove}");
+    assert!(remove.ends_with("false false"), "{remove}");
 }

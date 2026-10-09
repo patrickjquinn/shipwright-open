@@ -36,7 +36,11 @@ fn main() {
     builder.build();
     // The UI's QML and JavaScript, compiled ahead of time for where the
     // package installs them.
-    precompile_app_qml(&repo.join("reef/client/ui/qml"), "/usr/share/shipwright-reef/qml", &[]);
+    precompile_app_qml(
+        &repo.join("reef/client/ui/qml"),
+        "/usr/share/shipwright-reef/qml",
+        &[],
+    );
     // Keel Actions (ADR-0018): actions.json and the D-Bus files from the QML
     // declarations, into $OUT_DIR (keel::manifest!() in src/lib.rs) and
     // target/[<triple>/]<profile>/keel-actions/<app-id>/ for the RPM.

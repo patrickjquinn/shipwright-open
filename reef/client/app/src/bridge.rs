@@ -229,7 +229,7 @@ use cxx_qt_lib::{
 use reef_backend::catalogue::{Catalogue, LicenceModel};
 use reef_backend::claim_codes::{self, PendingClaims};
 use reef_backend::licences::LicenceStore;
-use reef_backend::packagekit::Progress;
+use reef_backend::packagekit::{Progress, SteadyProgress};
 use reef_backend::release::{self, SailfishRelease};
 use reef_backend::repo::{PinState, RepoConfig, SsuRepo};
 use reef_licence::{Licence, Policy};
@@ -806,12 +806,10 @@ impl qobject::Reef {
         let catalogue = self.core.catalogue.clone();
         self.as_mut().spawn(move |thread| {
             let progress_thread = thread.clone();
-            let mut last: Option<(Option<u32>, reef_backend::packagekit::Status)> = None;
+            // The bar only moves forward, and only changes are posted.
+            let mut steady = SteadyProgress::default();
             let mut on_progress = |p: Progress| {
-                // Post only changes: PackageKit repeats itself a lot.
-                let key = (p.percentage, p.status);
-                if last != Some(key) {
-                    last = Some(key);
+                if let Some(p) = steady.next(p) {
                     queue_or_log(&progress_thread, move |q| q.apply_progress(&p));
                 }
             };
