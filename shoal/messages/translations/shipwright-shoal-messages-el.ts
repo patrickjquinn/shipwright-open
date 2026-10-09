@@ -1,0 +1,3972 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modified by Shipwright, 2026: rebranded as Shoal Messages; see CHANGES-FROM-UPSTREAM.md. -->
+<!DOCTYPE TS>
+<TS version="2.1" language="el">
+<context>
+    <name>AboutPage</name>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Σχετικά με το Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Έκδοση %1</translation>
+    </message>
+    <message>
+        <source>A native Matrix client for Sailfish OS: encrypted rooms, spaces, voice and video calls.</source>
+        <translation>Εγγενής πελάτης Matrix για το Sailfish OS: κρυπτογραφημένα δωμάτια, χώροι, φωνητικές και βιντεοκλήσεις.</translation>
+    </message>
+    <message>
+        <source>License: Apache 2.0</source>
+        <translation>Άδεια: Apache 2.0</translation>
+    </message>
+    <message>
+        <source>Source code</source>
+        <translation>Πηγαίος κώδικας</translation>
+    </message>
+</context>
+<context>
+    <name>AccountPage</name>
+    <message>
+        <source>Signed in</source>
+        <translation>Συνδεδεμένος</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Λογαριασμός</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Συσκευή</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Πυρήνας</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Προφίλ</translation>
+    </message>
+    <message>
+        <source>Display name</source>
+        <translation>Εμφανιζόμενο όνομα</translation>
+    </message>
+    <message>
+        <source>Save name</source>
+        <translation>Αποθήκευση ονόματος</translation>
+    </message>
+    <message>
+        <source>Change avatar</source>
+        <translation>Αλλαγή άβαταρ</translation>
+    </message>
+    <message>
+        <source>Set avatar</source>
+        <translation>Ορισμός άβαταρ</translation>
+    </message>
+    <message>
+        <source>An avatar is set. Other people see it next to your name.</source>
+        <translation>Έχει οριστεί άβαταρ. Οι άλλοι το βλέπουν δίπλα στο όνομά σου.</translation>
+    </message>
+    <message>
+        <source>This app</source>
+        <translation>Αυτή η εφαρμογή</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Εμφάνιση</translation>
+    </message>
+    <message>
+        <source>Ignored users</source>
+        <translation>Αγνοημένοι χρήστες</translation>
+    </message>
+    <message>
+        <source>Reset send warnings</source>
+        <translation>Επαναφορά προειδοποιήσεων αποστολής</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n recipient(s) will warn again</source>
+        <translation>
+            <numerusform>%n παραλήπτης θα προειδοποιήσει ξανά</numerusform>
+            <numerusform>%n παραλήπτες θα προειδοποιήσουν ξανά</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No suppressed warnings</source>
+        <translation>Καμία κατασταλμένη προειδοποίηση</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Αποσύνδεση</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Κρυπτογράφηση</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Γλώσσα</translation>
+    </message>
+    <message>
+        <source>Privacy</source>
+        <translation>Απόρρητο</translation>
+    </message>
+    <message>
+        <source>Session and message database lie on this device unencrypted. Tap to encrypt them.</source>
+        <translation>Η συνεδρία και η βάση μηνυμάτων βρίσκονται μη κρυπτογραφημένες σε αυτή τη συσκευή. Πάτα για να τις κρυπτογραφήσεις.</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Αρχείο σφαλμάτων</translation>
+    </message>
+    <message>
+        <source>Push notifications</source>
+        <translation>Ειδοποιήσεις push</translation>
+    </message>
+</context>
+<context>
+    <name>AddDirectoryServerDialog</name>
+    <message>
+        <source>Add</source>
+        <translation>Προσθήκη</translation>
+    </message>
+    <message>
+        <source>Directory server</source>
+        <translation>Διακομιστής καταλόγου</translation>
+    </message>
+    <message>
+        <source>For example matrix.org</source>
+        <translation>Για παράδειγμα matrix.org</translation>
+    </message>
+</context>
+<context>
+    <name>AddToSpacePage</name>
+    <message>
+        <source>Add rooms</source>
+        <translation>Προσθήκη δωματίων</translation>
+    </message>
+    <message>
+        <source>Press and hold a room to add it to the space.</source>
+        <translation>Κράτα πατημένο ένα δωμάτιο για να το προσθέσεις στον χώρο.</translation>
+    </message>
+    <message>
+        <source>Add to space</source>
+        <translation>Προσθήκη στον χώρο</translation>
+    </message>
+    <message>
+        <source>Adding to space</source>
+        <translation>Προσθήκη στον χώρο</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Κανένα δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Join or start a chat first, then add it to a space.</source>
+        <translation>Μπες πρώτα σε μια συνομιλία ή ξεκίνα μία, και μετά πρόσθεσέ την σε έναν χώρο.</translation>
+    </message>
+</context>
+<context>
+    <name>AppearancePage</name>
+    <message>
+        <source>Reset to defaults</source>
+        <translation>Επαναφορά προεπιλογών</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Εμφάνιση</translation>
+    </message>
+    <message>
+        <source>Somebody</source>
+        <comment>sample sender on the appearance page</comment>
+        <translation>Κάποιος</translation>
+    </message>
+    <message>
+        <source>A received message looks like this.</source>
+        <translation>Ένα ληφθέν μήνυμα φαίνεται έτσι.</translation>
+    </message>
+    <message>
+        <source>And one of my own like this.</source>
+        <translation>Και ένα δικό μου έτσι.</translation>
+    </message>
+    <message>
+        <source>Colouring</source>
+        <translation>Χρώματα</translation>
+    </message>
+    <message>
+        <source>Their bubble</source>
+        <translation>Το συννεφάκι τους</translation>
+    </message>
+    <message>
+        <source>My bubble</source>
+        <translation>Το συννεφάκι μου</translation>
+    </message>
+    <message>
+        <source>Sender name</source>
+        <translation>Όνομα αποστολέα</translation>
+    </message>
+    <message>
+        <source>Their text</source>
+        <translation>Το κείμενό τους</translation>
+    </message>
+    <message>
+        <source>My text</source>
+        <translation>Το κείμενό μου</translation>
+    </message>
+    <message>
+        <source>Follow the ambience</source>
+        <translation>Να ακολουθεί το ambience</translation>
+    </message>
+    <message>
+        <source>Off, the colour below applies</source>
+        <translation>Ανενεργό: ισχύει το χρώμα παρακάτω</translation>
+    </message>
+    <message>
+        <source>Bubble opacity</source>
+        <translation>Αδιαφάνεια συννεφάκια</translation>
+    </message>
+    <message>
+        <source>Off, a reaction is drawn as the character it is - always right and free. On, Shoal Messages looks for a picture of your own for it in %1, named after its code points (1f44d.svg). Nothing is shipped and nothing is downloaded. Weigh it up: a picture file is opened by an image decoder, which is where an app of this kind is most exposed.</source>
+        <translation>Απενεργοποιημένο, μια αντίδραση σχεδιάζεται ως ο χαρακτήρας που είναι — πάντα σωστά και δωρεάν. Ενεργοποιημένο, το Shoal Messages ψάχνει γι&apos; αυτήν δική σου εικόνα στο %1, με όνομα από τα code points της (1f44d.svg). Τίποτα δεν παραδίδεται και τίποτα δεν κατεβαίνει. Ζύγισέ το: ένα αρχείο εικόνας το ανοίγει ένας αποκωδικοποιητής εικόνας, και εκεί μια τέτοια εφαρμογή είναι πιο εκτεθειμένη.</translation>
+    </message>
+    <message>
+        <source>Reading the pictures…</source>
+        <translation>Ανάγνωση των εικόνων…</translation>
+    </message>
+    <message>
+        <source>%1 taken over, %2 refused</source>
+        <translation>%1 ελήφθησαν, %2 απορρίφθηκαν</translation>
+    </message>
+    <message>
+        <source>The pictures have changed since they were read in and are not shown.</source>
+        <translation>Οι εικόνες άλλαξαν μετά την ανάγνωση και δεν εμφανίζονται.</translation>
+    </message>
+    <message>
+        <source>Reset colours to defaults</source>
+        <translation>Επαναφορά προεπιλεγμένων χρωμάτων</translation>
+    </message>
+    <message>
+        <source>Hide the keyboard after sending</source>
+        <translation>Απόκρυψη πληκτρολογίου μετά την αποστολή</translation>
+    </message>
+    <message>
+        <source>On, the keyboard closes once a message is out and the conversation is back in full. Off, it stays up for the next one.</source>
+        <translation>Ενεργό: το πληκτρολόγιο κλείνει μόλις φύγει το μήνυμα και η συνομιλία φαίνεται πάλι ολόκληρη. Ανενεργό: μένει ανοιχτό για το επόμενο μήνυμα.</translation>
+    </message>
+    <message>
+        <source>Open a room where you stopped reading</source>
+        <translation>Άνοιγμα του δωματίου εκεί που σταμάτησες να διαβάζεις</translation>
+    </message>
+    <message>
+        <source>Read in an emoji pack</source>
+        <translation>Φόρτωση πακέτου emoji</translation>
+    </message>
+    <message>
+        <source>Remove the emoji pack</source>
+        <translation>Αφαίρεση πακέτου emoji</translation>
+    </message>
+    <message>
+        <source>No pictures read in yet - emoji stay the characters they are, in black and white.</source>
+        <translation>Δεν έχουν φορτωθεί ακόμη εικόνες - τα emoji μένουν οι χαρακτήρες που είναι, ασπρόμαυρα.</translation>
+    </message>
+    <message>
+        <source>Pictures ready: %1</source>
+        <translation>Έτοιμες εικόνες: %1</translation>
+    </message>
+    <message>
+        <source>Unpack the pack anywhere in your own folders - Downloads or Public, say. This opens at your home folder; tap through to the pack, and the folder holding the pictures is read in as soon as you tap it. They have to lie directly in it, not in subfolders. Reading runs in the background and copies them into Shoal Messages' own storage, so your folder is not needed afterwards.</source>
+        <translation>Αποσυμπίεσε το πακέτο όπου θέλεις στους δικούς σου φακέλους - στο Downloads ή στο Public, ας πούμε. Αυτό ανοίγει στον προσωπικό σου φάκελο· πάτα μέχρι το πακέτο, και ο φάκελος με τις εικόνες διαβάζεται μόλις τον πατήσεις. Πρέπει να βρίσκονται απευθείας μέσα του, όχι σε υποφακέλους. Η ανάγνωση γίνεται στο παρασκήνιο και τις αντιγράφει στον δικό του χώρο του Shoal Messages, οπότε ο φάκελός σου δεν χρειάζεται μετά.</translation>
+    </message>
+    <message>
+        <source>Reactions as pictures (emoji)</source>
+        <translation>Αντιδράσεις ως εικόνες (emoji)</translation>
+    </message>
+    <message>
+        <source>Send with the return key</source>
+        <translation>Αποστολή με το πλήκτρο Enter</translation>
+    </message>
+    <message>
+        <source>On, the return key sends the message; the arrow beside the field keeps working. A line break then comes from holding that arrow, or from shift and the return key on a hardware keyboard. Off, the return key makes a line break and only the arrow sends.</source>
+        <translation>Ενεργό, το πλήκτρο Enter στέλνει το μήνυμα· το βέλος δίπλα στο πεδίο εξακολουθεί να λειτουργεί. Αλλαγή γραμμής δίνει τότε το παρατεταμένο πάτημα του βέλους, ή Shift και Enter σε φυσικό πληκτρολόγιο. Ανενεργό, το πλήκτρο Enter αλλάζει γραμμή και στέλνει μόνο το βέλος.</translation>
+    </message>
+    <message>
+        <source>Mark the space on the picture</source>
+        <translation>Σήμανση του χώρου πάνω στην εικόνα</translation>
+    </message>
+    <message>
+        <source>On, the chat list draws the initial of a room&apos;s space over its picture, in that space&apos;s colour. The colour is set in the space list, by holding the space.</source>
+        <translation>Ενεργό, η λίστα συνομιλιών σχεδιάζει το αρχικό γράμμα του χώρου πάνω στην εικόνα του δωματίου, στο χρώμα του χώρου. Το χρώμα ορίζεται στη λίστα χώρων κρατώντας πατημένο τον χώρο.</translation>
+    </message>
+    <message>
+        <source>On, entering a room takes you to your last read message, with the new ones below it — and back to the place you were at if you left the room in the middle of its history. That place is kept until the app is closed. Off, the room opens at its newest message and the line marking where you stopped is found by scrolling up.</source>
+        <translation>Ενεργό: μπαίνοντας σε ένα δωμάτιο βρίσκεσαι στο τελευταίο μήνυμα που διάβασες, με τα νέα από κάτω — και πίσω στο σημείο όπου ήσουν, αν έφυγες από το δωμάτιο στη μέση του ιστορικού. Το σημείο κρατιέται μέχρι να κλείσει η εφαρμογή. Ανενεργό: το δωμάτιο ανοίγει στο νεότερο μήνυμα και τη γραμμή που δείχνει πού σταμάτησες τη βρίσκεις κάνοντας κύλιση προς τα πάνω.</translation>
+    </message>
+</context>
+<context>
+    <name>AttachmentPickerPage</name>
+    <message>
+        <source>All</source>
+        <translation>Όλα</translation>
+    </message>
+    <message>
+        <source>Pictures</source>
+        <translation>Εικόνες</translation>
+    </message>
+    <message>
+        <source>Downloads</source>
+        <translation>Λήψεις</translation>
+    </message>
+    <message>
+        <source>%1 selected</source>
+        <translation>%1 επιλεγμένα</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Συνημμένο</translation>
+    </message>
+    <message>
+        <source>Gallery</source>
+        <translation>Συλλογή</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>Αρχεία</translation>
+    </message>
+    <message>
+        <source>Home folder</source>
+        <translation>Προσωπικός φάκελος</translation>
+    </message>
+    <message>
+        <source>Other files</source>
+        <translation>Άλλα αρχεία</translation>
+    </message>
+    <message>
+        <source>No pictures here</source>
+        <translation>Δεν υπάρχουν εικόνες εδώ</translation>
+    </message>
+    <message>
+        <source>Nothing here</source>
+        <translation>Δεν υπάρχει τίποτα εδώ</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Βίντεο</translation>
+    </message>
+    <message>
+        <source>Send text as a file</source>
+        <translation>Αποστολή κειμένου ως αρχείο</translation>
+    </message>
+</context>
+<context>
+    <name>CallEngine</name>
+    <message>
+        <source>the camera did not start — continuing without video</source>
+        <translation>η κάμερα δεν ξεκίνησε — συνεχίζουμε χωρίς βίντεο</translation>
+    </message>
+    <message>
+        <source>GStreamer could not be started: %1</source>
+        <translation>Δεν ήταν δυνατή η εκκίνηση του GStreamer: %1</translation>
+    </message>
+    <message>
+        <source>This device has no WebRTC support.</source>
+        <translation>Αυτή η συσκευή δεν υποστηρίζει WebRTC.</translation>
+    </message>
+    <message>
+        <source>ready</source>
+        <translation>έτοιμο</translation>
+    </message>
+    <message>
+        <source>pipeline failed: %1</source>
+        <translation>το pipeline απέτυχε: %1</translation>
+    </message>
+    <message>
+        <source>webrtcbin is missing</source>
+        <translation>λείπει το webrtcbin</translation>
+    </message>
+    <message>
+        <source>no camera — placing a voice call</source>
+        <translation>χωρίς κάμερα — γίνεται φωνητική κλήση</translation>
+    </message>
+    <message>
+        <source>the microphone could not be opened</source>
+        <translation>δεν ήταν δυνατό το άνοιγμα του μικροφώνου</translation>
+    </message>
+    <message>
+        <source>the session description could not be read</source>
+        <translation>δεν ήταν δυνατή η ανάγνωση της περιγραφής συνεδρίας</translation>
+    </message>
+    <message>
+        <source>the other side sent an unreadable session description</source>
+        <translation>η άλλη πλευρά έστειλε μη αναγνώσιμη περιγραφή συνεδρίας</translation>
+    </message>
+    <message>
+        <source>the other side hung up</source>
+        <translation>η άλλη πλευρά έκλεισε</translation>
+    </message>
+    <message>
+        <source>the connection was lost</source>
+        <translation>η σύνδεση χάθηκε</translation>
+    </message>
+    <message>
+        <source>connected</source>
+        <translation>συνδέθηκε</translation>
+    </message>
+    <message>
+        <source>the call could not be carried on</source>
+        <translation>η κλήση δεν μπόρεσε να συνεχιστεί</translation>
+    </message>
+    <message>
+        <source>answered on another device</source>
+        <translation>απαντήθηκε σε άλλη συσκευή</translation>
+    </message>
+</context>
+<context>
+    <name>CallPage</name>
+    <message>
+        <source>Call</source>
+        <translation>Κλήση</translation>
+    </message>
+    <message>
+        <source>Ringing…</source>
+        <translation>Κουδουνίζει…</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Εισερχόμενη κλήση</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Σύνδεση…</translation>
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation>Συνδέθηκε</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Αποδοχή</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>Hang up</source>
+        <translation>Τερματισμός</translation>
+    </message>
+    <message>
+        <source>Accept without camera</source>
+        <translation>Αποδοχή χωρίς κάμερα</translation>
+    </message>
+    <message>
+        <source>Accept with camera</source>
+        <translation>Αποδοχή με κάμερα</translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Εισερχόμενη βιντεοκλήση</translation>
+    </message>
+    <message>
+        <source>Video calls are switched off in Privacy; this one is answered as a voice call.</source>
+        <translation>Οι βιντεοκλήσεις είναι απενεργοποιημένες στο Απόρρητο· αυτή απαντάται ως φωνητική κλήση.</translation>
+    </message>
+</context>
+<context>
+    <name>CameraCapturePage</name>
+    <message>
+        <source>The photo could not be saved.</source>
+        <translation>Δεν ήταν δυνατή η αποθήκευση της φωτογραφίας.</translation>
+    </message>
+    <message>
+        <source>The photo could not be taken.</source>
+        <translation>Δεν ήταν δυνατή η λήψη της φωτογραφίας.</translation>
+    </message>
+    <message>
+        <source>The camera is not available.</source>
+        <translation>Η κάμερα δεν είναι διαθέσιμη.</translation>
+    </message>
+    <message>
+        <source>The camera is in use by the call.</source>
+        <translation>Η κάμερα χρησιμοποιείται από την κλήση.</translation>
+    </message>
+    <message>
+        <source>Keep in the gallery</source>
+        <translation>Κράτα στη συλλογή</translation>
+    </message>
+    <message>
+        <source>Otherwise the photo is deleted once it is sent.</source>
+        <translation>Αλλιώς η φωτογραφία διαγράφεται μόλις σταλεί.</translation>
+    </message>
+    <message>
+        <source>Retake</source>
+        <translation>Ξανά</translation>
+    </message>
+    <message>
+        <source>Use</source>
+        <translation>Χρήση</translation>
+    </message>
+</context>
+<context>
+    <name>ColorField</name>
+    <message>
+        <source>Hex code</source>
+        <translation>Δεκαεξαδικός κωδικός</translation>
+    </message>
+</context>
+<context>
+    <name>ConfirmDialog</name>
+    <message>
+        <source>Keep</source>
+        <translation>Διατήρηση</translation>
+    </message>
+</context>
+<context>
+    <name>CoverPage</name>
+    <message>
+        <source>signing in…</source>
+        <translation>γίνεται σύνδεση…</translation>
+    </message>
+    <message>
+        <source>not signed in</source>
+        <translation>μη συνδεδεμένος</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Εκτός σύνδεσης — αναμονή για δίκτυο</translation>
+    </message>
+    <message>
+        <source>no connection</source>
+        <translation>χωρίς σύνδεση</translation>
+    </message>
+</context>
+<context>
+    <name>CreatePollDialog</name>
+    <message>
+        <source>Create poll</source>
+        <translation>Δημιουργία δημοσκόπησης</translation>
+    </message>
+    <message>
+        <source>Question</source>
+        <translation>Ερώτηση</translation>
+    </message>
+    <message>
+        <source>What are you asking?</source>
+        <translation>Τι θέλεις να ρωτήσεις;</translation>
+    </message>
+    <message>
+        <source>Answer %1</source>
+        <translation>Απάντηση %1</translation>
+    </message>
+    <message>
+        <source>Add answer</source>
+        <translation>Προσθήκη απάντησης</translation>
+    </message>
+    <message>
+        <source>Allow several answers</source>
+        <translation>Να επιτρέπονται πολλές απαντήσεις</translation>
+    </message>
+    <message>
+        <source>Everyone can then pick more than one answer.</source>
+        <translation>Τότε ο καθένας μπορεί να διαλέξει περισσότερες από μία απαντήσεις.</translation>
+    </message>
+    <message>
+        <source>Hide results until the poll ends</source>
+        <translation>Απόκρυψη αποτελεσμάτων μέχρι το τέλος</translation>
+    </message>
+    <message>
+        <source>A poll is not a secret ballot: who voted for what stays readable in the room.</source>
+        <translation>Η δημοσκόπηση δεν είναι μυστική ψηφοφορία: ποιος ψήφισε τι παραμένει αναγνώσιμο στο δωμάτιο.</translation>
+    </message>
+    <message>
+        <source>Clients keep the counts hidden until the poll ends, yours included. A convention every common client follows, not a lock.</source>
+        <translation>Οι εφαρμογές κρατούν τους αριθμούς κρυφούς μέχρι το τέλος της δημοσκόπησης, και η δική σου. Μια σύμβαση που ακολουθούν οι συνηθισμένες εφαρμογές, όχι κλειδαριά.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateRoomDialog</name>
+    <message>
+        <source>Create room</source>
+        <translation>Δημιουργία δωματίου</translation>
+    </message>
+    <message>
+        <source>Room name</source>
+        <translation>Όνομα δωματίου</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Θέμα</translation>
+    </message>
+    <message>
+        <source>What the room is about</source>
+        <translation>Για τι είναι το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Public room</source>
+        <translation>Δημόσιο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Listed in your homeserver&apos;s room directory, and anyone who finds it can join. Off means invitation only.</source>
+        <translation>Εμφανίζεται στον κατάλογο δωματίων του διακομιστή σου, και όποιος το βρει μπορεί να μπει. Ανενεργό σημαίνει μόνο με πρόσκληση.</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Διεύθυνση</translation>
+    </message>
+    <message>
+        <source>Reachable as %1</source>
+        <translation>Προσβάσιμο ως %1</translation>
+    </message>
+    <message>
+        <source>The name people can use to find the room, without # and without the server part. Optional.</source>
+        <translation>Το όνομα με το οποίο βρίσκεται το δωμάτιο, χωρίς # και χωρίς το μέρος του διακομιστή. Προαιρετικό.</translation>
+    </message>
+    <message>
+        <source>Readable history</source>
+        <translation>Αναγνώσιμο ιστορικό</translation>
+    </message>
+    <message>
+        <source>Everyone, without joining</source>
+        <translation>Όλοι, χωρίς είσοδο</translation>
+    </message>
+    <message>
+        <source>Members, including earlier messages</source>
+        <translation>Τα μέλη, μαζί με προηγούμενα μηνύματα</translation>
+    </message>
+    <message>
+        <source>Members, from their invitation</source>
+        <translation>Τα μέλη, από την πρόσκλησή τους</translation>
+    </message>
+    <message>
+        <source>Members, from their join</source>
+        <translation>Τα μέλη, από την είσοδό τους</translation>
+    </message>
+    <message>
+        <source>End-to-end encryption</source>
+        <translation>Κρυπτογράφηση άκρο σε άκρο</translation>
+    </message>
+    <message>
+        <source>Unusual for a public room: everyone joining later reads along from their join onwards, and nothing before it.</source>
+        <translation>Ασυνήθιστο για δημόσιο δωμάτιο: όποιος μπει αργότερα διαβάζει από την είσοδό του και τίποτα πριν.</translation>
+    </message>
+    <message>
+        <source>Can only be decided now — encryption cannot be turned off again later.</source>
+        <translation>Αποφασίζεται μόνο τώρα — η κρυπτογράφηση δεν απενεργοποιείται αργότερα.</translation>
+    </message>
+    <message>
+        <source>Only moderators may write</source>
+        <translation>Μόνο οι συντονιστές μπορούν να γράφουν</translation>
+    </message>
+    <message>
+        <source>For an announcement room. Everyone else can read, but not write and not react.</source>
+        <translation>Για δωμάτιο ανακοινώσεων. Οι υπόλοιποι μπορούν να διαβάζουν, αλλά όχι να γράφουν ή να αντιδρούν.</translation>
+    </message>
+    <message>
+        <source>Invited people get my rights</source>
+        <translation>Οι προσκεκλημένοι παίρνουν τα δικαιώματά μου</translation>
+    </message>
+    <message>
+        <source>Everyone invited below starts as an administrator. Later members do not.</source>
+        <translation>Όποιος προσκληθεί παρακάτω ξεκινά ως διαχειριστής. Τα μεταγενέστερα μέλη όχι.</translation>
+    </message>
+    <message>
+        <source>Keep on this server</source>
+        <translation>Να μείνει σε αυτόν τον διακομιστή</translation>
+    </message>
+    <message>
+        <source>People on other servers cannot join, not even by invitation. Cannot be changed later.</source>
+        <translation>Άτομα από άλλους διακομιστές δεν μπορούν να μπουν, ούτε με πρόσκληση. Δεν αλλάζει αργότερα.</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Πρόσκληση</translation>
+    </message>
+    <message>
+        <source>Matrix addresses, separated by commas</source>
+        <translation>Διευθύνσεις Matrix, χωρισμένες με κόμματα</translation>
+    </message>
+    <message>
+        <source>Invited as the room is created. You can invite more people later from the room&apos;s pulldown menu.</source>
+        <translation>Προσκαλούνται κατά τη δημιουργία του δωματίου. Μπορείς να προσκαλέσεις κι άλλους αργότερα από το πτυσσόμενο μενού του δωματίου.</translation>
+    </message>
+    <message>
+        <source>The room opens right away.</source>
+        <translation>Το δωμάτιο ανοίγει αμέσως.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateSpaceDialog</name>
+    <message>
+        <source>Create space</source>
+        <translation>Δημιουργία χώρου</translation>
+    </message>
+    <message>
+        <source>Space name</source>
+        <translation>Όνομα χώρου</translation>
+    </message>
+    <message>
+        <source>The space appears in the overview right away. It is private and holds no messages — it is a folder for rooms.</source>
+        <translation>Ο χώρος εμφανίζεται αμέσως στην επισκόπηση. Είναι ιδιωτικός και δεν περιέχει μηνύματα — είναι φάκελος για δωμάτια.</translation>
+    </message>
+</context>
+<context>
+    <name>DirectoryPage</name>
+    <message>
+        <source>Remove this server</source>
+        <translation>Αφαίρεση αυτού του διακομιστή</translation>
+    </message>
+    <message>
+        <source>Add directory server</source>
+        <translation>Προσθήκη διακομιστή καταλόγου</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Ανακάλυψη δωματίων</translation>
+    </message>
+    <message>
+        <source>Directory</source>
+        <translation>Κατάλογος</translation>
+    </message>
+    <message>
+        <source>Search the room directory</source>
+        <translation>Αναζήτηση στον κατάλογο δωματίων</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n μέλος</numerusform>
+            <numerusform>%n μέλη</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Είσοδος</translation>
+    </message>
+    <message>
+        <source>Join (invitation required)</source>
+        <translation>Είσοδος (απαιτείται πρόσκληση)</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Γίνεται είσοδος</translation>
+    </message>
+    <message>
+        <source>No rooms found</source>
+        <translation>Δεν βρέθηκαν δωμάτια</translation>
+    </message>
+    <message>
+        <source>Public rooms of the chosen directory show up here.</source>
+        <translation>Τα δημόσια δωμάτια του επιλεγμένου καταλόγου εμφανίζονται εδώ.</translation>
+    </message>
+</context>
+<context>
+    <name>EmojiFolderPage</name>
+    <message>
+        <source>Where is the pack?</source>
+        <translation>Πού είναι το πακέτο;</translation>
+    </message>
+    <message>
+        <source>Take this folder</source>
+        <translation>Πάρε αυτόν τον φάκελο</translation>
+    </message>
+    <message>
+        <source>One level up</source>
+        <translation>Ένα επίπεδο πάνω</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Δεν υπάρχουν φάκελοι εδώ</translation>
+    </message>
+    <message>
+        <source>The pull-down takes the folder you are in.</source>
+        <translation>Το μενού από πάνω παίρνει τον φάκελο στον οποίο βρίσκεσαι.</translation>
+    </message>
+    <message>
+        <source>Pictures in here - tap to read them in</source>
+        <translation>Εικόνες εδώ - πάτα για ανάγνωση</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptStorageDialog</name>
+    <message>
+        <source>Sign out and encrypt</source>
+        <translation>Αποσύνδεση και κρυπτογράφηση</translation>
+    </message>
+    <message>
+        <source>Leave as it is</source>
+        <translation>Να μείνει ως έχει</translation>
+    </message>
+    <message>
+        <source>An existing database cannot be encrypted in place. It has to be created anew: signing out deletes it, and the next sign-in creates it encrypted.</source>
+        <translation>Μια υπάρχουσα βάση δεδομένων δεν κρυπτογραφείται επιτόπου. Πρέπει να δημιουργηθεί ξανά: η αποσύνδεση τη διαγράφει και η επόμενη σύνδεση τη δημιουργεί κρυπτογραφημένη.</translation>
+    </message>
+    <message>
+        <source>You will need your recovery key afterwards to unlock the backup, and this device has to be verified again. Have the recovery key at hand before you continue.</source>
+        <translation>Θα χρειαστείς μετά το κλειδί ανάκτησης για να ξεκλειδώσεις το αντίγραφο ασφαλείας, και η συσκευή θα πρέπει να επαληθευτεί ξανά. Να έχεις το κλειδί πρόχειρο πριν συνεχίσεις.</translation>
+    </message>
+    <message>
+        <source>Not possible yet: there is no key backup on the server. Signing out now would make every encrypted message on this device unreadable for good. Set up the backup first, then come back here.</source>
+        <translation>Δεν γίνεται ακόμη: δεν υπάρχει αντίγραφο κλειδιών στον διακομιστή. Η αποσύνδεση τώρα θα έκανε κάθε κρυπτογραφημένο μήνυμα της συσκευής οριστικά μη αναγνώσιμο. Ρύθμισε πρώτα το αντίγραφο και γύρνα εδώ.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>Σε αυτή την έκδοση του Sailfish ο περιηγητής δεν μπορεί να ολοκληρώσει τη σύνδεση. Επίστρεψε με «Σύνδεση σε άλλη συσκευή» — αυτός ο δρόμος λειτουργεί εδώ.</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptionPage</name>
+    <message>
+        <source>Encryption</source>
+        <translation>Κρυπτογράφηση</translation>
+    </message>
+    <message>
+        <source>Encrypt local storage</source>
+        <translation>Κρυπτογράφηση τοπικής αποθήκευσης</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Επαλήθευση</translation>
+    </message>
+    <message>
+        <source>Unlock backup</source>
+        <translation>Ξεκλείδωμα αντιγράφου</translation>
+    </message>
+    <message>
+        <source>Enter the recovery key from your other client. This device then fetches the room keys it is missing, and older messages become readable.</source>
+        <translation>Δώσε το κλειδί ανάκτησης από τον άλλο σου πελάτη. Η συσκευή τότε κατεβάζει τα κλειδιά δωματίων που της λείπουν, και τα παλαιότερα μηνύματα γίνονται αναγνώσιμα.</translation>
+    </message>
+    <message>
+        <source>Recovery key</source>
+        <translation>Κλειδί ανάκτησης</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Ξεκλείδωμα</translation>
+    </message>
+    <message>
+        <source>Set up backup</source>
+        <translation>Ρύθμιση αντιγράφου</translation>
+    </message>
+    <message>
+        <source>Creates a backup of your room keys on the server, encrypted with a recovery key that only you hold. Without it, reinstalling loses every encrypted message.</source>
+        <translation>Δημιουργεί στον διακομιστή αντίγραφο των κλειδιών των δωματίων σου, κρυπτογραφημένο με κλειδί ανάκτησης που έχεις μόνο εσύ. Χωρίς αυτό, μια επανεγκατάσταση χάνει κάθε κρυπτογραφημένο μήνυμα.</translation>
+    </message>
+    <message>
+        <source>Your recovery key</source>
+        <translation>Το κλειδί ανάκτησής σου</translation>
+    </message>
+    <message>
+        <source>Write this down now. It is shown only once and is not stored on this device.</source>
+        <translation>Σημείωσέ το τώρα. Εμφανίζεται μόνο μία φορά και δεν αποθηκεύεται σε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Αντιγραφή</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Επαλήθευση αυτής της συσκευής</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Συγκρίνει επτά emoji με την άλλη σου συσκευή. Χρειάζεσαι εκείνη τη συσκευή μπροστά σου· μόλις επιβεβαιώσουν και οι δύο, αυτή εδώ μπορεί να διαβάσει τα κοινά κλειδιά δωματίων.</translation>
+    </message>
+    <message>
+        <source>Trouble with the key storage?</source>
+        <translation>Πρόβλημα με τον χώρο κλειδιών;</translation>
+    </message>
+</context>
+<context>
+    <name>ErrorLogPage</name>
+    <message>
+        <source>Clear</source>
+        <translation>Καθαρισμός</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>Αντιγραφή όλων</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Αρχείο σφαλμάτων</translation>
+    </message>
+    <message>
+        <source>Nothing has failed in this run.</source>
+        <translation>Σε αυτή την εκτέλεση δεν απέτυχε τίποτα.</translation>
+    </message>
+    <message>
+        <source>Newest first, and only this run — nothing is kept on disk. Identifiers are already removed, so this can be passed on as it stands.</source>
+        <translation>Τα νεότερα πρώτα, και μόνο αυτή η εκτέλεση — τίποτα δεν κρατιέται στον δίσκο. Τα αναγνωριστικά έχουν ήδη αφαιρεθεί, οπότε αυτό μπορεί να δοθεί όπως είναι.</translation>
+    </message>
+</context>
+<context>
+    <name>ForwardPage</name>
+    <message>
+        <source>Forward to</source>
+        <translation>Προώθηση σε</translation>
+    </message>
+</context>
+<context>
+    <name>IgnoredUsersPage</name>
+    <message>
+        <source>Ignored users</source>
+        <translation>Αγνοημένοι χρήστες</translation>
+    </message>
+    <message>
+        <source>The list belongs to your account: the server stops delivering these people&apos;s messages, in every client. Tap somebody to stop ignoring them.</source>
+        <translation>Η λίστα ανήκει στον λογαριασμό σου: ο διακομιστής σταματά να παραδίδει τα μηνύματα αυτών των ατόμων, σε κάθε πελάτη. Πάτησε κάποιον για να πάψεις να τον αγνοείς.</translation>
+    </message>
+    <message>
+        <source>No longer ignoring</source>
+        <translation>Δεν αγνοείται πια</translation>
+    </message>
+    <message>
+        <source>Nobody is ignored</source>
+        <translation>Δεν αγνοείται κανείς</translation>
+    </message>
+    <message>
+        <source>You can ignore somebody from their profile.</source>
+        <translation>Μπορείς να αγνοήσεις κάποιον από το προφίλ του.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageViewPage</name>
+    <message>
+        <source>Forward</source>
+        <translation>Προώθηση</translation>
+    </message>
+    <message>
+        <source>Share</source>
+        <translation>Κοινή χρήση</translation>
+    </message>
+    <message>
+        <source>Save to gallery</source>
+        <translation>Αποθήκευση στη συλλογή</translation>
+    </message>
+    <message>
+        <source>Share picture</source>
+        <translation>Κοινή χρήση εικόνας</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Αποθηκεύτηκε στη συλλογή</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Η αποθήκευση απέτυχε</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Αυτό το συνημμένο δεν φορτώθηκε</translation>
+    </message>
+</context>
+<context>
+    <name>InviteToRoomDialog</name>
+    <message>
+        <source>Invite</source>
+        <translation>Πρόσκληση</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Αναγνωριστικό χρήστη</translation>
+    </message>
+    <message>
+        <source>They appear in the member list as invited until they accept.</source>
+        <translation>Εμφανίζονται στη λίστα μελών ως προσκεκλημένοι μέχρι να αποδεχτούν.</translation>
+    </message>
+</context>
+<context>
+    <name>JoinRoomDialog</name>
+    <message>
+        <source>Join</source>
+        <translation>Είσοδος</translation>
+    </message>
+    <message>
+        <source>Room address</source>
+        <translation>Διεύθυνση δωματίου</translation>
+    </message>
+    <message>
+        <source>The room appears in the list once the server has answered. Joining a large public room can take a moment.</source>
+        <translation>Το δωμάτιο εμφανίζεται στη λίστα μόλις απαντήσει ο διακομιστής. Η είσοδος σε μεγάλο δημόσιο δωμάτιο μπορεί να πάρει λίγη ώρα.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguagePage</name>
+    <message>
+        <source>Language</source>
+        <translation>Γλώσσα</translation>
+    </message>
+    <message>
+        <source>Takes effect the next time the app starts. Only the German translation has been checked by a native speaker; the others are machine translations, and English is always available here.</source>
+        <translation>Ισχύει από την επόμενη εκκίνηση της εφαρμογής. Μόνο η γερμανική μετάφραση έχει ελεγχθεί από φυσικό ομιλητή· οι υπόλοιπες είναι μηχανικές, και τα αγγλικά είναι πάντα διαθέσιμα εδώ.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguageSettings</name>
+    <message>
+        <source>Follow the device</source>
+        <translation>Να ακολουθεί τη συσκευή</translation>
+    </message>
+</context>
+<context>
+    <name>LocationActions</name>
+    <message>
+        <source>Location is switched off or not allowed.</source>
+        <translation>Η τοποθεσία είναι απενεργοποιημένη ή δεν επιτρέπεται.</translation>
+    </message>
+    <message>
+        <source>The position could not be determined.</source>
+        <translation>Δεν ήταν δυνατός ο προσδιορισμός της θέσης.</translation>
+    </message>
+    <message>
+        <source>No position yet. Outdoors it usually comes faster.</source>
+        <translation>Δεν υπάρχει θέση ακόμα. Σε εξωτερικό χώρο συνήθως είναι πιο γρήγορα.</translation>
+    </message>
+    <message>
+        <source>This device offers no positioning.</source>
+        <translation>Αυτή η συσκευή δεν προσφέρει εντοπισμό θέσης.</translation>
+    </message>
+</context>
+<context>
+    <name>LocationBlock</name>
+    <message>
+        <source>Location</source>
+        <translation>Τοποθεσία</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Ζωντανή τοποθεσία</translation>
+    </message>
+    <message>
+        <source>Live location ended</source>
+        <translation>Η ζωντανή τοποθεσία τελείωσε</translation>
+    </message>
+    <message>
+        <source>Waiting for the first position</source>
+        <translation>Αναμονή για την πρώτη θέση</translation>
+    </message>
+    <message>
+        <source>Updated %1, until %2</source>
+        <translation>Ενημερώθηκε %1, έως %2</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Διακοπή κοινοποίησης</translation>
+    </message>
+</context>
+<context>
+    <name>LoginPage</name>
+    <message>
+        <source>Sign in</source>
+        <translation>Σύνδεση</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix για Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Homeserver</source>
+        <translation>Οικείος διακομιστής</translation>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Όνομα χρήστη</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Κωδικός</translation>
+    </message>
+    <message>
+        <source>Create account</source>
+        <translation>Δημιουργία λογαριασμού</translation>
+    </message>
+    <message>
+        <source>Sign in on another device</source>
+        <translation>Σύνδεση σε άλλη συσκευή</translation>
+    </message>
+    <message>
+        <source>Finish signing in in the browser, then come back.</source>
+        <translation>Ολοκλήρωσε τη σύνδεση στον περιηγητή και μετά γύρνα πίσω.</translation>
+    </message>
+    <message>
+        <source>Open this address on any other device and sign in there:</source>
+        <translation>Άνοιξε αυτή τη διεύθυνση σε οποιαδήποτε άλλη συσκευή και συνδέσου εκεί:</translation>
+    </message>
+    <message>
+        <source>This page signs in by itself as soon as the login is approved there.</source>
+        <translation>Αυτή η σελίδα συνδέεται μόνη της μόλις εγκριθεί η σύνδεση εκεί.</translation>
+    </message>
+    <message>
+        <source>Your password is entered on the homeserver&apos;s own page and never reaches this app.</source>
+        <translation>Ο κωδικός σου δίνεται στη σελίδα του ίδιου του διακομιστή και δεν φτάνει ποτέ σε αυτή την εφαρμογή.</translation>
+    </message>
+    <message>
+        <source>This server uses the classic password sign-in. The password is sent only to this server and is never saved on the device.</source>
+        <translation>Αυτός ο διακομιστής χρησιμοποιεί την κλασική σύνδεση με κωδικό. Ο κωδικός στέλνεται μόνο σε αυτόν τον διακομιστή και δεν αποθηκεύεται ποτέ στη συσκευή.</translation>
+    </message>
+    <message>
+        <source>Sign-in did not work</source>
+        <translation>Η σύνδεση δεν πέτυχε</translation>
+    </message>
+    <message>
+        <source>This is the server&apos;s own web sign-in. Your password is not wrong — the app cannot use this method yet.</source>
+        <translation>Αυτή είναι η δική του σύνδεση μέσω ιστού του διακομιστή. Ο κωδικός σου δεν είναι λάθος — η εφαρμογή δεν μπορεί ακόμη να χρησιμοποιήσει αυτή τη μέθοδο.</translation>
+    </message>
+    <message>
+        <source>Check the server address and your connection.</source>
+        <translation>Έλεγξε τη διεύθυνση του διακομιστή και τη σύνδεσή σου.</translation>
+    </message>
+    <message>
+        <source>The server expects a sign-in this app does not implement.</source>
+        <translation>Ο διακομιστής περιμένει σύνδεση που αυτή η εφαρμογή δεν υλοποιεί.</translation>
+    </message>
+    <message>
+        <source>Cancel sign-in</source>
+        <translation>Ακύρωση σύνδεσης</translation>
+    </message>
+    <message>
+        <source>This Sailfish version&apos;s browser cannot complete the sign-in of modern homeservers — it returns to the form. Use “Sign in on another device”: Shoal Messages shows an address and a code, you sign in with them on any other device, and this one signs in by itself.</source>
+        <translation>Ο περιηγητής αυτής της έκδοσης του Sailfish δεν μπορεί να ολοκληρώσει τη σύνδεση σε σύγχρονους διακομιστές — επιστρέφει στη φόρμα. Χρησιμοποίησε «Σύνδεση σε άλλη συσκευή»: το Shoal Messages δείχνει μια διεύθυνση και έναν κωδικό, συνδέεσαι με αυτά σε οποιαδήποτε άλλη συσκευή, και αυτή εδώ συνδέεται μόνη της.</translation>
+    </message>
+    <message>
+        <source>Sign in via browser</source>
+        <translation>Σύνδεση μέσω περιηγητή</translation>
+    </message>
+</context>
+<context>
+    <name>LogoutDialog</name>
+    <message>
+        <source>Sign out</source>
+        <translation>Αποσύνδεση</translation>
+    </message>
+    <message>
+        <source>Stay signed in</source>
+        <translation>Να παραμείνω συνδεδεμένος</translation>
+    </message>
+    <message>
+        <source>Really sign out?</source>
+        <translation>Σίγουρα αποσύνδεση;</translation>
+    </message>
+    <message>
+        <source>This device&apos;s keys are deleted along with the session. Encrypted messages stay readable only if they are in a key backup, and this device has to be verified again after signing in.</source>
+        <translation>Τα κλειδιά αυτής της συσκευής διαγράφονται μαζί με τη συνεδρία. Τα κρυπτογραφημένα μηνύματα μένουν αναγνώσιμα μόνο αν βρίσκονται σε αντίγραφο κλειδιών, και η συσκευή πρέπει να επαληθευτεί ξανά μετά τη σύνδεση.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>Σε αυτή την έκδοση του Sailfish ο περιηγητής δεν μπορεί να ολοκληρώσει τη σύνδεση. Επίστρεψε με «Σύνδεση σε άλλη συσκευή» — αυτός ο δρόμος λειτουργεί εδώ.</translation>
+    </message>
+</context>
+<context>
+    <name>MatrixBridge</name>
+    <message>
+        <source>The protocol core could not be started.</source>
+        <translation>Ο πυρήνας πρωτοκόλλου δεν μπόρεσε να ξεκινήσει.</translation>
+    </message>
+    <message>
+        <source>The protocol core is not available.</source>
+        <translation>Ο πυρήνας πρωτοκόλλου δεν είναι διαθέσιμος.</translation>
+    </message>
+    <message>
+        <source>Enter a homeserver first.</source>
+        <translation>Δώσε πρώτα έναν οικείο διακομιστή.</translation>
+    </message>
+    <message>
+        <source>Enter username and password first.</source>
+        <translation>Δώσε πρώτα όνομα χρήστη και κωδικό.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key first.</source>
+        <translation>Δώσε πρώτα το κλειδί ανάκτησής σου.</translation>
+    </message>
+    <message>
+        <source>The file could not be saved.</source>
+        <translation>Το αρχείο δεν μπόρεσε να αποθηκευτεί.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a login page.</source>
+        <translation>Ο οικείος διακομιστής δεν επέστρεψε σελίδα σύνδεσης.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a sign-in code.</source>
+        <translation>Ο οικείος διακομιστής δεν επέστρεψε κωδικό σύνδεσης.</translation>
+    </message>
+    <message>
+        <source>The stored lists cannot be read right now.</source>
+        <translation>Οι αποθηκευμένες λίστες δεν διαβάζονται τώρα.</translation>
+    </message>
+    <message>
+        <source>Your session has ended. Please sign in again.</source>
+        <translation>Η συνεδρία σου τελείωσε. Συνδέσου ξανά.</translation>
+    </message>
+    <message>
+        <source>Enter a push gateway first.</source>
+        <translation>Δώσε πρώτα μια πύλη push.</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Νέο μήνυμα</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Εικόνα</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Βίντεο</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Φωνητικό μήνυμα</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Αρχείο</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Τοποθεσία</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Κρυπτογραφημένο μήνυμα</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Πρόσκληση</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Δημοσκόπηση</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Δημοσκόπηση: %1</translation>
+    </message>
+</context>
+<context>
+    <name>MemberListPage</name>
+    <message>
+        <source>Members</source>
+        <translation>Μέλη</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>προσκεκλημένος</translation>
+    </message>
+    <message>
+        <source>Admin</source>
+        <translation>Διαχειριστής</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Συντονιστής</translation>
+    </message>
+    <message>
+        <source>No members yet</source>
+        <translation>Δεν υπάρχουν ακόμη μέλη</translation>
+    </message>
+    <message>
+        <source>The people in this room show up here.</source>
+        <translation>Τα άτομα αυτού του δωματίου εμφανίζονται εδώ.</translation>
+    </message>
+</context>
+<context>
+    <name>MemberProfilePage</name>
+    <message>
+        <source>Admin</source>
+        <translation>Διαχειριστής</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Συντονιστής</translation>
+    </message>
+    <message>
+        <source>Member</source>
+        <translation>Μέλος</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>προσκεκλημένος</translation>
+    </message>
+    <message>
+        <source>banned</source>
+        <translation>αποκλεισμένος</translation>
+    </message>
+    <message>
+        <source>left the room</source>
+        <translation>έφυγε από το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Reload</source>
+        <translation>Επαναφόρτωση</translation>
+    </message>
+    <message>
+        <source>Make moderator</source>
+        <translation>Ορισμός συντονιστή</translation>
+    </message>
+    <message>
+        <source>Make admin</source>
+        <translation>Ορισμός διαχειριστή</translation>
+    </message>
+    <message>
+        <source>Really make this member an admin?</source>
+        <translation>Σίγουρα να γίνει διαχειριστής αυτό το μέλος;</translation>
+    </message>
+    <message>
+        <source>This cannot be taken back: only they themselves can step down afterwards.</source>
+        <translation>Δεν αναιρείται: μόνο ο ίδιος μπορεί να παραιτηθεί αργότερα.</translation>
+    </message>
+    <message>
+        <source>Demote to member</source>
+        <translation>Υποβιβασμός σε μέλος</translation>
+    </message>
+    <message>
+        <source>Revoke invitation</source>
+        <translation>Ανάκληση πρόσκλησης</translation>
+    </message>
+    <message>
+        <source>Remove from room</source>
+        <translation>Αφαίρεση από το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Removing</source>
+        <translation>Γίνεται αφαίρεση</translation>
+    </message>
+    <message>
+        <source>Ban from room</source>
+        <translation>Αποκλεισμός από το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Really ban this member?</source>
+        <translation>Σίγουρα αποκλεισμός αυτού του μέλους;</translation>
+    </message>
+    <message>
+        <source>%1 is removed from the room and cannot come back until the ban is lifted.</source>
+        <translation>Ο/Η %1 αφαιρείται από το δωμάτιο και δεν μπορεί να επιστρέψει μέχρι να αρθεί ο αποκλεισμός.</translation>
+    </message>
+    <message>
+        <source>Ban</source>
+        <translation>Αποκλεισμός</translation>
+    </message>
+    <message>
+        <source>Banning</source>
+        <translation>Γίνεται αποκλεισμός</translation>
+    </message>
+    <message>
+        <source>Lift ban</source>
+        <translation>Άρση αποκλεισμού</translation>
+    </message>
+    <message>
+        <source>Address copied</source>
+        <translation>Η διεύθυνση αντιγράφηκε</translation>
+    </message>
+    <message>
+        <source>Role</source>
+        <translation>Ρόλος</translation>
+    </message>
+    <message>
+        <source>Member since</source>
+        <translation>Μέλος από</translation>
+    </message>
+    <message>
+        <source>Invited by</source>
+        <translation>Προσκλήθηκε από</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>Συσκευές</translation>
+    </message>
+    <message>
+        <source>Send direct message</source>
+        <translation>Αποστολή προσωπικού μηνύματος</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Επαλήθευση</translation>
+    </message>
+    <message>
+        <source>Withdraw verification</source>
+        <translation>Ανάκληση επαλήθευσης</translation>
+    </message>
+    <message>
+        <source>Stop ignoring</source>
+        <translation>Παύση αγνόησης</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation>Αγνόηση</translation>
+    </message>
+    <message>
+        <source>Ignoring</source>
+        <translation>Γίνεται αγνόηση</translation>
+    </message>
+    <message>
+        <source>Shared rooms</source>
+        <translation>Κοινά δωμάτια</translation>
+    </message>
+    <message>
+        <source>Forbid calls</source>
+        <translation>Απαγόρευση κλήσεων</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Να επιτρέπονται οι κλήσεις</translation>
+    </message>
+    <message>
+        <source>Identity</source>
+        <translation>Ταυτότητα</translation>
+    </message>
+    <message>
+        <source>verified</source>
+        <translation>επαληθευμένη</translation>
+    </message>
+    <message>
+        <source>changed since it was verified — verify again or withdraw</source>
+        <translation>άλλαξε μετά την επαλήθευση — επαλήθευσε ξανά ή ανάκαλεσε</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>μη επαληθευμένη</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>καμία</translation>
+    </message>
+    <message>
+        <source>Mention</source>
+        <translation>Αναφορά</translation>
+    </message>
+</context>
+<context>
+    <name>MessageActionsPage</name>
+    <message>
+        <source>Message</source>
+        <translation>Μήνυμα</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Αντιγραφή</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Απάντηση</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Αποθήκευση</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Προώθηση</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Επεξεργασία</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Καρφίτσωμα</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Διαγραφή</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Αποστολή ξανά</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Αντίδραση</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Απάντηση στο νήμα</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Μετατροπή σε κείμενο</translation>
+    </message>
+</context>
+<context>
+    <name>MoveToSpacePage</name>
+    <message>
+        <source>Move to space</source>
+        <translation>Μετακίνηση σε χώρο</translation>
+    </message>
+    <message>
+        <source>No other space</source>
+        <translation>Κανένας άλλος χώρος</translation>
+    </message>
+    <message>
+        <source>Create another space first to move rooms between them.</source>
+        <translation>Δημιούργησε πρώτα άλλον χώρο για να μετακινείς δωμάτια ανάμεσά τους.</translation>
+    </message>
+</context>
+<context>
+    <name>NewChatDialog</name>
+    <message>
+        <source>Start chat</source>
+        <translation>Έναρξη συνομιλίας</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Αναγνωριστικό χρήστη</translation>
+    </message>
+    <message>
+        <source>The other side receives an invitation and the chat appears in your list right away. Messages are encrypted from the start.</source>
+        <translation>Η άλλη πλευρά λαμβάνει πρόσκληση και η συνομιλία εμφανίζεται αμέσως στη λίστα σου. Τα μηνύματα είναι κρυπτογραφημένα από την αρχή.</translation>
+    </message>
+</context>
+<context>
+    <name>PinnedMessagesPage</name>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Καρφιτσωμένα μηνύματα</translation>
+    </message>
+    <message>
+        <source>Show in conversation</source>
+        <translation>Εμφάνιση στη συνομιλία</translation>
+    </message>
+    <message>
+        <source>Unpin</source>
+        <translation>Ξεκαρφίτσωμα</translation>
+    </message>
+    <message>
+        <source>Pinned messages unavailable</source>
+        <translation>Τα καρφιτσωμένα μηνύματα δεν είναι διαθέσιμα</translation>
+    </message>
+    <message>
+        <source>No pinned messages</source>
+        <translation>Κανένα καρφιτσωμένο μήνυμα</translation>
+    </message>
+    <message>
+        <source>The server does not hand out these messages. They are older than this server&apos;s copy of the room.</source>
+        <translation>Ο διακομιστής δεν δίνει αυτά τα μηνύματα. Είναι παλαιότερα από το αντίγραφο του δωματίου σε αυτόν τον διακομιστή.</translation>
+    </message>
+    <message>
+        <source>Long-press a message in the conversation to pin it.</source>
+        <translation>Κράτα πατημένο ένα μήνυμα στη συνομιλία για να το καρφιτσώσεις.</translation>
+    </message>
+</context>
+<context>
+    <name>PollBlock</name>
+    <message>
+        <source>The poll has ended.</source>
+        <translation>Η δημοσκόπηση έληξε.</translation>
+    </message>
+    <message>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>Results are shown once the poll ends</source>
+        <translation>Τα αποτελέσματα εμφανίζονται μόλις λήξει η δημοσκόπηση</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n vote(s)</source>
+        <translation>
+            <numerusform>%n ψήφος</numerusform>
+            <numerusform>%n ψήφοι</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Ended</source>
+        <translation>Έληξε</translation>
+    </message>
+    <message>
+        <source>Several answers</source>
+        <translation>Πολλές απαντήσεις</translation>
+    </message>
+    <message>
+        <source>End poll</source>
+        <translation>Λήξη δημοσκόπησης</translation>
+    </message>
+</context>
+<context>
+    <name>Preview</name>
+    <message>
+        <source>Picture</source>
+        <translation>Εικόνα</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Βίντεο</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Φωνητικό μήνυμα</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Αρχείο</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Τοποθεσία</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Δημοσκόπηση: %1</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Δημοσκόπηση</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Κρυπτογραφημένο μήνυμα</translation>
+    </message>
+</context>
+<context>
+    <name>PrivacyPage</name>
+    <message>
+        <source>Privacy</source>
+        <translation>Απόρρητο</translation>
+    </message>
+    <message>
+        <source>Who may call you</source>
+        <translation>Ποιος μπορεί να σε καλεί</translation>
+    </message>
+    <message>
+        <source>Everyone</source>
+        <translation>Όλοι</translation>
+    </message>
+    <message>
+        <source>People you have a direct chat with</source>
+        <translation>Άτομα με τα οποία έχεις προσωπική συνομιλία</translation>
+    </message>
+    <message>
+        <source>Only my list</source>
+        <translation>Μόνο η λίστα μου</translation>
+    </message>
+    <message>
+        <source>Calls from group rooms</source>
+        <translation>Κλήσεις από ομαδικά δωμάτια</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Βιντεοκλήσεις</translation>
+    </message>
+    <message>
+        <source>Send read receipts</source>
+        <translation>Αποστολή αποδείξεων ανάγνωσης</translation>
+    </message>
+    <message>
+        <source>Allowed callers</source>
+        <translation>Επιτρεπόμενοι καλούντες</translation>
+    </message>
+    <message>
+        <source>Matrix address</source>
+        <translation>Διεύθυνση Matrix</translation>
+    </message>
+    <message>
+        <source>@name:server</source>
+        <translation>@name:server</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Να επιτρέπονται οι κλήσεις</translation>
+    </message>
+    <message>
+        <source>Nobody yet.</source>
+        <translation>Κανείς ακόμη.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Αφαίρεση</translation>
+    </message>
+    <message>
+        <source>A call rings past a muted room. Refused calls never ring, and the caller learns nothing.</source>
+        <translation>Μια κλήση χτυπά και σε σιγασμένο δωμάτιο. Οι απορριφθείσες δεν χτυπούν και ο καλών δεν μαθαίνει τίποτα.</translation>
+    </message>
+    <message>
+        <source>In a group room everybody sees the call. The list does not override this.</source>
+        <translation>Σε ομαδικό δωμάτιο όλοι βλέπουν την κλήση. Η λίστα δεν το ακυρώνει.</translation>
+    </message>
+    <message>
+        <source>They may always call. The list stays on this device.</source>
+        <translation>Μπορούν πάντα να καλούν. Η λίστα μένει σε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>On this device</source>
+        <translation>Σε αυτή τη συσκευή</translation>
+    </message>
+    <message>
+        <source>What others learn</source>
+        <translation>Τι μαθαίνουν οι άλλοι</translation>
+    </message>
+    <message>
+        <source>Message text in notifications</source>
+        <translation>Κείμενο μηνύματος στις ειδοποιήσεις</translation>
+    </message>
+    <message>
+        <source>Off, a notification says only how many messages arrived. On, it shows the latest message — also on the lock screen.</source>
+        <translation>Ανενεργό: η ειδοποίηση λέει μόνο πόσα μηνύματα ήρθαν. Ενεργό: δείχνει το τελευταίο μήνυμα — και στην οθόνη κλειδώματος.</translation>
+    </message>
+    <message>
+        <source>Show others&apos; read status</source>
+        <translation>Εμφάνιση κατάστασης ανάγνωσης των άλλων</translation>
+    </message>
+    <message>
+        <source>Voice messages</source>
+        <translation>Φωνητικά μηνύματα</translation>
+    </message>
+    <message>
+        <source>Tappable web links</source>
+        <translation>Σύνδεσμοι ιστού με πάτημα</translation>
+    </message>
+    <message>
+        <source>On, a link in a message opens the browser when tapped. Off, links stay plain text.</source>
+        <translation>Ενεργό: ένας σύνδεσμος σε μήνυμα ανοίγει τον περιηγητή με πάτημα. Ανενεργό: οι σύνδεσμοι μένουν απλό κείμενο.</translation>
+    </message>
+    <message>
+        <source>Delete media now</source>
+        <translation>Διαγραφή πολυμέσων τώρα</translation>
+    </message>
+    <message>
+        <source>Delete downloaded media</source>
+        <translation>Διαγραφή ληφθέντων πολυμέσων</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Ποτέ</translation>
+    </message>
+    <message>
+        <source>When the app is closed</source>
+        <translation>Όταν κλείνει η εφαρμογή</translation>
+    </message>
+    <message>
+        <source>As soon as the app is not in front</source>
+        <translation>Μόλις η εφαρμογή δεν είναι μπροστά</translation>
+    </message>
+    <message>
+        <source>By default they are deleted when you sign out, so save what you want to keep.</source>
+        <translation>Από προεπιλογή διαγράφονται κατά την αποσύνδεση, γι&apos; αυτό αποθήκευσε ό,τι θέλεις να κρατήσεις.</translation>
+    </message>
+    <message>
+        <source>&quot;Never&quot; keeps them for good - convenient, and not recommended.</source>
+        <translation>Το «Ποτέ» τα κρατά για πάντα — βολικό και μη συνιστώμενο.</translation>
+    </message>
+    <message>
+        <source>Anything deleted is fetched again when you open it.</source>
+        <translation>Ό,τι διαγράφεται λαμβάνεται ξανά όταν το ανοίξεις.</translation>
+    </message>
+    <message>
+        <source>When you sign out</source>
+        <translation>Κατά την αποσύνδεση</translation>
+    </message>
+    <message>
+        <source>Limit repeated calls</source>
+        <translation>Περιορισμός επαναλαμβανόμενων κλήσεων</translation>
+    </message>
+    <message>
+        <source>On, the same person can only ring again after a short pause. It also delays a second, genuine attempt.</source>
+        <translation>Ενεργό: το ίδιο άτομο μπορεί να ξανακαλέσει μόνο μετά από σύντομη παύση. Καθυστερεί και μια δεύτερη, πραγματική προσπάθεια.</translation>
+    </message>
+    <message>
+        <source>Messages and keys are stored encrypted.</source>
+        <translation>Τα μηνύματα και τα κλειδιά αποθηκεύονται κρυπτογραφημένα.</translation>
+    </message>
+    <message>
+        <source>Messages and keys lie on this device unencrypted - the encryption page says why and what can be done about it.</source>
+        <translation>Τα μηνύματα και τα κλειδιά βρίσκονται σε αυτή τη συσκευή χωρίς κρυπτογράφηση — η σελίδα κρυπτογράφησης λέει γιατί και τι μπορεί να γίνει.</translation>
+    </message>
+    <message>
+        <source>Pictures, videos and documents you opened are not - they lie on the device like the ones in the gallery, readable to anybody who has it.</source>
+        <translation>Οι εικόνες, τα βίντεο και τα έγγραφα που άνοιξες όχι — βρίσκονται στη συσκευή όπως αυτά της συλλογής, αναγνώσιμα από όποιον την κρατά.</translation>
+    </message>
+    <message>
+        <source>Off, an offer with video is answered as a voice call: your camera stays shut and no picture is shown. The other side may still send one, which this phone discards.</source>
+        <translation>Ανενεργό: μια πρόταση με βίντεο απαντάται ως φωνητική κλήση — η κάμερά σου μένει κλειστή και δεν εμφανίζεται εικόνα. Η άλλη πλευρά μπορεί να στέλνει έτσι κι αλλιώς, και αυτό το τηλέφωνο την πετάει.</translation>
+    </message>
+    <message>
+        <source>Off, nobody is told how far you have read. What others read is the setting below.</source>
+        <translation>Ανενεργό: κανείς δεν μαθαίνει ως πού έχεις διαβάσει. Τι έχουν διαβάσει οι άλλοι το ορίζει η ρύθμιση παρακάτω.</translation>
+    </message>
+    <message>
+        <source>The list is encrypted and its key is not available. It can be read again after the device has been unlocked and the app restarted.</source>
+        <translation>Η λίστα είναι κρυπτογραφημένη και το κλειδί της δεν είναι διαθέσιμο. Θα ξαναδιαβαστεί αφού ξεκλειδώσεις τη συσκευή και επανεκκινήσεις την εφαρμογή.</translation>
+    </message>
+    <message>
+        <source>Load pictures automatically</source>
+        <translation>Αυτόματη φόρτωση εικόνων</translation>
+    </message>
+    <message>
+        <source>On, a picture or video loads as soon as its message appears. Off, it loads when you tap it — scrolling past one is a request to the sender&apos;s server.</source>
+        <translation>Ενεργό: η εικόνα ή το βίντεο φορτώνεται μόλις εμφανιστεί το μήνυμα. Ανενεργό: φορτώνεται με το άγγιγμα — η κύλιση δίπλα του είναι αίτημα στον διακομιστή του αποστολέα.</translation>
+    </message>
+    <message>
+        <source>Link previews</source>
+        <translation>Προεπισκόπηση συνδέσμων</translation>
+    </message>
+    <message>
+        <source>Your homeserver fetches the page and shows its title. It learns every link it is asked about; in an encrypted room that is content it otherwise never sees.</source>
+        <translation>Ο διακομιστής σου ανακτά τη σελίδα και δείχνει τον τίτλο της. Μαθαίνει έτσι κάθε σύνδεσμο για τον οποίο ερωτάται· σε κρυπτογραφημένο δωμάτιο αυτό είναι περιεχόμενο που αλλιώς δεν βλέπει ποτέ.</translation>
+    </message>
+    <message>
+        <source>Only in unencrypted rooms</source>
+        <translation>Μόνο σε μη κρυπτογραφημένα δωμάτια</translation>
+    </message>
+    <message>
+        <source>Always</source>
+        <translation>Πάντα</translation>
+    </message>
+    <message>
+        <source>Voice messages as text</source>
+        <translation>Φωνητικά μηνύματα ως κείμενο</translation>
+    </message>
+    <message>
+        <source>Convert voice messages to text</source>
+        <translation>Μετατροπή φωνητικών μηνυμάτων σε κείμενο</translation>
+    </message>
+    <message>
+        <source>On, a long press on a voice message offers to convert it. Nothing is converted unless you ask, and the recording never leaves this phone.</source>
+        <translation>Ενεργοποιημένο, ένα παρατεταμένο πάτημα σε φωνητικό μήνυμα προσφέρει τη μετατροπή του. Τίποτα δεν μετατρέπεται αν δεν το ζητήσεις, και η ηχογράφηση δεν φεύγει ποτέ από αυτό το τηλέφωνο.</translation>
+    </message>
+    <message>
+        <source>This needs a program this app does not bring, from OpenRepos, installed by you: &quot;Speech Note&quot; (about 40 MB to download, 104 MB installed), and in it the model &quot;Auto (WhisperCpp Small)&quot; (190 MB), which recognises the language of each message by itself. Only on 64-bit phones.</source>
+        <translation>Χρειάζεται ένα πρόγραμμα που αυτή η εφαρμογή δεν έχει, από το OpenRepos, που το εγκαθιστάς εσύ: «Speech Note» (περίπου 40 MB λήψη, 104 MB εγκατεστημένο) και μέσα σε αυτό το μοντέλο «Auto (WhisperCpp Small)» (190 MB), που αναγνωρίζει μόνο του τη γλώσσα κάθε μηνύματος. Μόνο σε τηλέφωνα 64 bit.</translation>
+    </message>
+    <message>
+        <source>Check</source>
+        <translation>Έλεγχος</translation>
+    </message>
+    <message>
+        <source>Checking. The first time can take half a minute.</source>
+        <translation>Γίνεται έλεγχος. Την πρώτη φορά μπορεί να πάρει μισό λεπτό.</translation>
+    </message>
+    <message>
+        <source>On, a microphone sits next to the message field: hold it to record, let go to send - or tap it to record hands-free, and a second tap or seven seconds of silence sends. Off, it is not there.</source>
+        <translation>Ενεργοποιημένο, δίπλα στο πεδίο μηνύματος υπάρχει μικρόφωνο: κράτα το πατημένο για εγγραφή, άσ’ το για αποστολή – ή πάτησέ το για εγγραφή χωρίς χέρια, και ένα δεύτερο πάτημα ή επτά δευτερόλεπτα σιωπής στέλνουν. Απενεργοποιημένο, δεν υπάρχει.</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Τοποθεσία</translation>
+    </message>
+    <message>
+        <source>Share your location</source>
+        <translation>Κοινοποίηση της τοποθεσίας σου</translation>
+    </message>
+    <message>
+        <source>On, a room&apos;s pull-down menu offers to send your position, once or live for a while. Nothing is sent unless you choose it there.</source>
+        <translation>Όταν είναι ενεργό, το αναπτυσσόμενο μενού ενός δωματίου προσφέρει αποστολή της θέσης σου, μία φορά ή ζωντανά για λίγο. Τίποτα δεν στέλνεται αν δεν το επιλέξεις εκεί.</translation>
+    </message>
+    <message>
+        <source>Maps for locations</source>
+        <translation>Χάρτες για τοποθεσίες</translation>
+    </message>
+    <message>
+        <source>Map pieces come from OpenStreetMap. Its server learns your IP address and roughly where the location lies; in an encrypted room that is content it otherwise never sees. Without a map the coordinates are shown.</source>
+        <translation>Τα κομμάτια του χάρτη προέρχονται από το OpenStreetMap. Ο διακομιστής του μαθαίνει τη διεύθυνση IP σου και περίπου πού βρίσκεται η τοποθεσία· σε κρυπτογραφημένο δωμάτιο αυτό είναι περιεχόμενο που αλλιώς δεν βλέπει ποτέ. Χωρίς χάρτη εμφανίζονται οι συντεταγμένες.</translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation>Κάμερα</translation>
+    </message>
+    <message>
+        <source>Live picture in the attachment picker</source>
+        <translation>Ζωντανή εικόνα στην επιλογή συνημμένων</translation>
+    </message>
+    <message>
+        <source>On, the camera cell shows what the camera sees while the picker is open. Off, the camera only runs once you tap the cell.</source>
+        <translation>Ενεργό: το πλαίσιο της κάμερας δείχνει ό,τι βλέπει η κάμερα όσο η επιλογή είναι ανοιχτή. Ανενεργό: η κάμερα ξεκινά μόνο όταν πατήσεις το πλαίσιο.</translation>
+    </message>
+    <message>
+        <source>Off, who read what is neither tracked nor shown, which also keeps the conversation smoother. On, your own messages say how many people have read them.</source>
+        <translation>Απενεργοποιημένο, δεν καταγράφεται ούτε εμφανίζεται ποιος διάβασε τι, κάτι που κρατά και τη συνομιλία πιο ομαλή. Ενεργοποιημένο, τα δικά σου μηνύματα δείχνουν πόσοι τα διάβασαν.</translation>
+    </message>
+</context>
+<context>
+    <name>PushPage</name>
+    <message>
+        <source>Push notifications</source>
+        <translation>Ειδοποιήσεις push</translation>
+    </message>
+    <message>
+        <source>Shoal Messages has no background service, so messages arrive only while it runs. A push distributor is a separate app that holds one connection for every app on the device and wakes them when something comes in.</source>
+        <translation>Το Shoal Messages δεν έχει υπηρεσία παρασκηνίου, οπότε τα μηνύματα φτάνουν μόνο όσο τρέχει. Ένας διανομέας push είναι ξεχωριστή εφαρμογή που κρατά μία σύνδεση για όλες τις εφαρμογές της συσκευής και τις ξυπνά όταν έρθει κάτι.</translation>
+    </message>
+    <message>
+        <source>Receive push notifications</source>
+        <translation>Λήψη ειδοποιήσεων push</translation>
+    </message>
+    <message>
+        <source>Distributor</source>
+        <translation>Διανομέας</translation>
+    </message>
+    <message>
+        <source>No push distributor is installed. Without one there is nothing to hold the connection, and this stays off.</source>
+        <translation>Δεν υπάρχει εγκατεστημένος διανομέας push. Χωρίς αυτόν τίποτα δεν κρατά τη σύνδεση, και αυτό παραμένει ανενεργό.</translation>
+    </message>
+    <message>
+        <source>Registration</source>
+        <translation>Εγγραφή</translation>
+    </message>
+    <message>
+        <source>This device has an address to be reached at.</source>
+        <translation>Αυτή η συσκευή έχει διεύθυνση στην οποία μπορεί να προσεγγιστεί.</translation>
+    </message>
+    <message>
+        <source>Waiting for the distributor.</source>
+        <translation>Αναμονή για τον διανομέα.</translation>
+    </message>
+    <message>
+        <source>Not registered.</source>
+        <translation>Χωρίς εγγραφή.</translation>
+    </message>
+    <message>
+        <source>Gateway</source>
+        <translation>Πύλη</translation>
+    </message>
+    <message>
+        <source>A Matrix homeserver cannot talk to a push distributor directly, so it posts to a gateway that forwards. There is no default: it is the one thing nobody can guess for you.</source>
+        <translation>Ένας διακομιστής Matrix δεν μπορεί να μιλήσει απευθείας σε διανομέα push, γι&apos; αυτό στέλνει σε μια πύλη που προωθεί. Δεν υπάρχει προεπιλογή: είναι το μόνο που κανείς δεν μπορεί να μαντέψει για σένα.</translation>
+    </message>
+    <message>
+        <source>Push gateway</source>
+        <translation>Πύλη push</translation>
+    </message>
+    <message>
+        <source>What leaves this device</source>
+        <translation>Τι φεύγει από αυτή τη συσκευή</translation>
+    </message>
+    <message>
+        <source>Your homeserver is told an address at the push service, and posts a room and message identifier to the gateway for every notification. No message text: the push carries identifiers only and this device fetches and decrypts the message itself. That address is a secret — whoever holds it can send this phone a notification.</source>
+        <translation>Ο διακομιστής σου μαθαίνει μια διεύθυνση στην υπηρεσία push και στέλνει στην πύλη ένα αναγνωριστικό δωματίου και μηνύματος για κάθε ειδοποίηση. Κανένα κείμενο: το push μεταφέρει μόνο αναγνωριστικά και αυτή η συσκευή φέρνει και αποκρυπτογραφεί το μήνυμα μόνη της. Αυτή η διεύθυνση είναι μυστικό — όποιος την έχει μπορεί να στείλει ειδοποίηση σε αυτό το τηλέφωνο.</translation>
+    </message>
+</context>
+<context>
+    <name>PushWake</name>
+    <message>
+        <source>New message</source>
+        <translation>Νέο μήνυμα</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <source>no session description</source>
+        <translation>καμία περιγραφή συνεδρίας</translation>
+    </message>
+</context>
+<context>
+    <name>ReactionDialog</name>
+    <message>
+        <source>React</source>
+        <translation>Αντίδραση</translation>
+    </message>
+    <message>
+        <source>Nothing kept here</source>
+        <translation>Δεν υπάρχει τίποτα εδώ</translation>
+    </message>
+    <message>
+        <source>Press and hold an emoji in another tab to keep it here</source>
+        <translation>Κράτα πατημένο ένα emoji σε άλλη καρτέλα για να το κρατήσεις εδώ</translation>
+    </message>
+    <message>
+        <source>Your own text</source>
+        <translation>Δικό σου κείμενο</translation>
+    </message>
+    <message>
+        <source>Your text as reaction</source>
+        <translation>Το κείμενό σου ως αντίδραση</translation>
+    </message>
+</context>
+<context>
+    <name>RoomActionsPage</name>
+    <message>
+        <source>Rooms</source>
+        <translation>Δωμάτια</translation>
+    </message>
+    <message>
+        <source>New chat</source>
+        <translation>Νέα συνομιλία</translation>
+    </message>
+    <message>
+        <source>New room</source>
+        <translation>Νέο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Join room</source>
+        <translation>Είσοδος σε δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Ανακάλυψη δωματίων</translation>
+    </message>
+</context>
+<context>
+    <name>RoomDelegate</name>
+    <message>
+        <source>Invitation</source>
+        <translation>Πρόσκληση</translation>
+    </message>
+    <message>
+        <source>Replaced by a new room</source>
+        <translation>Αντικαταστάθηκε από νέο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Χώρος</translation>
+    </message>
+</context>
+<context>
+    <name>RoomInfoPage</name>
+    <message>
+        <source>this room</source>
+        <translation>αυτό το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Σίγουρα αποχώρηση από αυτό το δωμάτιο;</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Το δωμάτιο εγκαταλείπεται και ξεχνιέται. Εξαφανίζεται από τη λίστα συνομιλιών, και η επιστροφή απαιτεί νέα πρόσκληση ή δημόσια διεύθυνση.</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Αποχώρηση</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Γίνεται αποχώρηση</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Αποχώρηση από το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Room</source>
+        <translation>Δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Replaced — open the new room</source>
+        <translation>Αντικαταστάθηκε — άνοιξε το νέο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Replaced — join the new room</source>
+        <translation>Αντικαταστάθηκε — μπες στο νέο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Older messages in the previous room</source>
+        <translation>Παλαιότερα μηνύματα στο προηγούμενο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>People and messages</source>
+        <translation>Άτομα και μηνύματα</translation>
+    </message>
+    <message>
+        <source>Members: %1 (%2 invited)</source>
+        <translation>Μέλη: %1 (%2 προσκεκλημένοι)</translation>
+    </message>
+    <message>
+        <source>Members: %1</source>
+        <translation>Μέλη: %1</translation>
+    </message>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Καρφιτσωμένα μηνύματα</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Πρόσκληση</translation>
+    </message>
+    <message>
+        <source>This room for me</source>
+        <translation>Αυτό το δωμάτιο για μένα</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Ειδοποιήσεις</translation>
+    </message>
+    <message>
+        <source>Stored with the account, so it holds in every client</source>
+        <translation>Αποθηκεύεται με τον λογαριασμό, άρα ισχύει σε κάθε πελάτη</translation>
+    </message>
+    <message>
+        <source>Account default</source>
+        <translation>Προεπιλογή λογαριασμού</translation>
+    </message>
+    <message>
+        <source>Every message</source>
+        <translation>Κάθε μήνυμα</translation>
+    </message>
+    <message>
+        <source>Only mentions and keywords</source>
+        <translation>Μόνο αναφορές και λέξεις-κλειδιά</translation>
+    </message>
+    <message>
+        <source>Nothing (muted)</source>
+        <translation>Τίποτα (σε σίγαση)</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Αγαπημένο</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Χαμηλή προτεραιότητα</translation>
+    </message>
+    <message>
+        <source>Sorts to the bottom of the list and stays quiet</source>
+        <translation>Πάει στο τέλος της λίστας και μένει σιωπηλό</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Λεπτομέρειες</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Κρυπτογράφηση</translation>
+    </message>
+    <message>
+        <source>End-to-end encrypted</source>
+        <translation>Κρυπτογραφημένο άκρο σε άκρο</translation>
+    </message>
+    <message>
+        <source>Not encrypted</source>
+        <translation>Μη κρυπτογραφημένο</translation>
+    </message>
+    <message>
+        <source>Turning on encryption</source>
+        <translation>Ενεργοποίηση κρυπτογράφησης</translation>
+    </message>
+    <message>
+        <source>Turn on encryption</source>
+        <translation>Ενεργοποίηση κρυπτογράφησης</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption?</source>
+        <translation>Επαναδιαπραγμάτευση κρυπτογράφησης;</translation>
+    </message>
+    <message>
+        <source>The next message starts a new session and hands its key to every device in the room again. Messages already sent stay as they are; nothing of your own history is lost.</source>
+        <translation>Το επόμενο μήνυμα ξεκινά νέα συνεδρία και δίνει ξανά το κλειδί της σε κάθε συσκευή του δωματίου. Τα ήδη σταλμένα μηνύματα μένουν ως έχουν· τίποτα από το ιστορικό σου δεν χάνεται.</translation>
+    </message>
+    <message>
+        <source>Renegotiate</source>
+        <translation>Επαναδιαπραγμάτευση</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption</source>
+        <translation>Επαναδιαπραγμάτευση κρυπτογράφησης</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Διεύθυνση</translation>
+    </message>
+    <message>
+        <source>Access</source>
+        <translation>Πρόσβαση</translation>
+    </message>
+    <message>
+        <source>Public</source>
+        <translation>Δημόσιο</translation>
+    </message>
+    <message>
+        <source>On invitation</source>
+        <translation>Με πρόσκληση</translation>
+    </message>
+    <message>
+        <source>Room version</source>
+        <translation>Έκδοση δωματίου</translation>
+    </message>
+    <message>
+        <source>Room ID</source>
+        <translation>Αναγνωριστικό δωματίου</translation>
+    </message>
+    <message>
+        <source>Room ID copied</source>
+        <translation>Το αναγνωριστικό δωματίου αντιγράφηκε</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Επεξεργασία δωματίου</translation>
+    </message>
+</context>
+<context>
+    <name>RoomListPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Σίγουρα απόρριψη αυτής της πρόσκλησης;</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Σίγουρα αποχώρηση από αυτό το δωμάτιο;</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Μετά η πρόσκληση χάνεται. Επιστρέφεις μόνο αν σε προσκαλέσει κάποιος ξανά.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Το δωμάτιο εγκαταλείπεται και ξεχνιέται. Εξαφανίζεται από τη λίστα συνομιλιών, και η επιστροφή απαιτεί νέα πρόσκληση ή δημόσια διεύθυνση.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Αποχώρηση</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Γίνεται απόρριψη</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Γίνεται αποχώρηση</translation>
+    </message>
+    <message>
+        <source>Rooms</source>
+        <translation>Δωμάτια</translation>
+    </message>
+    <message>
+        <source>This homeserver is not supported</source>
+        <translation>Αυτός ο οικείος διακομιστής δεν υποστηρίζεται</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Εκτός σύνδεσης — αναμονή για δίκτυο</translation>
+    </message>
+    <message>
+        <source>Your homeserver does not offer the sync this app needs (simplified sliding sync, MSC4186). Rooms cannot be loaded from it. A newer server version, or an account on a server that supports it, is required.</source>
+        <translation>Ο οικείος διακομιστής σου δεν προσφέρει τον συγχρονισμό που χρειάζεται η εφαρμογή (simplified sliding sync, MSC4186). Δεν μπορούν να φορτωθούν δωμάτια από αυτόν. Χρειάζεται νεότερη έκδοση διακομιστή ή λογαριασμός σε διακομιστή που το υποστηρίζει.</translation>
+    </message>
+    <message>
+        <source>Search rooms</source>
+        <translation>Αναζήτηση δωματίων</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Αφαίρεση από τα αγαπημένα</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Αγαπημένο</translation>
+    </message>
+    <message>
+        <source>Normal priority</source>
+        <translation>Κανονική προτεραιότητα</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Χαμηλή προτεραιότητα</translation>
+    </message>
+    <message>
+        <source>Unmute</source>
+        <translation>Κατάργηση σίγασης</translation>
+    </message>
+    <message>
+        <source>Mute</source>
+        <translation>Σίγαση</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Απόρριψη πρόσκλησης</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Αποχώρηση από το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Κανένα δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Rooms you join show up here once the first sync is through.</source>
+        <translation>Τα δωμάτια στα οποία μπαίνεις εμφανίζονται εδώ μόλις ολοκληρωθεί ο πρώτος συγχρονισμός.</translation>
+    </message>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Σχετικά με το Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Ορισμός ως αρχική σελίδα</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Λογαριασμός</translation>
+    </message>
+    <message>
+        <source>Mark as read</source>
+        <translation>Σήμανση ως αναγνωσμένο</translation>
+    </message>
+    <message>
+        <source>%1 of %2 rooms</source>
+        <translation>%1 από %2 δωμάτια</translation>
+    </message>
+    <message>
+        <source>Verify user</source>
+        <translation>Επαλήθευση χρήστη</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Κατεστραμμένα τοπικά δεδομένα</translation>
+    </message>
+    <message>
+        <source>Part of the data stored on this device cannot be read any more, and Shoal Messages has not been able to put it right while running — so it has stopped syncing rather than meet the same row again. Close the app and start it again. If rooms are still missing afterwards, signing out and in rebuilds the local data — but it replaces this device&apos;s keys, so check on the encryption page that the key backup is on before you do.</source>
+        <translation>Ένα μέρος των δεδομένων που είναι αποθηκευμένα σε αυτή τη συσκευή δεν μπορεί πια να διαβαστεί και το Shoal Messages δεν μπόρεσε να το διορθώσει εν λειτουργία — γι&apos; αυτό σταμάτησε τον συγχρονισμό αντί να συναντήσει ξανά την ίδια γραμμή. Κλείσε την εφαρμογή και ξεκίνησέ την ξανά. Αν εξακολουθούν να λείπουν δωμάτια μετά, η αποσύνδεση και η επανασύνδεση ξαναχτίζουν τα τοπικά δεδομένα — αλλά αντικαθιστούν και τα κλειδιά αυτής της συσκευής: έλεγξε πρώτα στη σελίδα κρυπτογράφησης ότι το αντίγραφο ασφαλείας των κλειδιών είναι ενεργό.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Σίγουρα απόρριψη αυτής της πρόσκλησης;</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Σίγουρα αποχώρηση από αυτό το δωμάτιο;</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Μετά η πρόσκληση χάνεται. Επιστρέφεις μόνο αν σε προσκαλέσει κάποιος ξανά.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Το δωμάτιο εγκαταλείπεται και ξεχνιέται. Εξαφανίζεται από τη λίστα συνομιλιών, και η επιστροφή απαιτεί νέα πρόσκληση ή δημόσια διεύθυνση.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Αποχώρηση</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Γίνεται απόρριψη</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Γίνεται αποχώρηση</translation>
+    </message>
+    <message>
+        <source>The sender did not share the key: they consider this device insecure. Verify this device.</source>
+        <translation>Ο αποστολέας δεν μοιράστηκε το κλειδί: θεωρεί αυτή τη συσκευή μη ασφαλή. Επαλήθευσε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>The sender could not deliver the key to this device.</source>
+        <translation>Ο αποστολέας δεν μπόρεσε να παραδώσει το κλειδί σε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s identity has changed since you verified them, so the key was withheld.</source>
+        <translation>Η ταυτότητα του αποστολέα άλλαξε από τότε που την επαλήθευσες, οπότε το κλειδί κρατήθηκε.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is not signed by its owner.</source>
+        <translation>Η συσκευή του αποστολέα δεν είναι υπογεγραμμένη από τον κάτοχό της.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is unknown here.</source>
+        <translation>Η συσκευή του αποστολέα είναι άγνωστη εδώ.</translation>
+    </message>
+    <message>
+        <source>Sent before you joined the room.</source>
+        <translation>Στάλθηκε πριν μπεις στο δωμάτιο.</translation>
+    </message>
+    <message>
+        <source>Older than this device, and there is no key backup.</source>
+        <translation>Παλαιότερο από αυτή τη συσκευή, και δεν υπάρχει αντίγραφο κλειδιών.</translation>
+    </message>
+    <message>
+        <source>Older than this device. Verify this device to read it.</source>
+        <translation>Παλαιότερο από αυτή τη συσκευή. Επαλήθευσε τη συσκευή για να το διαβάσεις.</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Δεν αποκρυπτογραφείται — λείπει το κλειδί από αυτή τη συσκευή</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Απόρριψη πρόσκλησης</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Αποχώρηση από το δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <translation>Κλήση</translation>
+    </message>
+    <message>
+        <source>Video call</source>
+        <translation>Βιντεοκλήση</translation>
+    </message>
+    <message>
+        <source>Back to the call</source>
+        <translation>Πίσω στην κλήση</translation>
+    </message>
+    <message>
+        <source>Go to the new room</source>
+        <translation>Μετάβαση στο νέο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Join the new room</source>
+        <translation>Είσοδος στο νέο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Load older messages</source>
+        <translation>Φόρτωση παλαιότερων μηνυμάτων</translation>
+    </message>
+    <message>
+        <source>Room info</source>
+        <translation>Πληροφορίες δωματίου</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Εκτός σύνδεσης — αναμονή για δίκτυο</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Πρόσκληση</translation>
+    </message>
+    <message>
+        <source>This room has been replaced</source>
+        <translation>Αυτό το δωμάτιο αντικαταστάθηκε</translation>
+    </message>
+    <message>
+        <source>Switching to the new room…</source>
+        <translation>Μετάβαση στο νέο δωμάτιο…</translation>
+    </message>
+    <message>
+        <source>Tap to open the new room</source>
+        <translation>Πάτησε για να ανοίξεις το νέο δωμάτιο</translation>
+    </message>
+    <message>
+        <source>Tap to join the new room</source>
+        <translation>Πάτησε για να μπεις στο νέο δωμάτιο</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pinned message(s)</source>
+        <translation>
+            <numerusform>%n καρφιτσωμένο μήνυμα</numerusform>
+            <numerusform>%n καρφιτσωμένα μηνύματα</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Beginning of the conversation</source>
+        <translation>Αρχή της συνομιλίας</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <comment>timeline system line, a noun</comment>
+        <translation>Κλήση</translation>
+    </message>
+    <message>
+        <source>%1 joined</source>
+        <translation>Ο/Η %1 μπήκε</translation>
+    </message>
+    <message>
+        <source>%1 left</source>
+        <translation>Ο/Η %1 έφυγε</translation>
+    </message>
+    <message>
+        <source>%1 declined the invitation</source>
+        <translation>Ο/Η %1 απέρριψε την πρόσκληση</translation>
+    </message>
+    <message>
+        <source>%1 asked to join</source>
+        <translation>Ο/Η %1 ζήτησε να μπει</translation>
+    </message>
+    <message>
+        <source>%1 changed membership</source>
+        <translation>Ο/Η %1 άλλαξε συμμετοχή</translation>
+    </message>
+    <message>
+        <source>%1 changed their profile</source>
+        <translation>Ο/Η %1 άλλαξε το προφίλ του</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Αντιγραφή</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Απάντηση</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Αποθήκευση</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Προώθηση</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Επεξεργασία</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Καρφίτσωμα</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Διαγραφή</translation>
+    </message>
+    <message>
+        <source>More…</source>
+        <translation>Περισσότερα…</translation>
+    </message>
+    <message>
+        <source>The quoted message cannot be loaded: it no longer exists or you are not allowed to see it.</source>
+        <translation>Το μήνυμα που παρατίθεται δεν φορτώνεται: δεν υπάρχει πια ή δεν επιτρέπεται να το δεις.</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Φωνητικό μήνυμα</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Το μήνυμα διαγράφηκε</translation>
+    </message>
+    <message>
+        <source>Thread · %1</source>
+        <translation>Νήμα · %1</translation>
+    </message>
+    <message>
+        <source>In thread</source>
+        <translation>Στο νήμα</translation>
+    </message>
+    <message>
+        <source>not sent</source>
+        <translation>δεν στάλθηκε</translation>
+    </message>
+    <message>
+        <source>edited</source>
+        <translation>επεξεργάστηκε</translation>
+    </message>
+    <message>
+        <source>No messages</source>
+        <translation>Κανένα μήνυμα</translation>
+    </message>
+    <message>
+        <source>Accept invitation</source>
+        <translation>Αποδοχή πρόσκλησης</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s</source>
+        <translation>Εγγραφή… %1 δ</translation>
+    </message>
+    <message>
+        <source>Reply to %1</source>
+        <translation>Απάντηση σε %1</translation>
+    </message>
+    <message>
+        <source>Editing message</source>
+        <translation>Επεξεργασία μηνύματος</translation>
+    </message>
+    <message>
+        <source>New text</source>
+        <translation>Νέο κείμενο</translation>
+    </message>
+    <message>
+        <source>Message</source>
+        <translation>Μήνυμα</translation>
+    </message>
+    <message>
+        <source>That message is not in the loaded history</source>
+        <translation>Αυτό το μήνυμα δεν είναι στο φορτωμένο ιστορικό</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Αποστολή ξανά</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Αντίδραση</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Απάντηση στο νήμα</translation>
+    </message>
+    <message>
+        <source>Copy room link</source>
+        <translation>Αντιγραφή συνδέσμου δωματίου</translation>
+    </message>
+    <message>
+        <source>Room link copied</source>
+        <translation>Ο σύνδεσμος δωματίου αντιγράφηκε</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Στάλθηκε χωρίς κρυπτογράφηση</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Δεν στάλθηκε από τον λογαριασμό που αναφέρεται</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Τα κλειδιά του αποστολέα άλλαξαν</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Από μη επαληθευμένη συσκευή</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Από μη επαληθευμένο άτομο</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Η γνησιότητα δεν επιβεβαιώθηκε</translation>
+    </message>
+    <message>
+        <source>Discarding</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>Deleting</source>
+        <translation>Διαγραφή</translation>
+    </message>
+    <message>
+        <source>This reaction hides text and was not sent</source>
+        <translation>Αυτή η αντίδραση κρύβει κείμενο και δεν στάλθηκε</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Εικόνα</translation>
+    </message>
+    <message>
+        <source>Search messages</source>
+        <translation>Αναζήτηση μηνυμάτων</translation>
+    </message>
+    <message>
+        <source>What do these marks mean?</source>
+        <translation>Τι σημαίνουν αυτά τα σημάδια;</translation>
+    </message>
+    <message>
+        <source>Verify contact</source>
+        <translation>Επαλήθευση επαφής</translation>
+    </message>
+    <message>
+        <source>The conversation could not be loaded</source>
+        <translation>Δεν ήταν δυνατή η φόρτωση της συνομιλίας</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Άνοιγμα αυτής της διεύθυνσης;</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Άνοιγμα</translation>
+    </message>
+    <message>
+        <source>Select files</source>
+        <translation>Επιλογή αρχείων</translation>
+    </message>
+    <message>
+        <source>New poll</source>
+        <translation>Νέα δημοσκόπηση</translation>
+    </message>
+    <message>
+        <source>Voting failed</source>
+        <translation>Η ψηφοφορία απέτυχε</translation>
+    </message>
+    <message>
+        <source>The poll could not be ended</source>
+        <translation>Η δημοσκόπηση δεν μπόρεσε να λήξει</translation>
+    </message>
+    <message>
+        <source>The poll could not be sent</source>
+        <translation>Η δημοσκόπηση δεν μπόρεσε να σταλεί</translation>
+    </message>
+    <message>
+        <source>Your vote was not sent</source>
+        <translation>Η ψήφος σου δεν στάλθηκε</translation>
+    </message>
+    <message>
+        <source>%1 invited %2</source>
+        <translation>Ο/Η %1 προσκάλεσε τον/την %2</translation>
+    </message>
+    <message>
+        <source>%1 removed %2</source>
+        <translation>Ο/Η %1 αφαίρεσε τον/την %2</translation>
+    </message>
+    <message>
+        <source>%1 banned %2</source>
+        <translation>Ο/Η %1 απέκλεισε τον/την %2</translation>
+    </message>
+    <message>
+        <source>%1 unbanned %2</source>
+        <translation>Ο/Η %1 ήρε τον αποκλεισμό του/της %2</translation>
+    </message>
+    <message>
+        <source>%1 withdrew the invitation for %2</source>
+        <translation>Ο/Η %1 απέσυρε την πρόσκληση για %2</translation>
+    </message>
+    <message>
+        <source>%1: %2</source>
+        <comment>system line and the reason given for it</comment>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Μετατροπή σε κείμενο</translation>
+    </message>
+    <message>
+        <source>Converting to text…</source>
+        <translation>Μετατροπή σε κείμενο…</translation>
+    </message>
+    <message>
+        <source>Recognised automatically, may contain mistakes</source>
+        <translation>Αναγνωρίστηκε αυτόματα, μπορεί να έχει λάθη</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s. Tap the microphone to send.</source>
+        <translation>Εγγραφή… %1 δ. Πάτα το μικρόφωνο για αποστολή.</translation>
+    </message>
+    <message>
+        <source>Nothing was said, so nothing was sent.</source>
+        <translation>Δεν ειπώθηκε τίποτα, οπότε δεν στάλθηκε τίποτα.</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Αποθηκεύτηκε στη συλλογή</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Η αποθήκευση απέτυχε</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Αποθηκεύτηκε στις Λήψεις</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Εμφάνιση λιγότερων</translation>
+    </message>
+    <message>
+        <source>Show more</source>
+        <translation>Εμφάνιση περισσότερων</translation>
+    </message>
+    <message>
+        <source>The text could not be written as a file</source>
+        <translation>Το κείμενο δεν μπόρεσε να γραφτεί ως αρχείο</translation>
+    </message>
+    <message>
+        <source>Share location</source>
+        <translation>Κοινοποίηση τοποθεσίας</translation>
+    </message>
+    <message>
+        <source>deletion not sent</source>
+        <translation>η διαγραφή δεν στάλθηκε</translation>
+    </message>
+    <message>
+        <source>edit not sent</source>
+        <translation>η επεξεργασία δεν στάλθηκε</translation>
+    </message>
+    <message>
+        <source>That did not work. Try again in a moment.</source>
+        <translation>Δεν πέτυχε. Δοκίμασε ξανά σε λίγο.</translation>
+    </message>
+    <message>
+        <source>Back to the latest messages</source>
+        <translation>Επιστροφή στα πιο πρόσφατα μηνύματα</translation>
+    </message>
+    <message>
+        <source>Live location could not be started</source>
+        <translation>Δεν ήταν δυνατή η έναρξη της ζωντανής τοποθεσίας</translation>
+    </message>
+    <message>
+        <source>It is no longer waiting to be sent.</source>
+        <translation>Δεν περιμένει πια να σταλεί.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomSettingsPage</name>
+    <message>
+        <source>Change it on the other network as well?</source>
+        <translation>Να αλλάξει και στο άλλο δίκτυο;</translation>
+    </message>
+    <message>
+        <source>The bridge passes the change on. Everyone in the chat there sees it, including people who do not use Matrix.</source>
+        <translation>Η γέφυρα μεταβιβάζει την αλλαγή. Τη βλέπουν όλοι στη συνομιλία εκεί, ακόμη και όσοι δεν χρησιμοποιούν το Matrix.</translation>
+    </message>
+    <message>
+        <source>Change</source>
+        <translation>Αλλαγή</translation>
+    </message>
+    <message>
+        <source>The name could not be changed: %1</source>
+        <translation>Δεν ήταν δυνατή η αλλαγή του ονόματος: %1</translation>
+    </message>
+    <message>
+        <source>The topic could not be changed: %1</source>
+        <translation>Δεν ήταν δυνατή η αλλαγή του θέματος: %1</translation>
+    </message>
+    <message>
+        <source>The picture could not be changed: %1</source>
+        <translation>Δεν ήταν δυνατή η αλλαγή της εικόνας: %1</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Επεξεργασία δωματίου</translation>
+    </message>
+    <message>
+        <source>Your role in this room does not allow changing its name, topic or picture.</source>
+        <translation>Ο ρόλος σου σε αυτό το δωμάτιο δεν επιτρέπει την αλλαγή του ονόματος, του θέματος ή της εικόνας του.</translation>
+    </message>
+    <message>
+        <source>This room is bridged to another network. The bridge usually passes a new name, topic or picture on, and there it changes for everyone in the chat, including people who do not use Matrix.</source>
+        <translation>Αυτό το δωμάτιο συνδέεται με άλλο δίκτυο μέσω γέφυρας. Η γέφυρα συνήθως μεταβιβάζει ένα νέο όνομα, θέμα ή εικόνα, και εκεί αλλάζει για όλους στη συνομιλία, ακόμη και για όσους δεν χρησιμοποιούν το Matrix.</translation>
+    </message>
+    <message>
+        <source>This chat is bridged to another network. There, name and picture belong to the contact: the bridge usually passes nothing on, and it can overwrite a name set here whenever the contact changes theirs. Which contact name the bridge shows is part of its own configuration.</source>
+        <translation>Αυτή η συνομιλία συνδέεται με άλλο δίκτυο μέσω γέφυρας. Εκεί το όνομα και η εικόνα ανήκουν στην επαφή: η γέφυρα συνήθως δεν μεταβιβάζει τίποτα και μπορεί να αντικαταστήσει ένα όνομα που ορίστηκε εδώ μόλις η επαφή αλλάξει το δικό της. Ποιο όνομα επαφής δείχνει η γέφυρα καθορίζεται από τις δικές της ρυθμίσεις.</translation>
+    </message>
+    <message>
+        <source>Name, topic and picture belong to the room: everyone in it sees the change.</source>
+        <translation>Το όνομα, το θέμα και η εικόνα ανήκουν στο δωμάτιο: όλοι μέσα σε αυτό βλέπουν την αλλαγή.</translation>
+    </message>
+    <message>
+        <source>Bridged to</source>
+        <translation>Γέφυρα προς</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Εικόνα</translation>
+    </message>
+    <message>
+        <source>Change picture</source>
+        <translation>Αλλαγή εικόνας</translation>
+    </message>
+    <message>
+        <source>Set picture</source>
+        <translation>Ορισμός εικόνας</translation>
+    </message>
+    <message>
+        <source>Remove picture</source>
+        <translation>Αφαίρεση εικόνας</translation>
+    </message>
+    <message>
+        <source>Name and topic</source>
+        <translation>Όνομα και θέμα</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Όνομα</translation>
+    </message>
+    <message>
+        <source>No name set</source>
+        <translation>Δεν έχει οριστεί όνομα</translation>
+    </message>
+    <message>
+        <source>Without a name, the room is shown under the names of its members.</source>
+        <translation>Χωρίς όνομα, το δωμάτιο εμφανίζεται με τα ονόματα των μελών του.</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Θέμα</translation>
+    </message>
+    <message>
+        <source>No topic set</source>
+        <translation>Δεν έχει οριστεί θέμα</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Αποθήκευση</translation>
+    </message>
+    <message>
+        <source>Saving…</source>
+        <translation>Αποθήκευση…</translation>
+    </message>
+    <message>
+        <source>Saved</source>
+        <translation>Αποθηκεύτηκε</translation>
+    </message>
+    <message>
+        <source>Whether this room is bridged to another network could not be checked. If it is, the change may apply there for everyone in the chat.</source>
+        <translation>Δεν ήταν δυνατό να ελεγχθεί αν αυτό το δωμάτιο συνδέεται με άλλο δίκτυο μέσω γέφυρας. Αν ναι, η αλλαγή μπορεί να ισχύσει εκεί για όλους στη συνομιλία.</translation>
+    </message>
+    <message>
+        <source>Change it anyway?</source>
+        <translation>Να αλλάξει παρ&apos; όλα αυτά;</translation>
+    </message>
+</context>
+<context>
+    <name>SearchPage</name>
+    <message>
+        <source>Search messages</source>
+        <translation>Αναζήτηση μηνυμάτων</translation>
+    </message>
+    <message>
+        <source>Search this conversation</source>
+        <translation>Αναζήτηση σε αυτή τη συνομιλία</translation>
+    </message>
+    <message>
+        <source>Search failed</source>
+        <translation>Η αναζήτηση απέτυχε</translation>
+    </message>
+    <message>
+        <source>Nothing found</source>
+        <translation>Δεν βρέθηκε τίποτα</translation>
+    </message>
+    <message>
+        <source>Whole words only: &quot;test&quot; does not find &quot;test9&quot;. Pictures, files and messages from bots are not searched. And only what this device has already downloaded - load older messages in the conversation to add more.</source>
+        <translation>Μόνο ολόκληρες λέξεις: το «test» δεν βρίσκει το «test9». Εικόνες, αρχεία και μηνύματα από bot δεν αναζητούνται. Και μόνο ό,τι έχει ήδη κατεβάσει η συσκευή — φόρτωσε παλαιότερα μηνύματα για να προσθέσεις κι άλλα.</translation>
+    </message>
+</context>
+<context>
+    <name>SecretsHelpPage</name>
+    <message>
+        <source>Getting in again</source>
+        <translation>Ξανά μέσα</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys.</source>
+        <translation>Από αυτό το σύστημα λείπει η υπηρεσία που φυλάει τα κλειδιά κρυπτογράφησης.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service reports damaged data. Nothing can be unlocked in this state.</source>
+        <translation>Ο ασφαλής χώρος της συσκευής αναφέρει κατεστραμμένα δεδομένα. Σε αυτή την κατάσταση δεν ξεκλειδώνει τίποτα.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service itself is locked. Every app on this phone that stores secrets is affected, not only Shoal Messages.</source>
+        <translation>Ο ασφαλής χώρος της συσκευής είναι ο ίδιος κλειδωμένος. Αυτό αφορά κάθε εφαρμογή του τηλεφώνου που αποθηκεύει μυστικά, όχι μόνο το Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages' own key store is locked and waiting for your confirmation.</source>
+        <translation>Ο δικός του χώρος κλειδιών του Shoal Messages είναι κλειδωμένος και περιμένει την επιβεβαίωσή σου.</translation>
+    </message>
+    <message>
+        <source>The secrets service did not hand out a key, and it did not say why.</source>
+        <translation>Ο ασφαλής χώρος δεν έδωσε κλειδί και δεν είπε γιατί.</translation>
+    </message>
+    <message>
+        <source>This is a property of the operating system, not a fault in Shoal Messages. The package exists and can be installed; some Sailfish images simply do not ship it.</source>
+        <translation>Αυτό είναι ιδιότητα του λειτουργικού συστήματος, όχι σφάλμα του Shoal Messages. Το πακέτο υπάρχει και εγκαθίσταται· ορισμένες εικόνες του Sailfish απλώς δεν το περιλαμβάνουν.</translation>
+    </message>
+    <message>
+        <source>This is beyond what Shoal Messages can reach. Repairing it means resetting the service&apos;s own data, which affects every app on the device that stores secrets — ask in the Sailfish support channels before doing that.</source>
+        <translation>Αυτό ξεπερνά όσα φτάνει το Shoal Messages. Η επιδιόρθωση σημαίνει μηδενισμό των ίδιων των δεδομένων της υπηρεσίας, που αφορά κάθε εφαρμογή της συσκευής που αποθηκεύει μυστικά — ρώτησε πρώτα στα κανάλια υποστήριξης του Sailfish.</translation>
+    </message>
+    <message>
+        <source>The service is unlocked at start-up from your device lock code. Where that hand-off has stopped working, restarting lands in the same state every time — setting the code afresh is what starts it again.</source>
+        <translation>Η υπηρεσία ξεκλειδώνει κατά την εκκίνηση με τον κωδικό κλειδώματος της συσκευής. Αν αυτή η παράδοση έπαψε να λειτουργεί, κάθε επανεκκίνηση καταλήγει στην ίδια κατάσταση — το να ορίσεις τον κωδικό εκ νέου είναι αυτό που την ξαναβάζει μπροστά.</translation>
+    </message>
+    <message>
+        <source>The approval lasts until the device is restarted. If no request appears at all, the system components that draw it may be missing.</source>
+        <translation>Η έγκριση ισχύει μέχρι την επόμενη επανεκκίνηση της συσκευής. Αν δεν εμφανίζεται καθόλου αίτημα, ίσως λείπουν τα μέρη του συστήματος που το σχεδιάζουν.</translation>
+    </message>
+    <message>
+        <source>Setting the device lock code afresh and restarting is worth trying: it is what unlocks the service at start-up.</source>
+        <translation>Αξίζει να ορίσεις εκ νέου τον κωδικό κλειδώματος και να επανεκκινήσεις: αυτό ακριβώς ξεκλειδώνει την υπηρεσία κατά την εκκίνηση.</translation>
+    </message>
+    <message>
+        <source>What to do</source>
+        <translation>Τι να κάνεις</translation>
+    </message>
+    <message>
+        <source>1. Switch on Developer mode in the system settings, under Settings › Developer tools.</source>
+        <translation>1. Ενεργοποίησε τη λειτουργία προγραμματιστή στις ρυθμίσεις συστήματος, στο Ρυθμίσεις › Εργαλεία προγραμματιστή.</translation>
+    </message>
+    <message>
+        <source>2. Open the Terminal app and run the line below — tap it to copy. Then restart the device and start Shoal Messages again.</source>
+        <translation>2. Άνοιξε την εφαρμογή Terminal και εκτέλεσε την παρακάτω γραμμή — άγγιξέ την για αντιγραφή. Έπειτα επανεκκίνησε τη συσκευή και άνοιξε ξανά το Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Note down what this page reports below and take it to the Sailfish support channels. Signing out of Shoal Messages does not repair it.</source>
+        <translation>Σημείωσε τι αναφέρει αυτή η σελίδα παρακάτω και πήγαινέ το στα κανάλια υποστήριξης του Sailfish. Η αποσύνδεση από το Shoal Messages δεν το διορθώνει.</translation>
+    </message>
+    <message>
+        <source>Go back and tap “Try again”, then confirm the system&apos;s request. If nothing appears, install the missing components (tap the line to copy) and restart the device.</source>
+        <translation>Γύρνα πίσω και άγγιξε «Δοκίμασε ξανά», μετά επιβεβαίωσε το αίτημα του συστήματος. Αν δεν εμφανιστεί τίποτα, εγκατέστησε τα μέρη που λείπουν (άγγιξε τη γραμμή για αντιγραφή) και επανεκκίνησε τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>1. Open Settings › Device lock and set a new security code.</source>
+        <translation>1. Άνοιξε Ρυθμίσεις › Κλείδωμα συσκευής και όρισε νέο κωδικό ασφαλείας.</translation>
+    </message>
+    <message>
+        <source>2. Restart the device.</source>
+        <translation>2. Επανεκκίνησε τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>3. Start Shoal Messages again.</source>
+        <translation>3. Άνοιξε ξανά το Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Signing out does not help</source>
+        <translation>Η αποσύνδεση δεν βοηθά</translation>
+    </message>
+    <message>
+        <source>Signing out deletes this device&apos;s encryption keys along with the local data. You would then have to verify this device again from another one, and older messages would need your recovery key. It does not repair the secrets service.</source>
+        <translation>Με την αποσύνδεση διαγράφονται τα κλειδιά κρυπτογράφησης αυτής της συσκευής μαζί με τα τοπικά δεδομένα. Θα έπρεπε τότε να επαληθεύσεις ξανά αυτή τη συσκευή από μια άλλη, και τα παλαιότερα μηνύματα θα χρειάζονταν το κλειδί ανάκτησής σου. Τον ασφαλή χώρο δεν τον διορθώνει.</translation>
+    </message>
+    <message>
+        <source>What this page measured</source>
+        <translation>Τι μέτρησε αυτή η σελίδα</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityRows</name>
+    <message>
+        <source>Backup</source>
+        <translation>Αντίγραφο ασφαλείας</translation>
+    </message>
+    <message>
+        <source>Your room keys are backed up.</source>
+        <translation>Τα κλειδιά των δωματίων σου έχουν αντίγραφο ασφαλείας.</translation>
+    </message>
+    <message>
+        <source>The backup is on the server but not unlocked on this device.</source>
+        <translation>Το αντίγραφο βρίσκεται στον διακομιστή αλλά δεν έχει ξεκλειδωθεί σε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>There is no key backup. Without one, messages become unreadable when this device is gone.</source>
+        <translation>Δεν υπάρχει αντίγραφο κλειδιών. Χωρίς αυτό τα μηνύματα γίνονται μη αναγνώσιμα μόλις χαθεί αυτή η συσκευή.</translation>
+    </message>
+    <message>
+        <source>Recovery</source>
+        <translation>Ανάκτηση</translation>
+    </message>
+    <message>
+        <source>Recovery is set up.</source>
+        <translation>Η ανάκτηση έχει ρυθμιστεί.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key to unlock the backup on this device.</source>
+        <translation>Δώσε το κλειδί ανάκτησής σου για να ξεκλειδώσεις το αντίγραφο σε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>Cross-signing</source>
+        <translation>Διασταυρούμενη υπογραφή</translation>
+    </message>
+    <message>
+        <source>This device is signed as yours.</source>
+        <translation>Αυτή η συσκευή είναι υπογεγραμμένη ως δική σου.</translation>
+    </message>
+    <message>
+        <source>Others see this device as unverified. The recovery key or a verification from another device settles it.</source>
+        <translation>Οι άλλοι βλέπουν αυτή τη συσκευή ως μη επαληθευμένη. Το κλειδί ανάκτησης ή μια επαλήθευση από άλλη συσκευή το τακτοποιεί.</translation>
+    </message>
+    <message>
+        <source>Local storage</source>
+        <translation>Τοπική αποθήκευση</translation>
+    </message>
+    <message>
+        <source>Session and message database are encrypted on this device.</source>
+        <translation>Η συνεδρία και η βάση μηνυμάτων είναι κρυπτογραφημένες σε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because they were created before this app could encrypt them. An existing database cannot be encrypted in place.</source>
+        <translation>Βρίσκονται ακρυπτογράφητες επειδή δημιουργήθηκαν πριν μπορέσει η εφαρμογή να τις κρυπτογραφήσει. Μια υπάρχουσα βάση δεν κρυπτογραφείται εκ των υστέρων.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because the system&apos;s secure storage did not hand out a key.</source>
+        <translation>Βρίσκονται ακρυπτογράφητες επειδή ο ασφαλής χώρος του συστήματος δεν έδωσε κλειδί.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because this system is missing the service that keeps encryption keys.</source>
+        <translation>Βρίσκονται ακρυπτογράφητες επειδή από αυτό το σύστημα λείπει η υπηρεσία που φυλάει τα κλειδιά κρυπτογράφησης.</translation>
+    </message>
+    <message>
+        <source>Recovery key accepted — finishing. This can take a moment.</source>
+        <translation>Το κλειδί ανάκτησης έγινε δεκτό — ολοκληρώνεται. Μπορεί να πάρει μια στιγμή.</translation>
+    </message>
+    <message>
+        <source>There is no recovery for this account yet. Set up a key backup to create one.</source>
+        <translation>Για αυτόν τον λογαριασμό δεν υπάρχει ακόμη ανάκτηση. Ρύθμισε ένα αντίγραφο κλειδιών για να δημιουργηθεί.</translation>
+    </message>
+    <message>
+        <source>The server could not be asked whether a backup exists.</source>
+        <translation>Δεν ήταν δυνατό να ερωτηθεί ο διακομιστής αν υπάρχει αντίγραφο ασφαλείας.</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityStatusPage</name>
+    <message>
+        <source>Security</source>
+        <translation>Ασφάλεια</translation>
+    </message>
+    <message>
+        <source>Something on this device is not in order yet. You can settle it now or later.</source>
+        <translation>Κάτι σε αυτή τη συσκευή δεν είναι ακόμη εντάξει. Μπορείς να το τακτοποιήσεις τώρα ή αργότερα.</translation>
+    </message>
+    <message>
+        <source>Enter recovery key</source>
+        <translation>Εισαγωγή κλειδιού ανάκτησης</translation>
+    </message>
+    <message>
+        <source>Set up backup now</source>
+        <translation>Ρύθμιση αντιγράφου τώρα</translation>
+    </message>
+    <message>
+        <source>Encrypt storage now</source>
+        <translation>Κρυπτογράφηση τώρα</translation>
+    </message>
+    <message>
+        <source>Why is that</source>
+        <translation>Γιατί συμβαίνει</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Αργότερα</translation>
+    </message>
+    <message>
+        <source>You will find all of this again under Account › Encryption.</source>
+        <translation>Όλα αυτά θα τα βρεις ξανά στο Λογαριασμός › Κρυπτογράφηση.</translation>
+    </message>
+    <message>
+        <source>Everything on this device is in order.</source>
+        <translation>Όλα σε αυτή τη συσκευή είναι εντάξει.</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Κλείσιμο</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Επαλήθευση αυτής της συσκευής</translation>
+    </message>
+</context>
+<context>
+    <name>SendMediaPage</name>
+    <message>
+        <source>Reply</source>
+        <translation>Απάντηση</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Αποστολή</translation>
+    </message>
+    <message>
+        <source>Caption</source>
+        <translation>Λεζάντα</translation>
+    </message>
+    <message>
+        <source>Caption (optional)</source>
+        <translation>Λεζάντα (προαιρετική)</translation>
+    </message>
+    <message>
+        <source>%1 files, sent one after another. The caption goes with the first one.</source>
+        <translation>%1 αρχεία, στέλνονται το ένα μετά το άλλο. Η λεζάντα πάει με το πρώτο.</translation>
+    </message>
+    <message>
+        <source>Send at original resolution</source>
+        <translation>Αποστολή σε αρχική ανάλυση</translation>
+    </message>
+    <message>
+        <source>Off, the picture is made smaller before it goes out and its metadata - the place it was taken, among them - does not travel with it.</source>
+        <translation>Ανενεργό, η εικόνα σμικρύνεται πριν σταλεί και τα μεταδεδομένα της — μεταξύ άλλων ο τόπος λήψης — δεν ταξιδεύουν μαζί της.</translation>
+    </message>
+</context>
+<context>
+    <name>SendQueueBanner</name>
+    <message>
+        <source>A message could not be sent.</source>
+        <translation>Δεν ήταν δυνατή η αποστολή ενός μηνύματος.</translation>
+    </message>
+    <message>
+        <source>An edit could not be sent.</source>
+        <translation>Δεν ήταν δυνατή η αποστολή μιας επεξεργασίας.</translation>
+    </message>
+    <message>
+        <source>A deletion could not be sent. The message is still there for everyone else.</source>
+        <translation>Δεν ήταν δυνατή η αποστολή μιας διαγραφής. Για όλους τους άλλους το μήνυμα είναι ακόμη εκεί.</translation>
+    </message>
+    <message>
+        <source>A reaction could not be sent.</source>
+        <translation>Δεν ήταν δυνατή η αποστολή μιας αντίδρασης.</translation>
+    </message>
+    <message>
+        <source>A poll vote could not be sent.</source>
+        <translation>Δεν ήταν δυνατή η αποστολή μιας ψήφου δημοσκόπησης.</translation>
+    </message>
+    <message>
+        <source>A change could not be sent.</source>
+        <translation>Δεν ήταν δυνατή η αποστολή μιας αλλαγής.</translation>
+    </message>
+    <message>
+        <source>Someone you verified has a new identity. Withdraw the verification on their profile, then send again.</source>
+        <translation>Κάποιο άτομο που επαλήθευσες έχει νέα ταυτότητα. Ανακάλεσε την επαλήθευση στο προφίλ του και στείλε ξανά.</translation>
+    </message>
+    <message>
+        <source>This device has to be verified first.</source>
+        <translation>Αυτή η συσκευή πρέπει πρώτα να επαληθευτεί.</translation>
+    </message>
+    <message>
+        <source>Some devices in this room are not verified.</source>
+        <translation>Ορισμένες συσκευές σε αυτό το δωμάτιο δεν είναι επαληθευμένες.</translation>
+    </message>
+    <message>
+        <source>Everything sent after it in this room waits behind it.</source>
+        <translation>Ό,τι στάλθηκε μετά σε αυτό το δωμάτιο περιμένει πίσω του.</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Αποστολή ξανά</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>A poll could not be sent.</source>
+        <translation>Δεν ήταν δυνατή η αποστολή μιας δημοσκόπησης.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionLockedPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Αποσύνδεση και διαγραφή τοπικών δεδομένων</translation>
+    </message>
+    <message>
+        <source>Locked</source>
+        <translation>Κλειδωμένο</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix για Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your session is stored encrypted, and the key was not available when Shoal Messages started.</source>
+        <translation>Η συνεδρία σου είναι αποθηκευμένη κρυπτογραφημένα, και το κλειδί δεν ήταν διαθέσιμο όταν ξεκίνησε το Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Δοκίμασε ξανά</translation>
+    </message>
+    <message>
+        <source>The key lives in the device&apos;s secrets storage. Try again and confirm the system&apos;s request; the approval lasts until the next restart of the device. If no request appears at all, the secrets service itself is at fault rather than your account.</source>
+        <translation>Το κλειδί βρίσκεται στον ασφαλή χώρο της συσκευής. Δοκίμασε ξανά και επιβεβαίωσε το αίτημα του συστήματος· η έγκριση ισχύει μέχρι την επόμενη επανεκκίνηση της συσκευής. Αν δεν εμφανίζεται καθόλου αίτημα, το φταίξιμο είναι του ασφαλούς χώρου και όχι του λογαριασμού σου.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Χρειάζεσαι βοήθεια;</translation>
+    </message>
+</context>
+<context>
+    <name>SessionNewerPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Αποσύνδεση και διαγραφή τοπικών δεδομένων</translation>
+    </message>
+    <message>
+        <source>Newer version needed</source>
+        <translation>Απαιτείται νεότερη έκδοση</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix για Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Δοκίμασε ξανά</translation>
+    </message>
+    <message>
+        <source>Your session was saved in a format this version does not know, most likely by a newer version of Shoal Messages.</source>
+        <translation>Η συνεδρία σου αποθηκεύτηκε σε μορφή που αυτή η έκδοση δεν γνωρίζει, πιθανότατα από νεότερη έκδοση του Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>If a newer version of Shoal Messages was installed before, installing it again opens everything as before. Signing out instead deletes the data and keys this device holds.</source>
+        <translation>Αν πριν ήταν εγκατεστημένη νεότερη έκδοση του Shoal Messages, με την επανεγκατάστασή της όλα θα ανοίξουν όπως πριν. Η αποσύνδεση αντίθετα διαγράφει τα δεδομένα και τα κλειδιά αυτής της συσκευής.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionOfflinePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Αποσύνδεση και διαγραφή τοπικών δεδομένων</translation>
+    </message>
+    <message>
+        <source>No connection</source>
+        <translation>Χωρίς σύνδεση</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix για Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your homeserver could not be reached. You are still signed in, and nothing on this device has changed.</source>
+        <translation>Δεν ήταν δυνατή η σύνδεση με τον οικείο διακομιστή σου. Η συνεδρία σου παραμένει ενεργή και τίποτα δεν άλλαξε σε αυτή τη συσκευή.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages keeps trying on its own. Do not sign in again: that would start a new device and cost the keys to your encrypted history.</source>
+        <translation>Το Shoal Messages συνεχίζει να προσπαθεί μόνο του. Μη συνδεθείς ξανά: θα δημιουργούνταν νέα συσκευή και θα χάνονταν τα κλειδιά του κρυπτογραφημένου ιστορικού σου.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Δοκίμασε ξανά</translation>
+    </message>
+</context>
+<context>
+    <name>ShareLocationPage</name>
+    <message>
+        <source>Share location</source>
+        <translation>Κοινοποίηση τοποθεσίας</translation>
+    </message>
+    <message>
+        <source>Finding your position…</source>
+        <translation>Εντοπισμός της θέσης σου…</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Δοκίμασε ξανά</translation>
+    </message>
+    <message>
+        <source>Send this position</source>
+        <translation>Αποστολή αυτής της θέσης</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Ζωντανή τοποθεσία</translation>
+    </message>
+    <message>
+        <source>Your position goes to this room when you move, while the app is open, until the time is up or you stop it. When the app is closed, the others see the last position until the end of the time.</source>
+        <translation>Η θέση σου πηγαίνει σε αυτό το δωμάτιο όταν μετακινείσαι, όσο η εφαρμογή είναι ανοιχτή, μέχρι να λήξει ο χρόνος ή να τη σταματήσεις. Όταν η εφαρμογή είναι κλειστή, οι άλλοι βλέπουν την τελευταία θέση μέχρι το τέλος του χρόνου.</translation>
+    </message>
+    <message>
+        <source>For</source>
+        <translation>Για</translation>
+    </message>
+    <message>
+        <source>1 hour</source>
+        <translation>1 ώρα</translation>
+    </message>
+    <message>
+        <source>Share live location</source>
+        <translation>Κοινοποίηση ζωντανής τοποθεσίας</translation>
+    </message>
+    <message>
+        <source>Sharing your live location until %1.</source>
+        <translation>Κοινοποιείς τη ζωντανή τοποθεσία σου έως %1.</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Διακοπή κοινοποίησης</translation>
+    </message>
+    <message>
+        <source>6 hours</source>
+        <translation>6 ώρες</translation>
+    </message>
+    <message>
+        <source>1 day</source>
+        <translation>1 ημέρα</translation>
+    </message>
+</context>
+<context>
+    <name>ShareToRoomPage</name>
+    <message>
+        <source>Send to</source>
+        <translation>Αποστολή σε</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Κανένα δωμάτιο</translation>
+    </message>
+</context>
+<context>
+    <name>ShieldGlossaryPage</name>
+    <message>
+        <source>Message marks</source>
+        <translation>Σημάδια στα μηνύματα</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Στάλθηκε χωρίς κρυπτογράφηση</translation>
+    </message>
+    <message>
+        <source>The message went out without encryption although the room uses it. Anybody who can read the server&apos;s copy can read the message.</source>
+        <translation>Το μήνυμα έφυγε χωρίς κρυπτογράφηση αν και το δωμάτιο τη χρησιμοποιεί. Όποιος μπορεί να διαβάσει το αντίγραφο στον διακομιστή μπορεί να διαβάσει το μήνυμα.</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Δεν στάλθηκε από τον λογαριασμό που αναφέρεται</translation>
+    </message>
+    <message>
+        <source>The message was encrypted by a device that does not belong to the account it claims to come from - somebody is sending under another name. Some bridges work this way and produce it harmlessly; anywhere else it is the one sign of an actual impersonation this app has.</source>
+        <translation>Το μήνυμα κρυπτογραφήθηκε από συσκευή που δεν ανήκει στον λογαριασμό από τον οποίο ισχυρίζεται ότι προέρχεται — κάποιος στέλνει με ξένο όνομα. Ορισμένες γέφυρες λειτουργούν έτσι και το προκαλούν αβλαβώς· οπουδήποτε αλλού είναι η μοναδική ένδειξη πραγματικής πλαστοπροσωπίας που διαθέτει αυτή η εφαρμογή.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Τα κλειδιά του αποστολέα άλλαξαν</translation>
+    </message>
+    <message>
+        <source>This person&apos;s cryptographic identity is no longer the one that was verified. Either they set up their account again, or somebody else is using it.</source>
+        <translation>Η κρυπτογραφική ταυτότητα αυτού του ατόμου δεν είναι πια εκείνη που επαληθεύτηκε. Είτε ρύθμισε ξανά τον λογαριασμό του, είτε τον χρησιμοποιεί κάποιος άλλος.</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Από μη επαληθευμένη συσκευή</translation>
+    </message>
+    <message>
+        <source>The device that sent this has not been confirmed by the account it belongs to. That is normal for a device somebody has just started using.</source>
+        <translation>Η συσκευή που το έστειλε δεν έχει επιβεβαιωθεί από τον λογαριασμό στον οποίο ανήκει. Για μια συσκευή που μόλις τέθηκε σε χρήση αυτό είναι φυσιολογικό.</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Από μη επαληθευμένο άτομο</translation>
+    </message>
+    <message>
+        <source>This person&apos;s identity has never been verified, so there is nothing to check the message against.</source>
+        <translation>Η ταυτότητα αυτού του ατόμου δεν επαληθεύτηκε ποτέ, οπότε δεν υπάρχει τίποτα με το οποίο να ελεγχθεί το μήνυμα.</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Η γνησιότητα δεν επιβεβαιώθηκε</translation>
+    </message>
+    <message>
+        <source>The message could not be checked at all. It is not necessarily wrong - only unproven.</source>
+        <translation>Το μήνυμα δεν μπόρεσε να ελεγχθεί καθόλου. Δεν είναι απαραίτητα ψεύτικο — απλώς ανεπιβεβαίωτο.</translation>
+    </message>
+    <message>
+        <source>A mark beside a message means its authenticity could not be fully confirmed. A red triangle says the message is not what it claims to be. An orange dot says something about it could not be checked. Tap a mark in the conversation to see which of the cases below it is.</source>
+        <translation>Ένα σημάδι δίπλα σε ένα μήνυμα σημαίνει ότι η γνησιότητά του δεν επιβεβαιώθηκε πλήρως. Ένα κόκκινο τρίγωνο λέει ότι το μήνυμα δεν είναι αυτό που ισχυρίζεται. Μια πορτοκαλί κουκκίδα λέει ότι κάτι δεν μπόρεσε να ελεγχθεί. Άγγιξε ένα σημάδι στη συνομιλία για να δεις ποια από τις παρακάτω περιπτώσεις είναι.</translation>
+    </message>
+</context>
+<context>
+    <name>SpaceColourPage</name>
+    <message>
+        <source>Colour</source>
+        <translation>Χρώμα</translation>
+    </message>
+    <message>
+        <source>Automatic colour</source>
+        <translation>Αυτόματο χρώμα</translation>
+    </message>
+    <message>
+        <source>Taken from the space itself, a different one for each</source>
+        <translation>Προκύπτει από τον ίδιο τον χώρο, διαφορετικό για κάθε έναν</translation>
+    </message>
+    <message>
+        <source>Marking the space on a room&apos;s picture is switched off under Account, Appearance. Until it is on, this colour is drawn nowhere.</source>
+        <translation>Η σήμανση του Space πάνω στην εικόνα του δωματίου είναι απενεργοποιημένη στο Λογαριασμός, Εμφάνιση. Όσο είναι ανενεργή, αυτό το χρώμα δεν σχεδιάζεται πουθενά.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacePage</name>
+    <message>
+        <source>Space</source>
+        <translation>Χώρος</translation>
+    </message>
+    <message>
+        <source>Add rooms</source>
+        <translation>Προσθήκη δωματίων</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Ανανέωση</translation>
+    </message>
+    <message>
+        <source>Move to space</source>
+        <translation>Μετακίνηση σε χώρο</translation>
+    </message>
+    <message>
+        <source>Remove from space</source>
+        <translation>Αφαίρεση από τον χώρο</translation>
+    </message>
+    <message>
+        <source>Linked, not joined</source>
+        <translation>Συνδεδεμένο, χωρίς είσοδο</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n μέλος</numerusform>
+            <numerusform>%n μέλη</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Είσοδος</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Γίνεται είσοδος</translation>
+    </message>
+    <message>
+        <source>No rooms in this space</source>
+        <translation>Κανένα δωμάτιο σε αυτόν τον χώρο</translation>
+    </message>
+    <message>
+        <source>Add rooms with the pulldown menu, or rooms of this space that you have joined show up here.</source>
+        <translation>Πρόσθεσε δωμάτια με το πτυσσόμενο μενού, ή εμφανίζονται εδώ τα δωμάτια αυτού του χώρου στα οποία έχεις μπει.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacesPage</name>
+    <message>
+        <source>Really delete this space?</source>
+        <translation>Σίγουρα διαγραφή αυτού του χώρου;</translation>
+    </message>
+    <message>
+        <source>The space is left and forgotten. The rooms in it are not touched — they stay in the chat list.</source>
+        <translation>Ο χώρος εγκαταλείπεται και ξεχνιέται. Τα δωμάτια μέσα του δεν θίγονται — μένουν στη λίστα συνομιλιών.</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Διαγραφή</translation>
+    </message>
+    <message>
+        <source>Deleting space</source>
+        <translation>Γίνεται διαγραφή χώρου</translation>
+    </message>
+    <message>
+        <source>Spaces</source>
+        <translation>Χώροι</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Εκτός σύνδεσης — αναμονή για δίκτυο</translation>
+    </message>
+    <message>
+        <source>Create space</source>
+        <translation>Δημιουργία χώρου</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Ορισμός ως αρχική σελίδα</translation>
+    </message>
+    <message>
+        <source>Delete space</source>
+        <translation>Διαγραφή χώρου</translation>
+    </message>
+    <message>
+        <source>No spaces</source>
+        <translation>Κανένας χώρος</translation>
+    </message>
+    <message>
+        <source>Spaces you are a member of show up here. Spaces group rooms together.</source>
+        <translation>Οι χώροι στους οποίους είσαι μέλος εμφανίζονται εδώ. Οι χώροι ομαδοποιούν δωμάτια.</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Κατεστραμμένα τοπικά δεδομένα</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Χρώμα</translation>
+    </message>
+</context>
+<context>
+    <name>StorageBlockedPage</name>
+    <message>
+        <source>Encryption not possible</source>
+        <translation>Η κρυπτογράφηση δεν είναι δυνατή</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix για Sailfish OS</translation>
+    </message>
+    <message>
+        <source>The secure storage did not hand out a key, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Ο ασφαλής χώρος δεν έδωσε κλειδί, οπότε το Shoal Messages δεν μπορεί να δημιουργήσει κρυπτογραφημένη βάση.</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Από αυτό το σύστημα λείπει η υπηρεσία που φυλάει τα κλειδιά κρυπτογράφησης, οπότε το Shoal Messages δεν μπορεί να δημιουργήσει κρυπτογραφημένη βάση.</translation>
+    </message>
+    <message>
+        <source>Check again</source>
+        <translation>Έλεγχος ξανά</translation>
+    </message>
+    <message>
+        <source>Messages stay end-to-end encrypted on their way through the network either way. This is only about what lies on the device.</source>
+        <translation>Τα μηνύματα παραμένουν έτσι κι αλλιώς κρυπτογραφημένα από άκρο σε άκρο στον δρόμο τους μέσα από το δίκτυο. Εδώ πρόκειται μόνο για ό,τι βρίσκεται στη συσκευή.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Χρειάζεσαι βοήθεια;</translation>
+    </message>
+    <message>
+        <source>Checked — the secure storage still will not hand out a key.</source>
+        <translation>Ελέγχθηκε — ο ασφαλής χώρος εξακολουθεί να μη δίνει κλειδί.</translation>
+    </message>
+</context>
+<context>
+    <name>StoreUnreadablePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Αποσύνδεση και διαγραφή τοπικών δεδομένων</translation>
+    </message>
+    <message>
+        <source>Local data unreadable</source>
+        <translation>Τα τοπικά δεδομένα δεν διαβάζονται</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix για Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Shoal Messages could not read back part of the data it keeps on this device. Your account, this device and its encryption keys are not affected.</source>
+        <translation>Το Shoal Messages δεν μπόρεσε να διαβάσει ξανά μέρος των δεδομένων που φυλάει σε αυτή τη συσκευή. Ο λογαριασμός σου, αυτή η συσκευή και τα κλειδιά κρυπτογράφησής της δεν επηρεάζονται.</translation>
+    </message>
+    <message>
+        <source>Rebuilding deletes the rooms and messages stored on this device and loads them again from your homeserver. This device and its keys stay; messages that were not sent yet are lost.</source>
+        <translation>Η ανακατασκευή διαγράφει τα δωμάτια και τα μηνύματα που είναι αποθηκευμένα σε αυτή τη συσκευή και τα φορτώνει ξανά από τον οικείο διακομιστή σου. Αυτή η συσκευή και τα κλειδιά της παραμένουν· τα μηνύματα που δεν έχουν σταλεί ακόμη χάνονται.</translation>
+    </message>
+    <message>
+        <source>Rebuild local data</source>
+        <translation>Ανακατασκευή τοπικών δεδομένων</translation>
+    </message>
+</context>
+<context>
+    <name>ThreadPage</name>
+    <message>
+        <source>Load older posts</source>
+        <translation>Φόρτωση παλαιότερων αναρτήσεων</translation>
+    </message>
+    <message>
+        <source>Thread</source>
+        <translation>Νήμα</translation>
+    </message>
+    <message>
+        <source>Event</source>
+        <translation>Συμβάν</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Δεν αποκρυπτογραφείται — λείπει το κλειδί από αυτή τη συσκευή</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Το μήνυμα διαγράφηκε</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Συνημμένο</translation>
+    </message>
+    <message>
+        <source>Thread unavailable</source>
+        <translation>Το νήμα δεν είναι διαθέσιμο</translation>
+    </message>
+    <message>
+        <source>Loading thread</source>
+        <translation>Φόρτωση νήματος</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Απάντηση στο νήμα</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Στάλθηκε χωρίς κρυπτογράφηση</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Δεν στάλθηκε από τον λογαριασμό που αναφέρεται</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Τα κλειδιά του αποστολέα άλλαξαν</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Από μη επαληθευμένη συσκευή</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Από μη επαληθευμένο άτομο</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Η γνησιότητα δεν επιβεβαιώθηκε</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Άνοιγμα αυτής της διεύθυνσης;</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Άνοιγμα</translation>
+    </message>
+</context>
+<context>
+    <name>UnverifiedRecipientsDialog</name>
+    <message>
+        <source>Send anyway</source>
+        <translation>Αποστολή έτσι κι αλλιώς</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n unverified device(s)</source>
+        <translation>
+            <numerusform>%n μη επαληθευμένη συσκευή</numerusform>
+            <numerusform>%n μη επαληθευμένες συσκευές</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Do not warn about this user again</source>
+        <translation>Να μην ξαναειδοποιηθώ γι&apos; αυτόν τον χρήστη</translation>
+    </message>
+    <message>
+        <source>Do not warn about these users again</source>
+        <translation>Να μην ξαναειδοποιηθώ γι&apos; αυτούς τους χρήστες</translation>
+    </message>
+    <message>
+        <source>Applies until you verify or clear it.</source>
+        <translation>Ισχύει μέχρι να επαληθεύσεις ή να το μηδενίσεις.</translation>
+    </message>
+    <message>
+        <source>keys changed since you verified them</source>
+        <translation>τα κλειδιά άλλαξαν αφότου τα επαλήθευσες</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>μη επαληθευμένη</translation>
+    </message>
+    <message>
+        <source>This device is not verified</source>
+        <translation>Αυτή η συσκευή δεν είναι επαληθευμένη</translation>
+    </message>
+    <message>
+        <source>Unverified recipients</source>
+        <translation>Μη επαληθευμένοι παραλήπτες</translation>
+    </message>
+    <message>
+        <source>The message will be encrypted for recipients you have not verified. Verify them for real certainty, or send anyway.</source>
+        <translation>Το μήνυμα θα κρυπτογραφηθεί για παραλήπτες που δεν έχεις επαληθεύσει. Επαλήθευσέ τους για πραγματική βεβαιότητα ή στείλε ούτως ή άλλως.</translation>
+    </message>
+    <message>
+        <source>Do not warn again</source>
+        <translation>Να μην ξαναειδοποιηθώ</translation>
+    </message>
+    <message>
+        <source>As long as this device is unverified, no other device can be shown as verified — not even one that is. Verify it under Account → Encryption, or send anyway.</source>
+        <translation>Όσο αυτή η συσκευή δεν είναι επαληθευμένη, καμία άλλη συσκευή δεν μπορεί να εμφανιστεί ως επαληθευμένη — ούτε καν κάποια που είναι. Επαλήθευσέ την στο Λογαριασμός → Κρυπτογράφηση ή στείλε ούτως ή άλλως.</translation>
+    </message>
+</context>
+<context>
+    <name>VerificationPage</name>
+    <message>
+        <source>Verification</source>
+        <translation>Επαλήθευση</translation>
+    </message>
+    <message>
+        <source>Another one of your devices</source>
+        <translation>Άλλη μία από τις συσκευές σου</translation>
+    </message>
+    <message>
+        <source>Your answer is in. Waiting for the other device.</source>
+        <translation>Η απάντησή σου καταγράφηκε. Αναμονή για την άλλη συσκευή.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other device to accept.</source>
+        <translation>Αναμονή να αποδεχτεί η άλλη συσκευή.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other side to accept the request on their device.</source>
+        <translation>Αναμονή να αποδεχτεί η άλλη πλευρά το αίτημα στη συσκευή της.</translation>
+    </message>
+    <message>
+        <source>Confirm that this is really your other device. Once verified, both can share room keys and older messages become readable.</source>
+        <translation>Επιβεβαίωσε ότι αυτή είναι πράγματι η άλλη σου συσκευή. Μετά την επαλήθευση και οι δύο μπορούν να μοιράζονται κλειδιά δωματίων, και τα παλαιότερα μηνύματα γίνονται αναγνώσιμα.</translation>
+    </message>
+    <message>
+        <source>Confirm that you are really talking to this person and not to someone in between.</source>
+        <translation>Επιβεβαίωσε ότι μιλάς πράγματι με αυτό το άτομο και όχι με κάποιον ενδιάμεσα.</translation>
+    </message>
+    <message>
+        <source>Both devices must show the same emoji, in the same order.</source>
+        <translation>Και οι δύο συσκευές πρέπει να δείχνουν τα ίδια emoji, με την ίδια σειρά.</translation>
+    </message>
+    <message>
+        <source>Verified.</source>
+        <translation>Επαληθεύτηκε.</translation>
+    </message>
+    <message>
+        <source>The verification was cancelled.</source>
+        <translation>Η επαλήθευση ακυρώθηκε.</translation>
+    </message>
+    <message>
+        <source>They do not match</source>
+        <translation>Δεν ταιριάζουν</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Απόρριψη</translation>
+    </message>
+    <message>
+        <source>They match</source>
+        <translation>Ταιριάζουν</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Αποδοχή</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Κλείσιμο</translation>
+    </message>
+</context>
+<context>
+    <name>VerifyUserPage</name>
+    <message>
+        <source>Verify user</source>
+        <translation>Επαλήθευση χρήστη</translation>
+    </message>
+    <message>
+        <source>Both sides then compare seven emoji. That is what says nobody is sitting in between — and it holds for every room you share with this person.</source>
+        <translation>Και οι δύο πλευρές συγκρίνουν μετά επτά emoji. Αυτό ακριβώς δείχνει ότι δεν κάθεται κανείς ενδιάμεσα — και ισχύει για κάθε δωμάτιο που μοιράζεσαι με αυτό το άτομο.</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Αναγνωριστικό χρήστη</translation>
+    </message>
+    <message>
+        <source>For example @anna:example.org or @tom:example.net</source>
+        <translation>Για παράδειγμα @anna:example.org ή @tom:example.net</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Επαλήθευση</translation>
+    </message>
+    <message>
+        <source>Your own device</source>
+        <translation>Η δική σου συσκευή</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Συγκρίνει επτά emoji με την άλλη σου συσκευή. Χρειάζεσαι εκείνη τη συσκευή μπροστά σου· μόλις επιβεβαιώσουν και οι δύο, αυτή εδώ μπορεί να διαβάσει τα κοινά κλειδιά δωματίων.</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Επαλήθευση αυτής της συσκευής</translation>
+    </message>
+</context>
+<context>
+    <name>VideoPage</name>
+    <message>
+        <source>Save</source>
+        <translation>Αποθήκευση</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Αυτό το συνημμένο δεν φορτώθηκε</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Αποθηκεύτηκε στις Λήψεις</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Η αποθήκευση απέτυχε</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Προώθηση</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceRecorder</name>
+    <message>
+        <source>Nothing was recorded.</source>
+        <translation>Δεν καταγράφηκε τίποτα.</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceTranscripts</name>
+    <message>
+        <source>This voice message has no file.</source>
+        <translation>Αυτό το φωνητικό μήνυμα δεν έχει αρχείο.</translation>
+    </message>
+    <message>
+        <source>The voice message is too long to convert.</source>
+        <translation>Το φωνητικό μήνυμα είναι πολύ μεγάλο για μετατροπή.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be downloaded.</source>
+        <translation>Δεν ήταν δυνατή η λήψη του φωνητικού μηνύματος.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be read.</source>
+        <translation>Δεν ήταν δυνατή η ανάγνωση του φωνητικού μηνύματος.</translation>
+    </message>
+    <message>
+        <source>This is not a voice message that can be converted.</source>
+        <translation>Αυτό δεν είναι φωνητικό μήνυμα που μπορεί να μετατραπεί.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be decoded.</source>
+        <translation>Δεν ήταν δυνατή η αποκωδικοποίηση του φωνητικού μηνύματος.</translation>
+    </message>
+    <message>
+        <source>Converting took too long and was stopped.</source>
+        <translation>Η μετατροπή κράτησε πολύ και διακόπηκε.</translation>
+    </message>
+    <message>
+        <source>Speech Note is not installed, or its service does not start.</source>
+        <translation>Το Speech Note δεν είναι εγκατεστημένο ή η υπηρεσία του δεν ξεκινά.</translation>
+    </message>
+    <message>
+        <source>Speech Note has no model that recognises the language by itself. Download &quot;Auto (WhisperCpp Small)&quot; in Speech Note.</source>
+        <translation>Το Speech Note δεν έχει μοντέλο που αναγνωρίζει μόνο του τη γλώσσα. Κατέβασε το «Auto (WhisperCpp Small)» στο Speech Note.</translation>
+    </message>
+    <message>
+        <source>The speech service is busy. Try again in a moment.</source>
+        <translation>Η υπηρεσία ομιλίας είναι απασχολημένη. Δοκίμασε ξανά σε λίγο.</translation>
+    </message>
+    <message>
+        <source>The speech service refused the voice message.</source>
+        <translation>Η υπηρεσία ομιλίας απέρριψε το φωνητικό μήνυμα.</translation>
+    </message>
+    <message>
+        <source>The speech service reported an error.</source>
+        <translation>Η υπηρεσία ομιλίας ανέφερε σφάλμα.</translation>
+    </message>
+    <message>
+        <source>Everything works: voice messages can be converted.</source>
+        <translation>Όλα λειτουργούν: τα φωνητικά μηνύματα μπορούν να μετατραπούν.</translation>
+    </message>
+    <message>
+        <source>No speech was recognised.</source>
+        <translation>Δεν αναγνωρίστηκε ομιλία.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages may not talk to the speech service. Reinstalling Shoal Messages puts the permission back.</source>
+        <translation>Το Shoal Messages δεν επιτρέπεται να επικοινωνεί με την υπηρεσία ομιλίας. Η επανεγκατάσταση του Shoal Messages επαναφέρει την άδεια.</translation>
+    </message>
+    <message>
+        <source>The speech service does not answer.</source>
+        <translation>Η υπηρεσία ομιλίας δεν απαντά.</translation>
+    </message>
+</context>
+<context>
+    <name>shipwright-shoal-messages</name>
+    <message numerus="yes">
+        <source>%n mention(s)</source>
+        <translation>
+            <numerusform>%n αναφορά</numerusform>
+            <numerusform>%n αναφορές</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new message(s)</source>
+        <translation>
+            <numerusform>%n νέο μήνυμα</numerusform>
+            <numerusform>%n νέα μηνύματα</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Εισερχόμενη βιντεοκλήση</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Εισερχόμενη κλήση</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Νέο μήνυμα</translation>
+    </message>
+</context>
+</TS>

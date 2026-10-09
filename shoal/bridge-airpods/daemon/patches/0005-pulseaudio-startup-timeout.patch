@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 21:07:58 +0000
+Subject: [PATCH] Do not hang at startup when PulseAudio is not ready
+
+PulseAudioClient::WaitReady() has a 3 second timeout, but it drives the
+main loop with pa_mainloop_iterate(ml, 1, ...), which blocks until an
+event arrives. When the connection attempt never progresses (no
+PulseAudio server yet, as can happen early in a session) the call never
+returns, the timeout is never checked, and the daemon never finishes
+initialising: port 2020 is bound but every WebSocket client hangs.
+
+Poll with the remaining time as the limit instead, and log why the
+PulseAudio connection is unavailable. The daemon then starts without
+PulseAudio; only Bluetooth profile switching is affected.
+---
+ src/pulseaudio/PulseAudioClient.cpp | 27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
+
+diff --git a/src/pulseaudio/PulseAudioClient.cpp b/src/pulseaudio/PulseAudioClient.cpp
+index 6cbcefa..95367c2 100644
+--- a/src/pulseaudio/PulseAudioClient.cpp
++++ b/src/pulseaudio/PulseAudioClient.cpp
+@@ -194,13 +194,32 @@ namespace MagicPodsCore
+ 
+     bool PulseAudioClient::WaitReady(std::chrono::milliseconds timeout)
+     {
+-        const auto start = std::chrono::steady_clock::now();
++        // pa_mainloop_iterate(ml, 1, ...) blocks until an event arrives, so a
++        // connection attempt that never progresses (no PulseAudio server yet)
++        // would hang here forever and the timeout would never be checked.
++        // Poll with the remaining time as the limit instead.
++        const auto deadline = std::chrono::steady_clock::now() + timeout;
+         while (true) {
+-            pa_mainloop_iterate(ml, 1, nullptr);
+             const auto st = pa_context_get_state(ctx);
+             if (st == PA_CONTEXT_READY) return true;
+-            if (st == PA_CONTEXT_FAILED || st == PA_CONTEXT_TERMINATED) return false;
+-            if (std::chrono::steady_clock::now() - start > timeout) return false;
++            if (st == PA_CONTEXT_FAILED || st == PA_CONTEXT_TERMINATED) {
++                Logger::Error("PulseAudio connection failed: %s; Bluetooth profile switching is unavailable",
++                              pa_strerror(pa_context_errno(ctx)));
++                return false;
++            }
++
++            const auto remaining = std::chrono::duration_cast<std::chrono::microseconds>(
++                deadline - std::chrono::steady_clock::now());
++            if (remaining.count() <= 0) {
++                Logger::Error("PulseAudio not ready after %lld ms; Bluetooth profile switching is unavailable",
++                              static_cast<long long>(timeout.count()));
++                return false;
++            }
++
++            if (pa_mainloop_prepare(ml, static_cast<int>(remaining.count())) < 0 ||
++                pa_mainloop_poll(ml) < 0 ||
++                pa_mainloop_dispatch(ml) < 0)
++                return false;
+         }
+     }
+     void PulseAudioClient::StopLoop()

@@ -1,0 +1,131 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# shipwright-reef-installer: finishes installing Reef after the installer
+# RPM's own transaction has ended.
+#
+# Follows sailfishos-chum-gui-installer's bin/sailfishos-chum-gui-installer
+# (github.com/sailfishos-chum/sailfishos-chum-gui-installer, commit a757ca4):
+#   * started fully detached (setsid --fork) as the last act of %posttrans,
+#     because PackageKit cannot start a transaction while the RPM transaction
+#     that installed us is still open;
+#   * waits for the %posttrans shell (whose PID it is given) to exit;
+#   * refreshes only our repository with `pkcon repo-set-data <alias>
+#     refresh-now true`, retrying and escalating (TERM, then INT, then
+#     restarting packagekit) because pkcon occasionally hangs when hammered;
+#   * finally runs `pkcon -y install <client>` detached again, because
+#     installing the client obsoletes this package and deletes this file.
+# Additions for Reef: `rpm --import` of the signing key happens here, after
+# the RPM transaction (rpm cannot re-enter its database from a scriptlet),
+# and before the refresh so repository metadata and packages verify.
+#
+# usage: shipwright-reef-installer <posttrans PID> <logfile>
+# stdout and stderr are already redirected to the log by %posttrans.
+
+# -u only, on purpose: the refresh retry loop expects pkcon to fail and
+# time out, and every step's status is checked and logged explicitly.
+set -u
+
+called=shipwright-reef-installer
+REEF_CONF=${REEF_CONF:-/usr/share/shipwright-reef-installer/repo.conf}
+REPO_TOOL=${REPO_TOOL:-/usr/bin/shipwright-reef-repo}
+
+if [ $# != 2 ]; then
+  echo "[$called] expected 2 arguments (posttrans PID, logfile), got $#" >&2
+  exit 67
+fi
+ppid_wait=$1
+case "$ppid_wait" in
+  '' | *[!0-9]*)
+    echo "[$called] first argument $ppid_wait is not a PID" >&2
+    exit 68
+    ;;
+esac
+logfile=$2
+# shellcheck source-path=SCRIPTDIR source=../repo.conf
+. "$REEF_CONF"
+
+umask 022
+cd /
+
+log() {
+  # $1 priority (syslog number), rest message. To the log file and journal.
+  prio=$1
+  shift
+  printf '%s [%s] %s\n' "$(date -Iseconds)" "$called" "$*"
+  systemd-cat -t "$called" -p "$prio" printf '%s' "$*" 2>/dev/null || true
+}
+
+log 6 "started, logging to $logfile"
+# shellcheck disable=SC1091
+. /etc/os-release 2>/dev/null
+log 7 "os-release: ${ID:-?} ${VERSION_ID:-?} ${SAILFISH_FLAVOUR:-?}"
+log 7 "installed release per shipwright-reef-repo: $($REPO_TOOL release 2>&1)"
+log 7 "ssu lr entry: $(ssu lr 2>/dev/null | grep -F " $REEF_ALIAS " | tr -s ' ')"
+
+# 1. Let the RPM transaction that ran %posttrans finish (at most 10 s).
+i=0
+# shellcheck disable=SC2009 # busybox has no pgrep -x on older images
+while [ $i -lt 10 ] && ps -eo pid | grep -qx "[[:space:]]*$ppid_wait"; do
+  sleep 1
+  i=$((i + 1))
+done
+sleep 1
+# Most pkcon subcommands wait until the backend is idle, so this doubles as
+# a synchronisation point (the Chum installer uses `pkcon search name`).
+pkcon -p search name "$called" >/dev/null 2>&1
+
+# 2. Trust the Reef signing key.
+if $REPO_TOOL import-key; then
+  log 6 "imported $REEF_KEY_FILE"
+else
+  log 3 "rpm --import $REEF_KEY_FILE failed; packages from $REEF_ALIAS will not verify"
+fi
+
+# 3. Refresh our repository only, retrying as the Chum installer does.
+refresh="pkcon -pv repo-set-data $REEF_ALIAS refresh-now true"
+retc=1
+for attempt in 1 2 3 4; do
+  log 6 "[step 1/2] $refresh (attempt $attempt)"
+  $refresh
+  retc=$?
+  [ $retc = 0 ] && break
+  wait_s=$((attempt * 2 + 1))
+  case $attempt in
+    1) log 5 "refresh failed ($retc); retrying in $wait_s s" ;;
+    2)
+      log 4 "refresh failed ($retc); sending TERM to pkcon, retrying in $wait_s s"
+      killall -q -TERM pkcon
+      ;;
+    3)
+      log 4 "refresh failed ($retc); sending INT then TERM to pkcon"
+      killall -q -INT pkcon
+      sleep 2
+      killall -q -TERM pkcon
+      ;;
+    4)
+      log 3 "refresh failed ($retc); restarting packagekit and installing anyway"
+      killall -q -KILL pkcon
+      pkcon -p quit >/dev/null 2>&1
+      systemctl restart packagekit.service
+      ;;
+  esac
+  sleep $wait_s
+done
+
+# 4. Install the client, detached: installing it removes this script.
+install="pkcon -pvy install $REEF_CLIENT_PACKAGE"
+# shellcheck disable=SC2016 # expanded by the inner shell, from its arguments
+setsid --fork sh -c '
+  sleep 1
+  i=0
+  while [ $i -le 9 ] && ps -eo pid | grep -qx "[[:space:]]*$1"; do sleep 1; i=$((i + 1)); done
+  printf "%s [%s] [step 2/2] %s\n" "$(date -Iseconds)" "$3" "$2"
+  systemd-cat -t "$3" -p 6 printf "%s" "executing: $2" 2>/dev/null
+  $2
+  printf "%s [%s] %s exited %s\n" "$(date -Iseconds)" "$3" "$2" "$?"
+' sh_reef_install "$$" "$install" "$called" >>"$logfile" 2>&1 </dev/null
+
+log 7 "main script finished (refresh exit $retc)"
+exit $retc

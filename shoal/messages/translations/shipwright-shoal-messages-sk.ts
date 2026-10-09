@@ -1,0 +1,3980 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modified by Shipwright, 2026: rebranded as Shoal Messages; see CHANGES-FROM-UPSTREAM.md. -->
+<!DOCTYPE TS>
+<TS version="2.1" language="sk">
+<context>
+    <name>AboutPage</name>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>O Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Verzia %1</translation>
+    </message>
+    <message>
+        <source>A native Matrix client for Sailfish OS: encrypted rooms, spaces, voice and video calls.</source>
+        <translation>Natívny klient Matrix pre Sailfish OS: šifrované miestnosti, priestory, hlasové a videohovory.</translation>
+    </message>
+    <message>
+        <source>License: Apache 2.0</source>
+        <translation>Licencia: Apache 2.0</translation>
+    </message>
+    <message>
+        <source>Source code</source>
+        <translation>Zdrojový kód</translation>
+    </message>
+</context>
+<context>
+    <name>AccountPage</name>
+    <message>
+        <source>Signed in</source>
+        <translation>Prihlásené</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Účet</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Zariadenie</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Jadro</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Display name</source>
+        <translation>Zobrazované meno</translation>
+    </message>
+    <message>
+        <source>Save name</source>
+        <translation>Uložiť meno</translation>
+    </message>
+    <message>
+        <source>Change avatar</source>
+        <translation>Zmeniť avatara</translation>
+    </message>
+    <message>
+        <source>Set avatar</source>
+        <translation>Nastaviť avatara</translation>
+    </message>
+    <message>
+        <source>An avatar is set. Other people see it next to your name.</source>
+        <translation>Avatar je nastavený. Ostatní ho vidia vedľa tvojho mena.</translation>
+    </message>
+    <message>
+        <source>This app</source>
+        <translation>Táto aplikácia</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Vzhľad</translation>
+    </message>
+    <message>
+        <source>Ignored users</source>
+        <translation>Ignorovaní používatelia</translation>
+    </message>
+    <message>
+        <source>Reset send warnings</source>
+        <translation>Vynulovať varovania pri odosielaní</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n recipient(s) will warn again</source>
+        <translation>
+            <numerusform>%n príjemca bude znovu varovať</numerusform>
+            <numerusform>%n príjemcovia budú znovu varovať</numerusform>
+            <numerusform>%n príjemcov bude znovu varovať</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No suppressed warnings</source>
+        <translation>Žiadne potlačené varovania</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Odhlásiť sa</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Šifrovanie</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Jazyk</translation>
+    </message>
+    <message>
+        <source>Privacy</source>
+        <translation>Súkromie</translation>
+    </message>
+    <message>
+        <source>Session and message database lie on this device unencrypted. Tap to encrypt them.</source>
+        <translation>Relácia a databáza správ ležia na tomto zariadení nezašifrované. Ťuknutím ich zašifruješ.</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Protokol chýb</translation>
+    </message>
+    <message>
+        <source>Push notifications</source>
+        <translation>Push oznámenia</translation>
+    </message>
+</context>
+<context>
+    <name>AddDirectoryServerDialog</name>
+    <message>
+        <source>Add</source>
+        <translation>Pridať</translation>
+    </message>
+    <message>
+        <source>Directory server</source>
+        <translation>Server katalógu</translation>
+    </message>
+    <message>
+        <source>For example matrix.org</source>
+        <translation>Napríklad matrix.org</translation>
+    </message>
+</context>
+<context>
+    <name>AddToSpacePage</name>
+    <message>
+        <source>Add rooms</source>
+        <translation>Pridať miestnosti</translation>
+    </message>
+    <message>
+        <source>Press and hold a room to add it to the space.</source>
+        <translation>Podrž miestnosť, aby si ju pridal do priestoru.</translation>
+    </message>
+    <message>
+        <source>Add to space</source>
+        <translation>Pridať do priestoru</translation>
+    </message>
+    <message>
+        <source>Adding to space</source>
+        <translation>Pridávanie do priestoru</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Žiadne miestnosti</translation>
+    </message>
+    <message>
+        <source>Join or start a chat first, then add it to a space.</source>
+        <translation>Najprv sa pripoj k rozhovoru alebo ho začni, potom ho pridaj do priestoru.</translation>
+    </message>
+</context>
+<context>
+    <name>AppearancePage</name>
+    <message>
+        <source>Reset to defaults</source>
+        <translation>Obnoviť predvolené</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Vzhľad</translation>
+    </message>
+    <message>
+        <source>Somebody</source>
+        <comment>sample sender on the appearance page</comment>
+        <translation>Niekto</translation>
+    </message>
+    <message>
+        <source>A received message looks like this.</source>
+        <translation>Prijatá správa vyzerá takto.</translation>
+    </message>
+    <message>
+        <source>And one of my own like this.</source>
+        <translation>A moja vlastná takto.</translation>
+    </message>
+    <message>
+        <source>Colouring</source>
+        <translation>Farby</translation>
+    </message>
+    <message>
+        <source>Their bubble</source>
+        <translation>Ich bublina</translation>
+    </message>
+    <message>
+        <source>My bubble</source>
+        <translation>Moja bublina</translation>
+    </message>
+    <message>
+        <source>Sender name</source>
+        <translation>Meno odosielateľa</translation>
+    </message>
+    <message>
+        <source>Their text</source>
+        <translation>Ich text</translation>
+    </message>
+    <message>
+        <source>My text</source>
+        <translation>Môj text</translation>
+    </message>
+    <message>
+        <source>Follow the ambience</source>
+        <translation>Riadiť sa ambientom</translation>
+    </message>
+    <message>
+        <source>Off, the colour below applies</source>
+        <translation>Vypnuté: platí farba nižšie</translation>
+    </message>
+    <message>
+        <source>Bubble opacity</source>
+        <translation>Priehľadnosť bublín</translation>
+    </message>
+    <message>
+        <source>Off, a reaction is drawn as the character it is - always right and free. On, Shoal Messages looks for a picture of your own for it in %1, named after its code points (1f44d.svg). Nothing is shipped and nothing is downloaded. Weigh it up: a picture file is opened by an image decoder, which is where an app of this kind is most exposed.</source>
+        <translation>Vypnuté sa reakcia kreslí ako znak, ktorým je — vždy správne a zadarmo. Zapnuté Shoal Messages pre ňu hľadá tvoj vlastný obrázok v %1, pomenovaný podľa jej kódových bodov (1f44d.svg). Nič sa nedodáva ani nesťahuje. Zváž to: obrázkový súbor otvára dekodér obrázkov, a tam je aplikácia tohto druhu najzraniteľnejšia.</translation>
+    </message>
+    <message>
+        <source>Reading the pictures…</source>
+        <translation>Načítavajú sa obrázky…</translation>
+    </message>
+    <message>
+        <source>%1 taken over, %2 refused</source>
+        <translation>%1 prevzatých, %2 odmietnutých</translation>
+    </message>
+    <message>
+        <source>The pictures have changed since they were read in and are not shown.</source>
+        <translation>Obrázky sa od načítania zmenili a nezobrazujú sa.</translation>
+    </message>
+    <message>
+        <source>Reset colours to defaults</source>
+        <translation>Obnoviť predvolené farby</translation>
+    </message>
+    <message>
+        <source>Hide the keyboard after sending</source>
+        <translation>Skryť klávesnicu po odoslaní</translation>
+    </message>
+    <message>
+        <source>On, the keyboard closes once a message is out and the conversation is back in full. Off, it stays up for the next one.</source>
+        <translation>Zapnuté: klávesnica sa zavrie, len čo správa odíde, a konverzácia je zase celá vidieť. Vypnuté: zostane otvorená pre ďalšiu správu.</translation>
+    </message>
+    <message>
+        <source>Open a room where you stopped reading</source>
+        <translation>Otvoriť miestnosť tam, kde si prestal čítať</translation>
+    </message>
+    <message>
+        <source>Read in an emoji pack</source>
+        <translation>Načítať balíček emoji</translation>
+    </message>
+    <message>
+        <source>Remove the emoji pack</source>
+        <translation>Odstrániť balíček emoji</translation>
+    </message>
+    <message>
+        <source>No pictures read in yet - emoji stay the characters they are, in black and white.</source>
+        <translation>Zatiaľ neboli načítané žiadne obrázky - emoji zostávajú znakmi, čiernobielymi.</translation>
+    </message>
+    <message>
+        <source>Pictures ready: %1</source>
+        <translation>Pripravené obrázky: %1</translation>
+    </message>
+    <message>
+        <source>Unpack the pack anywhere in your own folders - Downloads or Public, say. This opens at your home folder; tap through to the pack, and the folder holding the pictures is read in as soon as you tap it. They have to lie directly in it, not in subfolders. Reading runs in the background and copies them into Shoal Messages' own storage, so your folder is not needed afterwards.</source>
+        <translation>Rozbaľ balíček kamkoľvek do vlastných priečinkov - napríklad Downloads alebo Public. Toto sa otvára v tvojom domovskom priečinku; preklikaj sa k balíčku a priečinok s obrázkami sa načíta, len čo naň ťukneš. Musia byť priamo v ňom, nie v podpriečinkoch. Načítava sa na pozadí a obrázky sa skopírujú do vlastného úložiska Shoal Messages, tvoj priečinok potom už netreba.</translation>
+    </message>
+    <message>
+        <source>Reactions as pictures (emoji)</source>
+        <translation>Reakcie ako obrázky (emoji)</translation>
+    </message>
+    <message>
+        <source>Send with the return key</source>
+        <translation>Odosielať klávesom Enter</translation>
+    </message>
+    <message>
+        <source>On, the return key sends the message; the arrow beside the field keeps working. A line break then comes from holding that arrow, or from shift and the return key on a hardware keyboard. Off, the return key makes a line break and only the arrow sends.</source>
+        <translation>Zapnuté, kláves Enter odošle správu; šípka vedľa poľa funguje ďalej. Nový riadok potom vznikne podržaním tejto šípky alebo Shiftom a Enterom na hardvérovej klávesnici. Vypnuté, kláves Enter vloží nový riadok a odosiela len šípka.</translation>
+    </message>
+    <message>
+        <source>Mark the space on the picture</source>
+        <translation>Označiť priestor na obrázku</translation>
+    </message>
+    <message>
+        <source>On, the chat list draws the initial of a room&apos;s space over its picture, in that space&apos;s colour. The colour is set in the space list, by holding the space.</source>
+        <translation>Zapnuté, zoznam četov vykreslí počiatočné písmeno priestoru miestnosti cez jej obrázok, farbou daného priestoru. Farbu nastavíš v zozname priestorov podržaním priestoru.</translation>
+    </message>
+    <message>
+        <source>On, entering a room takes you to your last read message, with the new ones below it — and back to the place you were at if you left the room in the middle of its history. That place is kept until the app is closed. Off, the room opens at its newest message and the line marking where you stopped is found by scrolling up.</source>
+        <translation>Zapnuté: po vstupe do miestnosti sa dostaneš k svojej poslednej prečítanej správe, nové sú pod ňou — a späť na miesto, kde si bol, ak si miestnosť opustil uprostred histórie. Toto miesto sa pamätá, kým aplikáciu nezavrieš. Vypnuté: miestnosť sa otvorí pri najnovšej správe a čiaru označujúcu, kde si skončil, nájdeš posunutím nahor.</translation>
+    </message>
+</context>
+<context>
+    <name>AttachmentPickerPage</name>
+    <message>
+        <source>All</source>
+        <translation>Všetky</translation>
+    </message>
+    <message>
+        <source>Pictures</source>
+        <translation>Obrázky</translation>
+    </message>
+    <message>
+        <source>Downloads</source>
+        <translation>Stiahnuté</translation>
+    </message>
+    <message>
+        <source>%1 selected</source>
+        <translation>Vybraté: %1</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Príloha</translation>
+    </message>
+    <message>
+        <source>Gallery</source>
+        <translation>Galéria</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>Súbory</translation>
+    </message>
+    <message>
+        <source>Home folder</source>
+        <translation>Domovský priečinok</translation>
+    </message>
+    <message>
+        <source>Other files</source>
+        <translation>Iné súbory</translation>
+    </message>
+    <message>
+        <source>No pictures here</source>
+        <translation>Tu nie sú žiadne obrázky</translation>
+    </message>
+    <message>
+        <source>Nothing here</source>
+        <translation>Tu nič nie je</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Videá</translation>
+    </message>
+    <message>
+        <source>Send text as a file</source>
+        <translation>Odoslať text ako súbor</translation>
+    </message>
+</context>
+<context>
+    <name>CallEngine</name>
+    <message>
+        <source>the camera did not start — continuing without video</source>
+        <translation>kamera sa nespustila — pokračujem bez videa</translation>
+    </message>
+    <message>
+        <source>GStreamer could not be started: %1</source>
+        <translation>GStreamer sa nepodarilo spustiť: %1</translation>
+    </message>
+    <message>
+        <source>This device has no WebRTC support.</source>
+        <translation>Toto zariadenie nepodporuje WebRTC.</translation>
+    </message>
+    <message>
+        <source>ready</source>
+        <translation>pripravené</translation>
+    </message>
+    <message>
+        <source>pipeline failed: %1</source>
+        <translation>zlyhala rúra: %1</translation>
+    </message>
+    <message>
+        <source>webrtcbin is missing</source>
+        <translation>chýba webrtcbin</translation>
+    </message>
+    <message>
+        <source>no camera — placing a voice call</source>
+        <translation>žiadna kamera — volám hlasovo</translation>
+    </message>
+    <message>
+        <source>the microphone could not be opened</source>
+        <translation>mikrofón sa nepodarilo otvoriť</translation>
+    </message>
+    <message>
+        <source>the session description could not be read</source>
+        <translation>popis relácie sa nepodarilo prečítať</translation>
+    </message>
+    <message>
+        <source>the other side sent an unreadable session description</source>
+        <translation>druhá strana poslala nečitateľný popis relácie</translation>
+    </message>
+    <message>
+        <source>the other side hung up</source>
+        <translation>druhá strana zložila</translation>
+    </message>
+    <message>
+        <source>the connection was lost</source>
+        <translation>spojenie sa stratilo</translation>
+    </message>
+    <message>
+        <source>connected</source>
+        <translation>spojené</translation>
+    </message>
+    <message>
+        <source>the call could not be carried on</source>
+        <translation>hovor sa nepodarilo pokračovať</translation>
+    </message>
+    <message>
+        <source>answered on another device</source>
+        <translation>prijaté na inom zariadení</translation>
+    </message>
+</context>
+<context>
+    <name>CallPage</name>
+    <message>
+        <source>Call</source>
+        <translation>Hovor</translation>
+    </message>
+    <message>
+        <source>Ringing…</source>
+        <translation>Zvoní…</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Prichádzajúci hovor</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Spájam…</translation>
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation>Spojené</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Prijať</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Odmietnuť</translation>
+    </message>
+    <message>
+        <source>Hang up</source>
+        <translation>Zložiť</translation>
+    </message>
+    <message>
+        <source>Accept without camera</source>
+        <translation>Prijať bez kamery</translation>
+    </message>
+    <message>
+        <source>Accept with camera</source>
+        <translation>Prijať s kamerou</translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Prichádzajúci videohovor</translation>
+    </message>
+    <message>
+        <source>Video calls are switched off in Privacy; this one is answered as a voice call.</source>
+        <translation>Videohovory sú v Súkromí vypnuté; tento sa prijme ako hlasový hovor.</translation>
+    </message>
+</context>
+<context>
+    <name>CameraCapturePage</name>
+    <message>
+        <source>The photo could not be saved.</source>
+        <translation>Fotku sa nepodarilo uložiť.</translation>
+    </message>
+    <message>
+        <source>The photo could not be taken.</source>
+        <translation>Fotku sa nepodarilo odfotiť.</translation>
+    </message>
+    <message>
+        <source>The camera is not available.</source>
+        <translation>Fotoaparát nie je dostupný.</translation>
+    </message>
+    <message>
+        <source>The camera is in use by the call.</source>
+        <translation>Fotoaparát používa hovor.</translation>
+    </message>
+    <message>
+        <source>Keep in the gallery</source>
+        <translation>Ponechať v galérii</translation>
+    </message>
+    <message>
+        <source>Otherwise the photo is deleted once it is sent.</source>
+        <translation>Inak sa fotka po odoslaní vymaže.</translation>
+    </message>
+    <message>
+        <source>Retake</source>
+        <translation>Znova</translation>
+    </message>
+    <message>
+        <source>Use</source>
+        <translation>Použiť</translation>
+    </message>
+</context>
+<context>
+    <name>ColorField</name>
+    <message>
+        <source>Hex code</source>
+        <translation>Šestnástkový kód</translation>
+    </message>
+</context>
+<context>
+    <name>ConfirmDialog</name>
+    <message>
+        <source>Keep</source>
+        <translation>Ponechať</translation>
+    </message>
+</context>
+<context>
+    <name>CoverPage</name>
+    <message>
+        <source>signing in…</source>
+        <translation>prihlasujem…</translation>
+    </message>
+    <message>
+        <source>not signed in</source>
+        <translation>neprihlásené</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — čakám na sieť</translation>
+    </message>
+    <message>
+        <source>no connection</source>
+        <translation>bez pripojenia</translation>
+    </message>
+</context>
+<context>
+    <name>CreatePollDialog</name>
+    <message>
+        <source>Create poll</source>
+        <translation>Vytvoriť anketu</translation>
+    </message>
+    <message>
+        <source>Question</source>
+        <translation>Otázka</translation>
+    </message>
+    <message>
+        <source>What are you asking?</source>
+        <translation>Na čo sa pýtaš?</translation>
+    </message>
+    <message>
+        <source>Answer %1</source>
+        <translation>Odpoveď %1</translation>
+    </message>
+    <message>
+        <source>Add answer</source>
+        <translation>Pridať odpoveď</translation>
+    </message>
+    <message>
+        <source>Allow several answers</source>
+        <translation>Povoliť viac odpovedí</translation>
+    </message>
+    <message>
+        <source>Everyone can then pick more than one answer.</source>
+        <translation>Každý si potom môže vybrať viac než jednu odpoveď.</translation>
+    </message>
+    <message>
+        <source>Hide results until the poll ends</source>
+        <translation>Skryť výsledky do ukončenia ankety</translation>
+    </message>
+    <message>
+        <source>A poll is not a secret ballot: who voted for what stays readable in the room.</source>
+        <translation>Anketa nie je tajné hlasovanie: kto čo zvolil, zostáva v miestnosti čitateľné.</translation>
+    </message>
+    <message>
+        <source>Clients keep the counts hidden until the poll ends, yours included. A convention every common client follows, not a lock.</source>
+        <translation>Klienti držia počty skryté až do ukončenia ankety, vrátane tvojho. Zvyklosť, ktorú bežné klienty dodržiavajú, nie zámok.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateRoomDialog</name>
+    <message>
+        <source>Create room</source>
+        <translation>Vytvoriť miestnosť</translation>
+    </message>
+    <message>
+        <source>Room name</source>
+        <translation>Názov miestnosti</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Téma</translation>
+    </message>
+    <message>
+        <source>What the room is about</source>
+        <translation>O čom je miestnosť</translation>
+    </message>
+    <message>
+        <source>Public room</source>
+        <translation>Verejná miestnosť</translation>
+    </message>
+    <message>
+        <source>Listed in your homeserver&apos;s room directory, and anyone who finds it can join. Off means invitation only.</source>
+        <translation>Je vidieť v katalógu miestností tvojho servera a ktokoľvek ju nájde, môže vstúpiť. Vypnuté znamená len na pozvanie.</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adresa</translation>
+    </message>
+    <message>
+        <source>Reachable as %1</source>
+        <translation>Dostupná ako %1</translation>
+    </message>
+    <message>
+        <source>The name people can use to find the room, without # and without the server part. Optional.</source>
+        <translation>Meno, pod ktorým sa dá miestnosť nájsť, bez # a bez serverovej časti. Nepovinné.</translation>
+    </message>
+    <message>
+        <source>Readable history</source>
+        <translation>Čitateľná história</translation>
+    </message>
+    <message>
+        <source>Everyone, without joining</source>
+        <translation>Všetci, aj bez vstupu</translation>
+    </message>
+    <message>
+        <source>Members, including earlier messages</source>
+        <translation>Členovia, vrátane skorších správ</translation>
+    </message>
+    <message>
+        <source>Members, from their invitation</source>
+        <translation>Členovia, od svojho pozvania</translation>
+    </message>
+    <message>
+        <source>Members, from their join</source>
+        <translation>Členovia, od svojho vstupu</translation>
+    </message>
+    <message>
+        <source>End-to-end encryption</source>
+        <translation>Šifrovanie end-to-end</translation>
+    </message>
+    <message>
+        <source>Unusual for a public room: everyone joining later reads along from their join onwards, and nothing before it.</source>
+        <translation>Pre verejnú miestnosť nezvyčajné: kto príde neskôr, číta od svojho vstupu a nič pred ním.</translation>
+    </message>
+    <message>
+        <source>Can only be decided now — encryption cannot be turned off again later.</source>
+        <translation>Dá sa rozhodnúť len teraz — šifrovanie sa už neskôr vypnúť nedá.</translation>
+    </message>
+    <message>
+        <source>Only moderators may write</source>
+        <translation>Písať smú len moderátori</translation>
+    </message>
+    <message>
+        <source>For an announcement room. Everyone else can read, but not write and not react.</source>
+        <translation>Pre oznamovaciu miestnosť. Ostatní môžu čítať, ale nie písať ani reagovať.</translation>
+    </message>
+    <message>
+        <source>Invited people get my rights</source>
+        <translation>Pozvaní dostanú moje práva</translation>
+    </message>
+    <message>
+        <source>Everyone invited below starts as an administrator. Later members do not.</source>
+        <translation>Každý pozvaný nižšie začína ako správca. Neskorší členovia nie.</translation>
+    </message>
+    <message>
+        <source>Keep on this server</source>
+        <translation>Ponechať na tomto serveri</translation>
+    </message>
+    <message>
+        <source>People on other servers cannot join, not even by invitation. Cannot be changed later.</source>
+        <translation>Ľudia z iných serverov nemôžu vstúpiť, ani na pozvanie. Neskôr sa to nedá zmeniť.</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Pozvať</translation>
+    </message>
+    <message>
+        <source>Matrix addresses, separated by commas</source>
+        <translation>Adresy Matrix oddelené čiarkami</translation>
+    </message>
+    <message>
+        <source>Invited as the room is created. You can invite more people later from the room&apos;s pulldown menu.</source>
+        <translation>Pozvaní pri vytvorení miestnosti. Ďalších ľudí môžeš pozvať neskôr z rozbaľovacej ponuky miestnosti.</translation>
+    </message>
+    <message>
+        <source>The room opens right away.</source>
+        <translation>Miestnosť sa hneď otvorí.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateSpaceDialog</name>
+    <message>
+        <source>Create space</source>
+        <translation>Vytvoriť priestor</translation>
+    </message>
+    <message>
+        <source>Space name</source>
+        <translation>Názov priestoru</translation>
+    </message>
+    <message>
+        <source>The space appears in the overview right away. It is private and holds no messages — it is a folder for rooms.</source>
+        <translation>Priestor sa hneď objaví v prehľade. Je súkromný a neobsahuje správy — je to priečinok na miestnosti.</translation>
+    </message>
+</context>
+<context>
+    <name>DirectoryPage</name>
+    <message>
+        <source>Remove this server</source>
+        <translation>Odobrať tento server</translation>
+    </message>
+    <message>
+        <source>Add directory server</source>
+        <translation>Pridať server katalógu</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Objavovať miestnosti</translation>
+    </message>
+    <message>
+        <source>Directory</source>
+        <translation>Katalóg</translation>
+    </message>
+    <message>
+        <source>Search the room directory</source>
+        <translation>Hľadať v katalógu miestností</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n člen</numerusform>
+            <numerusform>%n členovia</numerusform>
+            <numerusform>%n členov</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Vstúpiť</translation>
+    </message>
+    <message>
+        <source>Join (invitation required)</source>
+        <translation>Vstúpiť (vyžaduje pozvanie)</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Vstupujem</translation>
+    </message>
+    <message>
+        <source>No rooms found</source>
+        <translation>Nenašli sa žiadne miestnosti</translation>
+    </message>
+    <message>
+        <source>Public rooms of the chosen directory show up here.</source>
+        <translation>Verejné miestnosti zvoleného katalógu sa objavia tu.</translation>
+    </message>
+</context>
+<context>
+    <name>EmojiFolderPage</name>
+    <message>
+        <source>Where is the pack?</source>
+        <translation>Kde je balíček?</translation>
+    </message>
+    <message>
+        <source>Take this folder</source>
+        <translation>Vziať tento priečinok</translation>
+    </message>
+    <message>
+        <source>One level up</source>
+        <translation>O úroveň vyššie</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Tu nie sú žiadne priečinky</translation>
+    </message>
+    <message>
+        <source>The pull-down takes the folder you are in.</source>
+        <translation>Rozbaľovacia ponuka vezme priečinok, v ktorom si.</translation>
+    </message>
+    <message>
+        <source>Pictures in here - tap to read them in</source>
+        <translation>Obrázky tu - ťuknutím načítaš</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptStorageDialog</name>
+    <message>
+        <source>Sign out and encrypt</source>
+        <translation>Odhlásiť sa a zašifrovať</translation>
+    </message>
+    <message>
+        <source>Leave as it is</source>
+        <translation>Nechať tak, ako je</translation>
+    </message>
+    <message>
+        <source>An existing database cannot be encrypted in place. It has to be created anew: signing out deletes it, and the next sign-in creates it encrypted.</source>
+        <translation>Existujúcu databázu sa nedá zašifrovať na mieste. Musí vzniknúť nanovo: odhlásenie ju zmaže a ďalšie prihlásenie ju vytvorí zašifrovanú.</translation>
+    </message>
+    <message>
+        <source>You will need your recovery key afterwards to unlock the backup, and this device has to be verified again. Have the recovery key at hand before you continue.</source>
+        <translation>Potom budeš potrebovať svoj obnovovací kľúč na odomknutie zálohy a toto zariadenie bude treba znovu overiť. Maj kľúč po ruke, než budeš pokračovať.</translation>
+    </message>
+    <message>
+        <source>Not possible yet: there is no key backup on the server. Signing out now would make every encrypted message on this device unreadable for good. Set up the backup first, then come back here.</source>
+        <translation>Zatiaľ nemožné: na serveri nie je záloha kľúčov. Odhlásenie teraz by natrvalo znečitateľnilo každú šifrovanú správu v tomto zariadení. Najprv nastav zálohu a potom sa sem vráť.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>V tejto verzii Sailfishu prehliadač nedokáže prihlásenie dokončiť. Vráť sa cez „Prihlásiť sa na inom zariadení“ — táto cesta tu funguje.</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptionPage</name>
+    <message>
+        <source>Encryption</source>
+        <translation>Šifrovanie</translation>
+    </message>
+    <message>
+        <source>Encrypt local storage</source>
+        <translation>Zašifrovať miestne úložisko</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Overiť</translation>
+    </message>
+    <message>
+        <source>Unlock backup</source>
+        <translation>Odomknúť zálohu</translation>
+    </message>
+    <message>
+        <source>Enter the recovery key from your other client. This device then fetches the room keys it is missing, and older messages become readable.</source>
+        <translation>Zadaj obnovovací kľúč zo svojho druhého klienta. Zariadenie potom stiahne chýbajúce kľúče miestností a staršie správy sa stanú čitateľnými.</translation>
+    </message>
+    <message>
+        <source>Recovery key</source>
+        <translation>Obnovovací kľúč</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Odomknúť</translation>
+    </message>
+    <message>
+        <source>Set up backup</source>
+        <translation>Nastaviť zálohu</translation>
+    </message>
+    <message>
+        <source>Creates a backup of your room keys on the server, encrypted with a recovery key that only you hold. Without it, reinstalling loses every encrypted message.</source>
+        <translation>Vytvorí na serveri zálohu tvojich kľúčov miestností, zašifrovanú obnovovacím kľúčom, ktorý máš len ty. Bez neho preinštalovanie stratí každú šifrovanú správu.</translation>
+    </message>
+    <message>
+        <source>Your recovery key</source>
+        <translation>Tvoj obnovovací kľúč</translation>
+    </message>
+    <message>
+        <source>Write this down now. It is shown only once and is not stored on this device.</source>
+        <translation>Zapíš si ho hneď. Zobrazí sa len raz a v zariadení sa neuchováva.</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopírovať</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Overiť toto zariadenie</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Porovná sedem emodži s tvojím druhým zariadením. Potrebuješ ho pred sebou; keď obe potvrdia, toto zariadenie môže čítať zdieľané kľúče miestností.</translation>
+    </message>
+    <message>
+        <source>Trouble with the key storage?</source>
+        <translation>Problémy s úložiskom kľúčov?</translation>
+    </message>
+</context>
+<context>
+    <name>ErrorLogPage</name>
+    <message>
+        <source>Clear</source>
+        <translation>Vyprázdniť</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>Kopírovať všetko</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Protokol chýb</translation>
+    </message>
+    <message>
+        <source>Nothing has failed in this run.</source>
+        <translation>V tomto behu nič nezlyhalo.</translation>
+    </message>
+    <message>
+        <source>Newest first, and only this run — nothing is kept on disk. Identifiers are already removed, so this can be passed on as it stands.</source>
+        <translation>Najnovšie hore, a len tento beh — na disku sa nič neuchováva. Identifikátory sú už odstránené, takže sa to dá odovzdať tak, ako je.</translation>
+    </message>
+</context>
+<context>
+    <name>ForwardPage</name>
+    <message>
+        <source>Forward to</source>
+        <translation>Preposlať</translation>
+    </message>
+</context>
+<context>
+    <name>IgnoredUsersPage</name>
+    <message>
+        <source>Ignored users</source>
+        <translation>Ignorovaní používatelia</translation>
+    </message>
+    <message>
+        <source>The list belongs to your account: the server stops delivering these people&apos;s messages, in every client. Tap somebody to stop ignoring them.</source>
+        <translation>Zoznam patrí tvojmu účtu: server prestane doručovať správy týchto ľudí, vo všetkých klientoch. Ťukni na niekoho, aby si ho prestal ignorovať.</translation>
+    </message>
+    <message>
+        <source>No longer ignoring</source>
+        <translation>Už nie je ignorovaný</translation>
+    </message>
+    <message>
+        <source>Nobody is ignored</source>
+        <translation>Nikto nie je ignorovaný</translation>
+    </message>
+    <message>
+        <source>You can ignore somebody from their profile.</source>
+        <translation>Niekoho môžeš ignorovať z jeho profilu.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageViewPage</name>
+    <message>
+        <source>Forward</source>
+        <translation>Preposlať</translation>
+    </message>
+    <message>
+        <source>Share</source>
+        <translation>Zdieľať</translation>
+    </message>
+    <message>
+        <source>Save to gallery</source>
+        <translation>Uložiť do galérie</translation>
+    </message>
+    <message>
+        <source>Share picture</source>
+        <translation>Zdieľať obrázok</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Uložené do galérie</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nepodarilo sa uložiť</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Túto prílohu sa nepodarilo načítať</translation>
+    </message>
+</context>
+<context>
+    <name>InviteToRoomDialog</name>
+    <message>
+        <source>Invite</source>
+        <translation>Pozvať</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>ID používateľa</translation>
+    </message>
+    <message>
+        <source>They appear in the member list as invited until they accept.</source>
+        <translation>V zozname členov sú vedení ako pozvaní, kým pozvanie neprijmú.</translation>
+    </message>
+</context>
+<context>
+    <name>JoinRoomDialog</name>
+    <message>
+        <source>Join</source>
+        <translation>Vstúpiť</translation>
+    </message>
+    <message>
+        <source>Room address</source>
+        <translation>Adresa miestnosti</translation>
+    </message>
+    <message>
+        <source>The room appears in the list once the server has answered. Joining a large public room can take a moment.</source>
+        <translation>Miestnosť sa objaví v zozname, len čo server odpovie. Vstup do veľkej verejnej miestnosti môže chvíľu trvať.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguagePage</name>
+    <message>
+        <source>Language</source>
+        <translation>Jazyk</translation>
+    </message>
+    <message>
+        <source>Takes effect the next time the app starts. Only the German translation has been checked by a native speaker; the others are machine translations, and English is always available here.</source>
+        <translation>Prejaví sa pri ďalšom spustení aplikácie. Len nemecký preklad skontroloval rodený hovorca; ostatné sú strojové, a angličtina je tu vždy k dispozícii.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguageSettings</name>
+    <message>
+        <source>Follow the device</source>
+        <translation>Podľa zariadenia</translation>
+    </message>
+</context>
+<context>
+    <name>LocationActions</name>
+    <message>
+        <source>Location is switched off or not allowed.</source>
+        <translation>Poloha je vypnutá alebo nie je povolená.</translation>
+    </message>
+    <message>
+        <source>The position could not be determined.</source>
+        <translation>Polohu sa nepodarilo určiť.</translation>
+    </message>
+    <message>
+        <source>No position yet. Outdoors it usually comes faster.</source>
+        <translation>Zatiaľ žiadna poloha. Vonku to zvyčajne ide rýchlejšie.</translation>
+    </message>
+    <message>
+        <source>This device offers no positioning.</source>
+        <translation>Toto zariadenie neponúka určovanie polohy.</translation>
+    </message>
+</context>
+<context>
+    <name>LocationBlock</name>
+    <message>
+        <source>Location</source>
+        <translation>Poloha</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Živá poloha</translation>
+    </message>
+    <message>
+        <source>Live location ended</source>
+        <translation>Živá poloha ukončená</translation>
+    </message>
+    <message>
+        <source>Waiting for the first position</source>
+        <translation>Čakám na prvú polohu</translation>
+    </message>
+    <message>
+        <source>Updated %1, until %2</source>
+        <translation>Aktualizované %1, do %2</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Ukončiť zdieľanie</translation>
+    </message>
+</context>
+<context>
+    <name>LoginPage</name>
+    <message>
+        <source>Sign in</source>
+        <translation>Prihlásiť sa</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pre Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Homeserver</source>
+        <translation>Domovský server</translation>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Používateľské meno</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Heslo</translation>
+    </message>
+    <message>
+        <source>Create account</source>
+        <translation>Vytvoriť účet</translation>
+    </message>
+    <message>
+        <source>Sign in on another device</source>
+        <translation>Prihlásiť sa na inom zariadení</translation>
+    </message>
+    <message>
+        <source>Finish signing in in the browser, then come back.</source>
+        <translation>Dokonči prihlásenie v prehliadači a potom sa vráť.</translation>
+    </message>
+    <message>
+        <source>Open this address on any other device and sign in there:</source>
+        <translation>Otvor túto adresu na ľubovoľnom inom zariadení a prihlás sa tam:</translation>
+    </message>
+    <message>
+        <source>This page signs in by itself as soon as the login is approved there.</source>
+        <translation>Táto stránka sa prihlási sama, len čo tam prihlásenie schváliš.</translation>
+    </message>
+    <message>
+        <source>Your password is entered on the homeserver&apos;s own page and never reaches this app.</source>
+        <translation>Svoje heslo zadávaš na vlastnej stránke domovského servera a nikdy sa nedostane do tejto aplikácie.</translation>
+    </message>
+    <message>
+        <source>This server uses the classic password sign-in. The password is sent only to this server and is never saved on the device.</source>
+        <translation>Tento server používa klasické prihlásenie heslom. Heslo sa posiela len na tento server a nikdy sa neukladá do zariadenia.</translation>
+    </message>
+    <message>
+        <source>Sign-in did not work</source>
+        <translation>Prihlásenie sa nepodarilo</translation>
+    </message>
+    <message>
+        <source>This is the server&apos;s own web sign-in. Your password is not wrong — the app cannot use this method yet.</source>
+        <translation>Toto je vlastné webové prihlásenie servera. Tvoje heslo nie je zlé — aplikácia tento spôsob zatiaľ nevie.</translation>
+    </message>
+    <message>
+        <source>Check the server address and your connection.</source>
+        <translation>Skontroluj adresu servera a svoje pripojenie.</translation>
+    </message>
+    <message>
+        <source>The server expects a sign-in this app does not implement.</source>
+        <translation>Server očakáva prihlásenie, ktoré táto aplikácia neimplementuje.</translation>
+    </message>
+    <message>
+        <source>Cancel sign-in</source>
+        <translation>Zrušiť prihlásenie</translation>
+    </message>
+    <message>
+        <source>This Sailfish version&apos;s browser cannot complete the sign-in of modern homeservers — it returns to the form. Use “Sign in on another device”: Shoal Messages shows an address and a code, you sign in with them on any other device, and this one signs in by itself.</source>
+        <translation>Prehliadač tejto verzie Sailfishu nedokáže dokončiť prihlásenie k moderným domovským serverom — vracia sa na formulár. Použi „Prihlásiť sa na inom zariadení“: Shoal Messages ukáže adresu a kód, prihlásiš sa s nimi na ľubovoľnom inom zariadení a toto sa prihlási samo.</translation>
+    </message>
+    <message>
+        <source>Sign in via browser</source>
+        <translation>Prihlásiť sa cez prehliadač</translation>
+    </message>
+</context>
+<context>
+    <name>LogoutDialog</name>
+    <message>
+        <source>Sign out</source>
+        <translation>Odhlásiť sa</translation>
+    </message>
+    <message>
+        <source>Stay signed in</source>
+        <translation>Zostať prihlásený</translation>
+    </message>
+    <message>
+        <source>Really sign out?</source>
+        <translation>Naozaj sa odhlásiť?</translation>
+    </message>
+    <message>
+        <source>This device&apos;s keys are deleted along with the session. Encrypted messages stay readable only if they are in a key backup, and this device has to be verified again after signing in.</source>
+        <translation>Kľúče tohto zariadenia sa zmažú spolu s reláciou. Šifrované správy zostanú čitateľné len vtedy, ak sú v zálohe kľúčov, a zariadenie bude po prihlásení treba znovu overiť.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>V tejto verzii Sailfishu prehliadač nedokáže prihlásenie dokončiť. Vráť sa cez „Prihlásiť sa na inom zariadení“ — táto cesta tu funguje.</translation>
+    </message>
+</context>
+<context>
+    <name>MatrixBridge</name>
+    <message>
+        <source>The protocol core could not be started.</source>
+        <translation>Jadro protokolu sa nepodarilo spustiť.</translation>
+    </message>
+    <message>
+        <source>The protocol core is not available.</source>
+        <translation>Jadro protokolu nie je dostupné.</translation>
+    </message>
+    <message>
+        <source>Enter a homeserver first.</source>
+        <translation>Najprv zadaj domovský server.</translation>
+    </message>
+    <message>
+        <source>Enter username and password first.</source>
+        <translation>Najprv zadaj používateľské meno a heslo.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key first.</source>
+        <translation>Najprv zadaj svoj obnovovací kľúč.</translation>
+    </message>
+    <message>
+        <source>The file could not be saved.</source>
+        <translation>Súbor sa nepodarilo uložiť.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a login page.</source>
+        <translation>Domovský server nevrátil prihlasovaciu stránku.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a sign-in code.</source>
+        <translation>Domovský server nevrátil prihlasovací kód.</translation>
+    </message>
+    <message>
+        <source>The stored lists cannot be read right now.</source>
+        <translation>Uložené zoznamy sa teraz nedajú prečítať.</translation>
+    </message>
+    <message>
+        <source>Your session has ended. Please sign in again.</source>
+        <translation>Tvoja relácia sa skončila. Prihlás sa znova.</translation>
+    </message>
+    <message>
+        <source>Enter a push gateway first.</source>
+        <translation>Najprv zadaj push bránu.</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Nová správa</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Obrázok</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Hlasová správa</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Súbor</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Poloha</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Šifrovaná správa</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Pozvanie</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Anketa</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Anketa: %1</translation>
+    </message>
+</context>
+<context>
+    <name>MemberListPage</name>
+    <message>
+        <source>Members</source>
+        <translation>Členovia</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>pozvaný</translation>
+    </message>
+    <message>
+        <source>Admin</source>
+        <translation>Správca</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderátor</translation>
+    </message>
+    <message>
+        <source>No members yet</source>
+        <translation>Zatiaľ žiadni členovia</translation>
+    </message>
+    <message>
+        <source>The people in this room show up here.</source>
+        <translation>Ľudia v tejto miestnosti sa objavia tu.</translation>
+    </message>
+</context>
+<context>
+    <name>MemberProfilePage</name>
+    <message>
+        <source>Admin</source>
+        <translation>Správca</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderátor</translation>
+    </message>
+    <message>
+        <source>Member</source>
+        <translation>Člen</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>pozvaný</translation>
+    </message>
+    <message>
+        <source>banned</source>
+        <translation>zablokovaný</translation>
+    </message>
+    <message>
+        <source>left the room</source>
+        <translation>opustil miestnosť</translation>
+    </message>
+    <message>
+        <source>Reload</source>
+        <translation>Načítať znovu</translation>
+    </message>
+    <message>
+        <source>Make moderator</source>
+        <translation>Urobiť moderátorom</translation>
+    </message>
+    <message>
+        <source>Make admin</source>
+        <translation>Urobiť správcom</translation>
+    </message>
+    <message>
+        <source>Really make this member an admin?</source>
+        <translation>Naozaj urobiť z tohto člena správcu?</translation>
+    </message>
+    <message>
+        <source>This cannot be taken back: only they themselves can step down afterwards.</source>
+        <translation>Nedá sa vziať späť: vzdať sa toho môže neskôr len on sám.</translation>
+    </message>
+    <message>
+        <source>Demote to member</source>
+        <translation>Znížiť na člena</translation>
+    </message>
+    <message>
+        <source>Revoke invitation</source>
+        <translation>Odvolať pozvanie</translation>
+    </message>
+    <message>
+        <source>Remove from room</source>
+        <translation>Odobrať z miestnosti</translation>
+    </message>
+    <message>
+        <source>Removing</source>
+        <translation>Odoberám</translation>
+    </message>
+    <message>
+        <source>Ban from room</source>
+        <translation>Zablokovať v miestnosti</translation>
+    </message>
+    <message>
+        <source>Really ban this member?</source>
+        <translation>Naozaj zablokovať tohto člena?</translation>
+    </message>
+    <message>
+        <source>%1 is removed from the room and cannot come back until the ban is lifted.</source>
+        <translation>%1 je odobratý z miestnosti a nemôže sa vrátiť, kým sa blokovanie nezruší.</translation>
+    </message>
+    <message>
+        <source>Ban</source>
+        <translation>Zablokovať</translation>
+    </message>
+    <message>
+        <source>Banning</source>
+        <translation>Blokujem</translation>
+    </message>
+    <message>
+        <source>Lift ban</source>
+        <translation>Zrušiť blokovanie</translation>
+    </message>
+    <message>
+        <source>Address copied</source>
+        <translation>Adresa skopírovaná</translation>
+    </message>
+    <message>
+        <source>Role</source>
+        <translation>Rola</translation>
+    </message>
+    <message>
+        <source>Member since</source>
+        <translation>Členom od</translation>
+    </message>
+    <message>
+        <source>Invited by</source>
+        <translation>Pozval</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>Zariadenia</translation>
+    </message>
+    <message>
+        <source>Send direct message</source>
+        <translation>Poslať priamu správu</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Overiť</translation>
+    </message>
+    <message>
+        <source>Withdraw verification</source>
+        <translation>Odvolať overenie</translation>
+    </message>
+    <message>
+        <source>Stop ignoring</source>
+        <translation>Prestať ignorovať</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation>Ignorovať</translation>
+    </message>
+    <message>
+        <source>Ignoring</source>
+        <translation>Ignorujem</translation>
+    </message>
+    <message>
+        <source>Shared rooms</source>
+        <translation>Spoločné miestnosti</translation>
+    </message>
+    <message>
+        <source>Forbid calls</source>
+        <translation>Zakázať hovory</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Povoliť hovory</translation>
+    </message>
+    <message>
+        <source>Identity</source>
+        <translation>Identita</translation>
+    </message>
+    <message>
+        <source>verified</source>
+        <translation>overená</translation>
+    </message>
+    <message>
+        <source>changed since it was verified — verify again or withdraw</source>
+        <translation>od overenia sa zmenila — over znova alebo overenie zruš</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>neoverená</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>žiadne</translation>
+    </message>
+    <message>
+        <source>Mention</source>
+        <translation>Spomenúť</translation>
+    </message>
+</context>
+<context>
+    <name>MessageActionsPage</name>
+    <message>
+        <source>Message</source>
+        <translation>Správa</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopírovať</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Odpovedať</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Uložiť</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Preposlať</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Upraviť</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Pripnúť</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Zmazať</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Zahodiť</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Odoslať znova</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reagovať</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Odpovedať vo vlákne</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Previesť na text</translation>
+    </message>
+</context>
+<context>
+    <name>MoveToSpacePage</name>
+    <message>
+        <source>Move to space</source>
+        <translation>Presunúť do priestoru</translation>
+    </message>
+    <message>
+        <source>No other space</source>
+        <translation>Žiadny iný priestor</translation>
+    </message>
+    <message>
+        <source>Create another space first to move rooms between them.</source>
+        <translation>Najprv vytvor ďalší priestor, aby si mohol miestnosti presúvať.</translation>
+    </message>
+</context>
+<context>
+    <name>NewChatDialog</name>
+    <message>
+        <source>Start chat</source>
+        <translation>Začať rozhovor</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>ID používateľa</translation>
+    </message>
+    <message>
+        <source>The other side receives an invitation and the chat appears in your list right away. Messages are encrypted from the start.</source>
+        <translation>Druhá strana dostane pozvanie a rozhovor sa hneď objaví v tvojom zozname. Správy sú šifrované od začiatku.</translation>
+    </message>
+</context>
+<context>
+    <name>PinnedMessagesPage</name>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Pripnuté správy</translation>
+    </message>
+    <message>
+        <source>Show in conversation</source>
+        <translation>Ukázať v rozhovore</translation>
+    </message>
+    <message>
+        <source>Unpin</source>
+        <translation>Odopnúť</translation>
+    </message>
+    <message>
+        <source>Pinned messages unavailable</source>
+        <translation>Pripnuté správy nie sú dostupné</translation>
+    </message>
+    <message>
+        <source>No pinned messages</source>
+        <translation>Žiadne pripnuté správy</translation>
+    </message>
+    <message>
+        <source>The server does not hand out these messages. They are older than this server&apos;s copy of the room.</source>
+        <translation>Server tieto správy nevydáva. Sú staršie než kópia miestnosti na tomto serveri.</translation>
+    </message>
+    <message>
+        <source>Long-press a message in the conversation to pin it.</source>
+        <translation>Podrž správu v rozhovore, aby si ju pripol.</translation>
+    </message>
+</context>
+<context>
+    <name>PollBlock</name>
+    <message>
+        <source>The poll has ended.</source>
+        <translation>Anketa bola ukončená.</translation>
+    </message>
+    <message>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>Results are shown once the poll ends</source>
+        <translation>Výsledky sa zobrazia po ukončení ankety</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n vote(s)</source>
+        <translation>
+            <numerusform>%n hlas</numerusform>
+            <numerusform>%n hlasy</numerusform>
+            <numerusform>%n hlasov</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Ended</source>
+        <translation>Ukončená</translation>
+    </message>
+    <message>
+        <source>Several answers</source>
+        <translation>Viac odpovedí</translation>
+    </message>
+    <message>
+        <source>End poll</source>
+        <translation>Ukončiť anketu</translation>
+    </message>
+</context>
+<context>
+    <name>Preview</name>
+    <message>
+        <source>Picture</source>
+        <translation>Obrázok</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Hlasová správa</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Súbor</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Poloha</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Anketa: %1</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Anketa</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Šifrovaná správa</translation>
+    </message>
+</context>
+<context>
+    <name>PrivacyPage</name>
+    <message>
+        <source>Privacy</source>
+        <translation>Súkromie</translation>
+    </message>
+    <message>
+        <source>Who may call you</source>
+        <translation>Kto ti smie volať</translation>
+    </message>
+    <message>
+        <source>Everyone</source>
+        <translation>Všetci</translation>
+    </message>
+    <message>
+        <source>People you have a direct chat with</source>
+        <translation>Ľudia, s ktorými máš priamy rozhovor</translation>
+    </message>
+    <message>
+        <source>Only my list</source>
+        <translation>Len môj zoznam</translation>
+    </message>
+    <message>
+        <source>Calls from group rooms</source>
+        <translation>Hovory zo skupinových miestností</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Videohovory</translation>
+    </message>
+    <message>
+        <source>Send read receipts</source>
+        <translation>Posielať potvrdenia o prečítaní</translation>
+    </message>
+    <message>
+        <source>Allowed callers</source>
+        <translation>Povolení volajúci</translation>
+    </message>
+    <message>
+        <source>Matrix address</source>
+        <translation>Adresa Matrix</translation>
+    </message>
+    <message>
+        <source>@name:server</source>
+        <translation>@name:server</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Povoliť hovory</translation>
+    </message>
+    <message>
+        <source>Nobody yet.</source>
+        <translation>Zatiaľ nikto.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Odstrániť</translation>
+    </message>
+    <message>
+        <source>A call rings past a muted room. Refused calls never ring, and the caller learns nothing.</source>
+        <translation>Hovor zvoní aj v stíšenej miestnosti. Odmietnuté nezvonia a volajúci sa nič nedozvie.</translation>
+    </message>
+    <message>
+        <source>In a group room everybody sees the call. The list does not override this.</source>
+        <translation>V skupinovej miestnosti hovor vidia všetci. Zoznam to neprebíja.</translation>
+    </message>
+    <message>
+        <source>They may always call. The list stays on this device.</source>
+        <translation>Volať môžu vždy. Zoznam zostáva v tomto zariadení.</translation>
+    </message>
+    <message>
+        <source>On this device</source>
+        <translation>V tomto zariadení</translation>
+    </message>
+    <message>
+        <source>What others learn</source>
+        <translation>Čo sa dozvedia ostatní</translation>
+    </message>
+    <message>
+        <source>Message text in notifications</source>
+        <translation>Text správy v oznámeniach</translation>
+    </message>
+    <message>
+        <source>Off, a notification says only how many messages arrived. On, it shows the latest message — also on the lock screen.</source>
+        <translation>Vypnuté: oznámenie povie len, koľko správ prišlo. Zapnuté: ukáže poslednú správu — aj na uzamknutej obrazovke.</translation>
+    </message>
+    <message>
+        <source>Show others&apos; read status</source>
+        <translation>Zobrazovať stav prečítania ostatných</translation>
+    </message>
+    <message>
+        <source>Voice messages</source>
+        <translation>Hlasové správy</translation>
+    </message>
+    <message>
+        <source>Tappable web links</source>
+        <translation>Klikateľné webové odkazy</translation>
+    </message>
+    <message>
+        <source>On, a link in a message opens the browser when tapped. Off, links stay plain text.</source>
+        <translation>Zapnuté: odkaz v správe po ťuknutí otvorí prehliadač. Vypnuté: odkazy zostanú obyčajným textom.</translation>
+    </message>
+    <message>
+        <source>Delete media now</source>
+        <translation>Zmazať médiá teraz</translation>
+    </message>
+    <message>
+        <source>Delete downloaded media</source>
+        <translation>Mazanie stiahnutých médií</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Nikdy</translation>
+    </message>
+    <message>
+        <source>When the app is closed</source>
+        <translation>Pri zatvorení aplikácie</translation>
+    </message>
+    <message>
+        <source>As soon as the app is not in front</source>
+        <translation>Hneď ako aplikácia nie je vpredu</translation>
+    </message>
+    <message>
+        <source>By default they are deleted when you sign out, so save what you want to keep.</source>
+        <translation>Predvolene sa zmažú pri odhlásení, tak si ulož, čo si chceš nechať.</translation>
+    </message>
+    <message>
+        <source>&quot;Never&quot; keeps them for good - convenient, and not recommended.</source>
+        <translation>„Nikdy“ ich nechá navždy — pohodlné a neodporúčané.</translation>
+    </message>
+    <message>
+        <source>Anything deleted is fetched again when you open it.</source>
+        <translation>Zmazané sa stiahne znova pri otvorení.</translation>
+    </message>
+    <message>
+        <source>When you sign out</source>
+        <translation>Pri odhlásení</translation>
+    </message>
+    <message>
+        <source>Limit repeated calls</source>
+        <translation>Obmedziť opakované hovory</translation>
+    </message>
+    <message>
+        <source>On, the same person can only ring again after a short pause. It also delays a second, genuine attempt.</source>
+        <translation>Zapnuté: ten istý človek môže zavolať znova až po krátkej pauze. Zdrží to aj druhý, skutočný pokus.</translation>
+    </message>
+    <message>
+        <source>Messages and keys are stored encrypted.</source>
+        <translation>Správy a kľúče sú uložené šifrovane.</translation>
+    </message>
+    <message>
+        <source>Messages and keys lie on this device unencrypted - the encryption page says why and what can be done about it.</source>
+        <translation>Správy a kľúče ležia na tomto zariadení nešifrované — stránka šifrovania hovorí prečo a čo sa s tým dá robiť.</translation>
+    </message>
+    <message>
+        <source>Pictures, videos and documents you opened are not - they lie on the device like the ones in the gallery, readable to anybody who has it.</source>
+        <translation>Otvorené obrázky, videá a dokumenty nie — ležia v zariadení ako tie v galérii, čitateľné pre každého, kto ho má.</translation>
+    </message>
+    <message>
+        <source>Off, an offer with video is answered as a voice call: your camera stays shut and no picture is shown. The other side may still send one, which this phone discards.</source>
+        <translation>Vypnuté: ponuka s videom sa prijme ako hlasový hovor — tvoj fotoaparát zostane zatvorený a žiadny obraz sa nezobrazí. Druhá strana ho napriek tomu môže posielať a tento telefón ho zahodí.</translation>
+    </message>
+    <message>
+        <source>Off, nobody is told how far you have read. What others read is the setting below.</source>
+        <translation>Vypnuté: nikto sa nedozvie, kam až si čítal. Čo čítali ostatní, riadi nastavenie nižšie.</translation>
+    </message>
+    <message>
+        <source>The list is encrypted and its key is not available. It can be read again after the device has been unlocked and the app restarted.</source>
+        <translation>Zoznam je šifrovaný a jeho kľúč nie je k dispozícii. Bude znovu čitateľný po odomknutí zariadenia a reštarte aplikácie.</translation>
+    </message>
+    <message>
+        <source>Load pictures automatically</source>
+        <translation>Automaticky načítať obrázky</translation>
+    </message>
+    <message>
+        <source>On, a picture or video loads as soon as its message appears. Off, it loads when you tap it — scrolling past one is a request to the sender&apos;s server.</source>
+        <translation>Zapnuté: obrázok alebo video sa načíta hneď, ako sa správa objaví. Vypnuté: načíta sa po ťuknutí — prejsť okolo znamená požiadavku na server odosielateľa.</translation>
+    </message>
+    <message>
+        <source>Link previews</source>
+        <translation>Náhľady odkazov</translation>
+    </message>
+    <message>
+        <source>Your homeserver fetches the page and shows its title. It learns every link it is asked about; in an encrypted room that is content it otherwise never sees.</source>
+        <translation>Tvoj domovský server stiahne stránku a zobrazí jej titulok. Dozvie sa tak o každom odkaze, na ktorý sa ho opýtaš; v šifrovanej miestnosti je to obsah, ktorý inak nikdy nevidí.</translation>
+    </message>
+    <message>
+        <source>Only in unencrypted rooms</source>
+        <translation>Len v nešifrovaných miestnostiach</translation>
+    </message>
+    <message>
+        <source>Always</source>
+        <translation>Vždy</translation>
+    </message>
+    <message>
+        <source>Voice messages as text</source>
+        <translation>Hlasové správy ako text</translation>
+    </message>
+    <message>
+        <source>Convert voice messages to text</source>
+        <translation>Prevádzať hlasové správy na text</translation>
+    </message>
+    <message>
+        <source>On, a long press on a voice message offers to convert it. Nothing is converted unless you ask, and the recording never leaves this phone.</source>
+        <translation>Zapnuté dlhé podržanie hlasovej správy ponúkne jej prevod. Nič sa neprevádza, kým o to nepožiadaš, a nahrávka nikdy neopustí tento telefón.</translation>
+    </message>
+    <message>
+        <source>This needs a program this app does not bring, from OpenRepos, installed by you: &quot;Speech Note&quot; (about 40 MB to download, 104 MB installed), and in it the model &quot;Auto (WhisperCpp Small)&quot; (190 MB), which recognises the language of each message by itself. Only on 64-bit phones.</source>
+        <translation>Na to treba program, ktorý táto aplikácia nemá, z OpenRepos, nainštalovaný tebou: „Speech Note“ (asi 40 MB na stiahnutie, 104 MB po inštalácii) a v ňom model „Auto (WhisperCpp Small)“ (190 MB), ktorý sám rozpozná jazyk každej správy. Len na 64-bitových telefónoch.</translation>
+    </message>
+    <message>
+        <source>Check</source>
+        <translation>Skontrolovať</translation>
+    </message>
+    <message>
+        <source>Checking. The first time can take half a minute.</source>
+        <translation>Prebieha kontrola. Prvýkrát to môže trvať pol minúty.</translation>
+    </message>
+    <message>
+        <source>On, a microphone sits next to the message field: hold it to record, let go to send - or tap it to record hands-free, and a second tap or seven seconds of silence sends. Off, it is not there.</source>
+        <translation>Zapnuté je vedľa poľa správy mikrofón: podrž pre nahrávanie, pusti pre odoslanie – alebo ťukni pre nahrávanie bez držania a druhé ťuknutie alebo sedem sekúnd ticha odošle. Vypnuté tam nie je.</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Poloha</translation>
+    </message>
+    <message>
+        <source>Share your location</source>
+        <translation>Zdieľať svoju polohu</translation>
+    </message>
+    <message>
+        <source>On, a room&apos;s pull-down menu offers to send your position, once or live for a while. Nothing is sent unless you choose it there.</source>
+        <translation>Keď je zapnuté, rozbaľovacia ponuka miestnosti ponúka odoslanie tvojej polohy, raz alebo naživo na nejaký čas. Nič sa neodošle, ak to tam nezvolíš.</translation>
+    </message>
+    <message>
+        <source>Maps for locations</source>
+        <translation>Mapy pre polohy</translation>
+    </message>
+    <message>
+        <source>Map pieces come from OpenStreetMap. Its server learns your IP address and roughly where the location lies; in an encrypted room that is content it otherwise never sees. Without a map the coordinates are shown.</source>
+        <translation>Časti mapy pochádzajú z OpenStreetMap. Jeho server sa dozvie tvoju IP adresu a približne, kde poloha leží; v šifrovanej miestnosti je to obsah, ktorý inak nikdy nevidí. Bez mapy sa zobrazia súradnice.</translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation>Fotoaparát</translation>
+    </message>
+    <message>
+        <source>Live picture in the attachment picker</source>
+        <translation>Živý obraz vo výbere príloh</translation>
+    </message>
+    <message>
+        <source>On, the camera cell shows what the camera sees while the picker is open. Off, the camera only runs once you tap the cell.</source>
+        <translation>Zapnuté: dlaždica fotoaparátu ukazuje, čo fotoaparát vidí, kým je výber otvorený. Vypnuté: fotoaparát sa spustí až po ťuknutí na dlaždicu.</translation>
+    </message>
+    <message>
+        <source>Off, who read what is neither tracked nor shown, which also keeps the conversation smoother. On, your own messages say how many people have read them.</source>
+        <translation>Vypnuté sa nesleduje ani nezobrazuje, kto čo prečítal, čo udrží konverzáciu plynulejšou. Zapnuté tvoje správy ukazujú, koľko ľudí ich prečítalo.</translation>
+    </message>
+</context>
+<context>
+    <name>PushPage</name>
+    <message>
+        <source>Push notifications</source>
+        <translation>Push oznámenia</translation>
+    </message>
+    <message>
+        <source>Shoal Messages has no background service, so messages arrive only while it runs. A push distributor is a separate app that holds one connection for every app on the device and wakes them when something comes in.</source>
+        <translation>Shoal Messages nemá službu na pozadí, takže správy prídu len keď beží. Distribútor push je samostatná aplikácia, ktorá drží jedno spojenie pre všetky aplikácie v zariadení a budí ich, keď niečo príde.</translation>
+    </message>
+    <message>
+        <source>Receive push notifications</source>
+        <translation>Prijímať push oznámenia</translation>
+    </message>
+    <message>
+        <source>Distributor</source>
+        <translation>Distribútor</translation>
+    </message>
+    <message>
+        <source>No push distributor is installed. Without one there is nothing to hold the connection, and this stays off.</source>
+        <translation>Nie je nainštalovaný žiadny distribútor push. Bez neho nie je nič, čo by držalo spojenie, a toto zostane vypnuté.</translation>
+    </message>
+    <message>
+        <source>Registration</source>
+        <translation>Registrácia</translation>
+    </message>
+    <message>
+        <source>This device has an address to be reached at.</source>
+        <translation>Toto zariadenie má adresu, na ktorej je dosiahnuteľné.</translation>
+    </message>
+    <message>
+        <source>Waiting for the distributor.</source>
+        <translation>Čaká sa na distribútora.</translation>
+    </message>
+    <message>
+        <source>Not registered.</source>
+        <translation>Neregistrované.</translation>
+    </message>
+    <message>
+        <source>Gateway</source>
+        <translation>Brána</translation>
+    </message>
+    <message>
+        <source>A Matrix homeserver cannot talk to a push distributor directly, so it posts to a gateway that forwards. There is no default: it is the one thing nobody can guess for you.</source>
+        <translation>Matrix server nemôže hovoriť s distribútorom push priamo, posiela teda na bránu, ktorá to posunie ďalej. Predvolená hodnota neexistuje: to je jediná vec, ktorú za teba nikto neuhádne.</translation>
+    </message>
+    <message>
+        <source>Push gateway</source>
+        <translation>Push brána</translation>
+    </message>
+    <message>
+        <source>What leaves this device</source>
+        <translation>Čo opúšťa toto zariadenie</translation>
+    </message>
+    <message>
+        <source>Your homeserver is told an address at the push service, and posts a room and message identifier to the gateway for every notification. No message text: the push carries identifiers only and this device fetches and decrypts the message itself. That address is a secret — whoever holds it can send this phone a notification.</source>
+        <translation>Tvoj server sa dozvie adresu v službe push a ku každému oznámeniu pošle bráne identifikátor miestnosti a správy. Žiadny text: push nesie len identifikátory a správu si toto zariadenie stiahne a rozšifruje samo. Tá adresa je tajomstvo — kto ju má, môže tomuto telefónu poslať oznámenie.</translation>
+    </message>
+</context>
+<context>
+    <name>PushWake</name>
+    <message>
+        <source>New message</source>
+        <translation>Nová správa</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <source>no session description</source>
+        <translation>žiadny popis relácie</translation>
+    </message>
+</context>
+<context>
+    <name>ReactionDialog</name>
+    <message>
+        <source>React</source>
+        <translation>Reagovať</translation>
+    </message>
+    <message>
+        <source>Nothing kept here</source>
+        <translation>Nič tu nie je</translation>
+    </message>
+    <message>
+        <source>Press and hold an emoji in another tab to keep it here</source>
+        <translation>Podrž emodži na inej karte, aby sa sem uložilo</translation>
+    </message>
+    <message>
+        <source>Your own text</source>
+        <translation>Tvoj vlastný text</translation>
+    </message>
+    <message>
+        <source>Your text as reaction</source>
+        <translation>Tvoj text ako reakcia</translation>
+    </message>
+</context>
+<context>
+    <name>RoomActionsPage</name>
+    <message>
+        <source>Rooms</source>
+        <translation>Miestnosti</translation>
+    </message>
+    <message>
+        <source>New chat</source>
+        <translation>Nový rozhovor</translation>
+    </message>
+    <message>
+        <source>New room</source>
+        <translation>Nová miestnosť</translation>
+    </message>
+    <message>
+        <source>Join room</source>
+        <translation>Vstúpiť do miestnosti</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Objavovať miestnosti</translation>
+    </message>
+</context>
+<context>
+    <name>RoomDelegate</name>
+    <message>
+        <source>Invitation</source>
+        <translation>Pozvanie</translation>
+    </message>
+    <message>
+        <source>Replaced by a new room</source>
+        <translation>Nahradená novou miestnosťou</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Priestor</translation>
+    </message>
+</context>
+<context>
+    <name>RoomInfoPage</name>
+    <message>
+        <source>this room</source>
+        <translation>túto miestnosť</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Naozaj opustiť túto miestnosť?</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Miestnosť sa opustí a zabudne. Zmizne zo zoznamu rozhovorov a návrat si vyžaduje nové pozvanie alebo verejnú adresu.</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Opustiť</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Opúšťam miestnosť</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Opustiť miestnosť</translation>
+    </message>
+    <message>
+        <source>Room</source>
+        <translation>Miestnosť</translation>
+    </message>
+    <message>
+        <source>Replaced — open the new room</source>
+        <translation>Nahradená — otvoriť novú miestnosť</translation>
+    </message>
+    <message>
+        <source>Replaced — join the new room</source>
+        <translation>Nahradená — vstúpiť do novej miestnosti</translation>
+    </message>
+    <message>
+        <source>Older messages in the previous room</source>
+        <translation>Staršie správy v predchádzajúcej miestnosti</translation>
+    </message>
+    <message>
+        <source>People and messages</source>
+        <translation>Ľudia a správy</translation>
+    </message>
+    <message>
+        <source>Members: %1 (%2 invited)</source>
+        <translation>Členovia: %1 (pozvaných %2)</translation>
+    </message>
+    <message>
+        <source>Members: %1</source>
+        <translation>Členovia: %1</translation>
+    </message>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Pripnuté správy</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Pozvať</translation>
+    </message>
+    <message>
+        <source>This room for me</source>
+        <translation>Táto miestnosť pre mňa</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Oznámenia</translation>
+    </message>
+    <message>
+        <source>Stored with the account, so it holds in every client</source>
+        <translation>Ukladá sa k účtu, takže platí vo všetkých klientoch</translation>
+    </message>
+    <message>
+        <source>Account default</source>
+        <translation>Predvolené pre účet</translation>
+    </message>
+    <message>
+        <source>Every message</source>
+        <translation>Každá správa</translation>
+    </message>
+    <message>
+        <source>Only mentions and keywords</source>
+        <translation>Len zmienky a kľúčové slová</translation>
+    </message>
+    <message>
+        <source>Nothing (muted)</source>
+        <translation>Nič (stlmené)</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Obľúbená</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Nízka priorita</translation>
+    </message>
+    <message>
+        <source>Sorts to the bottom of the list and stays quiet</source>
+        <translation>Radí sa na koniec zoznamu a mlčí</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Podrobnosti</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Šifrovanie</translation>
+    </message>
+    <message>
+        <source>End-to-end encrypted</source>
+        <translation>Šifrované end-to-end</translation>
+    </message>
+    <message>
+        <source>Not encrypted</source>
+        <translation>Nešifrované</translation>
+    </message>
+    <message>
+        <source>Turning on encryption</source>
+        <translation>Zapínam šifrovanie</translation>
+    </message>
+    <message>
+        <source>Turn on encryption</source>
+        <translation>Zapnúť šifrovanie</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption?</source>
+        <translation>Znovu dohodnúť šifrovanie?</translation>
+    </message>
+    <message>
+        <source>The next message starts a new session and hands its key to every device in the room again. Messages already sent stay as they are; nothing of your own history is lost.</source>
+        <translation>Ďalšia správa začne novú reláciu a znovu odovzdá jej kľúč každému zariadeniu v miestnosti. Už odoslané správy zostanú bez zmeny; z tvojej histórie sa nič nestratí.</translation>
+    </message>
+    <message>
+        <source>Renegotiate</source>
+        <translation>Dohodnúť znovu</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption</source>
+        <translation>Znovu dohodnúť šifrovanie</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adresa</translation>
+    </message>
+    <message>
+        <source>Access</source>
+        <translation>Prístup</translation>
+    </message>
+    <message>
+        <source>Public</source>
+        <translation>Verejná</translation>
+    </message>
+    <message>
+        <source>On invitation</source>
+        <translation>Na pozvanie</translation>
+    </message>
+    <message>
+        <source>Room version</source>
+        <translation>Verzia miestnosti</translation>
+    </message>
+    <message>
+        <source>Room ID</source>
+        <translation>ID miestnosti</translation>
+    </message>
+    <message>
+        <source>Room ID copied</source>
+        <translation>ID miestnosti skopírované</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Upraviť miestnosť</translation>
+    </message>
+</context>
+<context>
+    <name>RoomListPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Naozaj odmietnuť toto pozvanie?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Naozaj opustiť túto miestnosť?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Pozvanie potom zmizne. Späť sa dostaneš, len ak ťa niekto pozve znovu.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Miestnosť sa opustí a zabudne. Zmizne zo zoznamu rozhovorov a návrat si vyžaduje nové pozvanie alebo verejnú adresu.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Odmietnuť</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Opustiť</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Odmietam</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Opúšťam miestnosť</translation>
+    </message>
+    <message>
+        <source>Rooms</source>
+        <translation>Miestnosti</translation>
+    </message>
+    <message>
+        <source>This homeserver is not supported</source>
+        <translation>Tento domovský server nie je podporovaný</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — čakám na sieť</translation>
+    </message>
+    <message>
+        <source>Your homeserver does not offer the sync this app needs (simplified sliding sync, MSC4186). Rooms cannot be loaded from it. A newer server version, or an account on a server that supports it, is required.</source>
+        <translation>Tvoj domovský server neponúka synchronizáciu, ktorú aplikácia potrebuje (simplified sliding sync, MSC4186). Miestnosti sa z neho nedajú načítať. Treba novšiu verziu servera alebo účet na serveri, ktorý ju podporuje.</translation>
+    </message>
+    <message>
+        <source>Search rooms</source>
+        <translation>Hľadať miestnosti</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Odobrať z obľúbených</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Obľúbená</translation>
+    </message>
+    <message>
+        <source>Normal priority</source>
+        <translation>Normálna priorita</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Nízka priorita</translation>
+    </message>
+    <message>
+        <source>Unmute</source>
+        <translation>Zrušiť stlmenie</translation>
+    </message>
+    <message>
+        <source>Mute</source>
+        <translation>Stlmiť</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Odmietnuť pozvanie</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Opustiť miestnosť</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Žiadne miestnosti</translation>
+    </message>
+    <message>
+        <source>Rooms you join show up here once the first sync is through.</source>
+        <translation>Miestnosti, do ktorých vstúpiš, sa objavia tu, len čo prebehne prvá synchronizácia.</translation>
+    </message>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>O Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Nastaviť ako úvodnú stránku</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Účet</translation>
+    </message>
+    <message>
+        <source>Mark as read</source>
+        <translation>Označiť ako prečítané</translation>
+    </message>
+    <message>
+        <source>%1 of %2 rooms</source>
+        <translation>%1 z %2 miestností</translation>
+    </message>
+    <message>
+        <source>Verify user</source>
+        <translation>Overiť používateľa</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Poškodené lokálne údaje</translation>
+    </message>
+    <message>
+        <source>Part of the data stored on this device cannot be read any more, and Shoal Messages has not been able to put it right while running — so it has stopped syncing rather than meet the same row again. Close the app and start it again. If rooms are still missing afterwards, signing out and in rebuilds the local data — but it replaces this device&apos;s keys, so check on the encryption page that the key backup is on before you do.</source>
+        <translation>Časť údajov uložených v tomto zariadení sa už nedá prečítať a Shoal Messages to počas behu nedokázal napraviť — preto zastavil synchronizáciu, namiesto toho, aby na ten istý riadok narazil znova. Zavri aplikáciu a spusti ju znova. Ak potom stále chýbajú miestnosti, odhlásenie a opätovné prihlásenie obnoví miestne údaje — ale nahradí aj kľúče tohto zariadenia: najskôr na stránke šifrovania skontroluj, či je záloha kľúčov zapnutá.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Naozaj odmietnuť toto pozvanie?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Naozaj opustiť túto miestnosť?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Pozvanie potom zmizne. Späť sa dostaneš, len ak ťa niekto pozve znovu.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Miestnosť sa opustí a zabudne. Zmizne zo zoznamu rozhovorov a návrat si vyžaduje nové pozvanie alebo verejnú adresu.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Odmietnuť</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Opustiť</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Odmietam</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Opúšťam miestnosť</translation>
+    </message>
+    <message>
+        <source>The sender did not share the key: they consider this device insecure. Verify this device.</source>
+        <translation>Odosielateľ kľúč nezdieľal: považuje toto zariadenie za nebezpečné. Over toto zariadenie.</translation>
+    </message>
+    <message>
+        <source>The sender could not deliver the key to this device.</source>
+        <translation>Odosielateľ nedokázal kľúč doručiť do tohto zariadenia.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s identity has changed since you verified them, so the key was withheld.</source>
+        <translation>Identita odosielateľa sa od tvojho overenia zmenila, takže bol kľúč zadržaný.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is not signed by its owner.</source>
+        <translation>Zariadenie odosielateľa nie je podpísané svojím vlastníkom.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is unknown here.</source>
+        <translation>Zariadenie odosielateľa je tu neznáme.</translation>
+    </message>
+    <message>
+        <source>Sent before you joined the room.</source>
+        <translation>Odoslané skôr, než si vstúpil do miestnosti.</translation>
+    </message>
+    <message>
+        <source>Older than this device, and there is no key backup.</source>
+        <translation>Staršie než toto zariadenie a záloha kľúčov neexistuje.</translation>
+    </message>
+    <message>
+        <source>Older than this device. Verify this device to read it.</source>
+        <translation>Staršie než toto zariadenie. Over zariadenie, aby si to mohol prečítať.</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Nedá sa dešifrovať — tomuto zariadeniu chýba kľúč</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Odmietnuť pozvanie</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Opustiť miestnosť</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <translation>Hovor</translation>
+    </message>
+    <message>
+        <source>Video call</source>
+        <translation>Videohovor</translation>
+    </message>
+    <message>
+        <source>Back to the call</source>
+        <translation>Späť k hovoru</translation>
+    </message>
+    <message>
+        <source>Go to the new room</source>
+        <translation>Prejsť do novej miestnosti</translation>
+    </message>
+    <message>
+        <source>Join the new room</source>
+        <translation>Vstúpiť do novej miestnosti</translation>
+    </message>
+    <message>
+        <source>Load older messages</source>
+        <translation>Načítať staršie správy</translation>
+    </message>
+    <message>
+        <source>Room info</source>
+        <translation>Info o miestnosti</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — čakám na sieť</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Pozvanie</translation>
+    </message>
+    <message>
+        <source>This room has been replaced</source>
+        <translation>Táto miestnosť bola nahradená</translation>
+    </message>
+    <message>
+        <source>Switching to the new room…</source>
+        <translation>Prechádzam do novej miestnosti…</translation>
+    </message>
+    <message>
+        <source>Tap to open the new room</source>
+        <translation>Ťuknutím otvoríš novú miestnosť</translation>
+    </message>
+    <message>
+        <source>Tap to join the new room</source>
+        <translation>Ťuknutím vstúpiš do novej miestnosti</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pinned message(s)</source>
+        <translation>
+            <numerusform>%n pripnutá správa</numerusform>
+            <numerusform>%n pripnuté správy</numerusform>
+            <numerusform>%n pripnutých správ</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Beginning of the conversation</source>
+        <translation>Začiatok rozhovoru</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <comment>timeline system line, a noun</comment>
+        <translation>Hovor</translation>
+    </message>
+    <message>
+        <source>%1 joined</source>
+        <translation>%1 vstúpil</translation>
+    </message>
+    <message>
+        <source>%1 left</source>
+        <translation>%1 odišiel</translation>
+    </message>
+    <message>
+        <source>%1 declined the invitation</source>
+        <translation>%1 odmietol pozvanie</translation>
+    </message>
+    <message>
+        <source>%1 asked to join</source>
+        <translation>%1 požiadal o vstup</translation>
+    </message>
+    <message>
+        <source>%1 changed membership</source>
+        <translation>%1 zmenil členstvo</translation>
+    </message>
+    <message>
+        <source>%1 changed their profile</source>
+        <translation>%1 zmenil svoj profil</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopírovať</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Odpovedať</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Uložiť</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Preposlať</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Upraviť</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Pripnúť</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Zmazať</translation>
+    </message>
+    <message>
+        <source>More…</source>
+        <translation>Viac…</translation>
+    </message>
+    <message>
+        <source>The quoted message cannot be loaded: it no longer exists or you are not allowed to see it.</source>
+        <translation>Citovanú správu nemožno načítať: už neexistuje, alebo ju nesmieš vidieť.</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Hlasová správa</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Správa zmazaná</translation>
+    </message>
+    <message>
+        <source>Thread · %1</source>
+        <translation>Vlákno · %1</translation>
+    </message>
+    <message>
+        <source>In thread</source>
+        <translation>Vo vlákne</translation>
+    </message>
+    <message>
+        <source>not sent</source>
+        <translation>neodoslané</translation>
+    </message>
+    <message>
+        <source>edited</source>
+        <translation>upravené</translation>
+    </message>
+    <message>
+        <source>No messages</source>
+        <translation>Žiadne správy</translation>
+    </message>
+    <message>
+        <source>Accept invitation</source>
+        <translation>Prijať pozvanie</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s</source>
+        <translation>Nahrávam… %1 s</translation>
+    </message>
+    <message>
+        <source>Reply to %1</source>
+        <translation>Odpoveď pre %1</translation>
+    </message>
+    <message>
+        <source>Editing message</source>
+        <translation>Upravujem správu</translation>
+    </message>
+    <message>
+        <source>New text</source>
+        <translation>Nový text</translation>
+    </message>
+    <message>
+        <source>Message</source>
+        <translation>Správa</translation>
+    </message>
+    <message>
+        <source>That message is not in the loaded history</source>
+        <translation>Táto správa nie je v načítanej histórii</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Zahodiť</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Odoslať znova</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reagovať</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Odpovedať vo vlákne</translation>
+    </message>
+    <message>
+        <source>Copy room link</source>
+        <translation>Kopírovať odkaz na miestnosť</translation>
+    </message>
+    <message>
+        <source>Room link copied</source>
+        <translation>Odkaz na miestnosť skopírovaný</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Odoslané nešifrovane</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Neodoslal to uvedený účet</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Kľúče odosielateľa sa zmenili</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Z neovereného zariadenia</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Od neoverenej osoby</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Pravosť nepotvrdená</translation>
+    </message>
+    <message>
+        <source>Discarding</source>
+        <translation>Zahadzuje sa</translation>
+    </message>
+    <message>
+        <source>Deleting</source>
+        <translation>Maže sa</translation>
+    </message>
+    <message>
+        <source>This reaction hides text and was not sent</source>
+        <translation>Táto reakcia skrýva text a nebola odoslaná</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Obrázok</translation>
+    </message>
+    <message>
+        <source>Search messages</source>
+        <translation>Hľadať v správach</translation>
+    </message>
+    <message>
+        <source>What do these marks mean?</source>
+        <translation>Čo znamenajú tieto značky?</translation>
+    </message>
+    <message>
+        <source>Verify contact</source>
+        <translation>Overiť kontakt</translation>
+    </message>
+    <message>
+        <source>The conversation could not be loaded</source>
+        <translation>Konverzáciu sa nepodarilo načítať</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Otvoriť túto adresu?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Otvoriť</translation>
+    </message>
+    <message>
+        <source>Select files</source>
+        <translation>Vybrať súbory</translation>
+    </message>
+    <message>
+        <source>New poll</source>
+        <translation>Nová anketa</translation>
+    </message>
+    <message>
+        <source>Voting failed</source>
+        <translation>Hlasovanie zlyhalo</translation>
+    </message>
+    <message>
+        <source>The poll could not be ended</source>
+        <translation>Anketu sa nepodarilo ukončiť</translation>
+    </message>
+    <message>
+        <source>The poll could not be sent</source>
+        <translation>Anketu sa nepodarilo odoslať</translation>
+    </message>
+    <message>
+        <source>Your vote was not sent</source>
+        <translation>Tvoj hlas nebol odoslaný</translation>
+    </message>
+    <message>
+        <source>%1 invited %2</source>
+        <translation>%1 pozval %2</translation>
+    </message>
+    <message>
+        <source>%1 removed %2</source>
+        <translation>%1 odobral %2</translation>
+    </message>
+    <message>
+        <source>%1 banned %2</source>
+        <translation>%1 zablokoval %2</translation>
+    </message>
+    <message>
+        <source>%1 unbanned %2</source>
+        <translation>%1 odblokoval %2</translation>
+    </message>
+    <message>
+        <source>%1 withdrew the invitation for %2</source>
+        <translation>%1 zrušil pozvánku pre %2</translation>
+    </message>
+    <message>
+        <source>%1: %2</source>
+        <comment>system line and the reason given for it</comment>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Previesť na text</translation>
+    </message>
+    <message>
+        <source>Converting to text…</source>
+        <translation>Prevádza sa na text…</translation>
+    </message>
+    <message>
+        <source>Recognised automatically, may contain mistakes</source>
+        <translation>Rozpoznané automaticky, môže obsahovať chyby</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s. Tap the microphone to send.</source>
+        <translation>Nahrávam… %1 s. Ťukni na mikrofón pre odoslanie.</translation>
+    </message>
+    <message>
+        <source>Nothing was said, so nothing was sent.</source>
+        <translation>Nič nebolo povedané, takže nič nebolo odoslané.</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Uložené do galérie</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nepodarilo sa uložiť</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Uložené do priečinka Stiahnuté</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Zobraziť menej</translation>
+    </message>
+    <message>
+        <source>Show more</source>
+        <translation>Zobraziť viac</translation>
+    </message>
+    <message>
+        <source>The text could not be written as a file</source>
+        <translation>Text sa nepodarilo zapísať ako súbor</translation>
+    </message>
+    <message>
+        <source>Share location</source>
+        <translation>Zdieľať polohu</translation>
+    </message>
+    <message>
+        <source>deletion not sent</source>
+        <translation>zmazanie neodoslané</translation>
+    </message>
+    <message>
+        <source>edit not sent</source>
+        <translation>úprava neodoslaná</translation>
+    </message>
+    <message>
+        <source>That did not work. Try again in a moment.</source>
+        <translation>Nepodarilo sa. Skús to o chvíľu znova.</translation>
+    </message>
+    <message>
+        <source>Back to the latest messages</source>
+        <translation>Späť na najnovšie správy</translation>
+    </message>
+    <message>
+        <source>Live location could not be started</source>
+        <translation>Živú polohu sa nepodarilo spustiť</translation>
+    </message>
+    <message>
+        <source>It is no longer waiting to be sent.</source>
+        <translation>Už to nečaká na odoslanie.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomSettingsPage</name>
+    <message>
+        <source>Change it on the other network as well?</source>
+        <translation>Zmeniť to aj v druhej sieti?</translation>
+    </message>
+    <message>
+        <source>The bridge passes the change on. Everyone in the chat there sees it, including people who do not use Matrix.</source>
+        <translation>Most zmenu odovzdá ďalej. Uvidia ju všetci v tamojšom chate, aj ľudia, ktorí Matrix nepoužívajú.</translation>
+    </message>
+    <message>
+        <source>Change</source>
+        <translation>Zmeniť</translation>
+    </message>
+    <message>
+        <source>The name could not be changed: %1</source>
+        <translation>Názov sa nepodarilo zmeniť: %1</translation>
+    </message>
+    <message>
+        <source>The topic could not be changed: %1</source>
+        <translation>Tému sa nepodarilo zmeniť: %1</translation>
+    </message>
+    <message>
+        <source>The picture could not be changed: %1</source>
+        <translation>Obrázok sa nepodarilo zmeniť: %1</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Upraviť miestnosť</translation>
+    </message>
+    <message>
+        <source>Your role in this room does not allow changing its name, topic or picture.</source>
+        <translation>Tvoja rola v tejto miestnosti neumožňuje meniť jej názov, tému ani obrázok.</translation>
+    </message>
+    <message>
+        <source>This room is bridged to another network. The bridge usually passes a new name, topic or picture on, and there it changes for everyone in the chat, including people who do not use Matrix.</source>
+        <translation>Táto miestnosť je mostom prepojená s inou sieťou. Most nový názov, tému alebo obrázok zvyčajne odovzdá ďalej a tam sa zmení pre všetkých v chate, aj pre ľudí, ktorí Matrix nepoužívajú.</translation>
+    </message>
+    <message>
+        <source>This chat is bridged to another network. There, name and picture belong to the contact: the bridge usually passes nothing on, and it can overwrite a name set here whenever the contact changes theirs. Which contact name the bridge shows is part of its own configuration.</source>
+        <translation>Tento chat je mostom prepojený s inou sieťou. Tam názov a obrázok patria kontaktu: most zvyčajne nič neodovzdáva a môže prepísať názov nastavený tu, kedykoľvek kontakt zmení svoj. Aké meno kontaktu most zobrazuje, určuje jeho vlastná konfigurácia.</translation>
+    </message>
+    <message>
+        <source>Name, topic and picture belong to the room: everyone in it sees the change.</source>
+        <translation>Názov, téma a obrázok patria miestnosti: zmenu uvidia všetci v nej.</translation>
+    </message>
+    <message>
+        <source>Bridged to</source>
+        <translation>Most do</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Obrázok</translation>
+    </message>
+    <message>
+        <source>Change picture</source>
+        <translation>Zmeniť obrázok</translation>
+    </message>
+    <message>
+        <source>Set picture</source>
+        <translation>Nastaviť obrázok</translation>
+    </message>
+    <message>
+        <source>Remove picture</source>
+        <translation>Odstrániť obrázok</translation>
+    </message>
+    <message>
+        <source>Name and topic</source>
+        <translation>Názov a téma</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Názov</translation>
+    </message>
+    <message>
+        <source>No name set</source>
+        <translation>Názov nie je nastavený</translation>
+    </message>
+    <message>
+        <source>Without a name, the room is shown under the names of its members.</source>
+        <translation>Bez názvu sa miestnosť zobrazuje pod menami svojich členov.</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Téma</translation>
+    </message>
+    <message>
+        <source>No topic set</source>
+        <translation>Téma nie je nastavená</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Uložiť</translation>
+    </message>
+    <message>
+        <source>Saving…</source>
+        <translation>Ukladá sa…</translation>
+    </message>
+    <message>
+        <source>Saved</source>
+        <translation>Uložené</translation>
+    </message>
+    <message>
+        <source>Whether this room is bridged to another network could not be checked. If it is, the change may apply there for everyone in the chat.</source>
+        <translation>Nepodarilo sa overiť, či je táto miestnosť mostom prepojená s inou sieťou. Ak áno, zmena tam môže platiť pre všetkých v chate.</translation>
+    </message>
+    <message>
+        <source>Change it anyway?</source>
+        <translation>Napriek tomu zmeniť?</translation>
+    </message>
+</context>
+<context>
+    <name>SearchPage</name>
+    <message>
+        <source>Search messages</source>
+        <translation>Hľadať v správach</translation>
+    </message>
+    <message>
+        <source>Search this conversation</source>
+        <translation>Hľadať v tejto konverzácii</translation>
+    </message>
+    <message>
+        <source>Search failed</source>
+        <translation>Hľadanie zlyhalo</translation>
+    </message>
+    <message>
+        <source>Nothing found</source>
+        <translation>Nič sa nenašlo</translation>
+    </message>
+    <message>
+        <source>Whole words only: &quot;test&quot; does not find &quot;test9&quot;. Pictures, files and messages from bots are not searched. And only what this device has already downloaded - load older messages in the conversation to add more.</source>
+        <translation>Len celé slová: „test“ nenájde „test9“. Obrázky, súbory a správy od botov sa neprehľadávajú. A len to, čo si zariadenie už stiahlo — načítaj staršie správy, aby sa pridalo viac.</translation>
+    </message>
+</context>
+<context>
+    <name>SecretsHelpPage</name>
+    <message>
+        <source>Getting in again</source>
+        <translation>Späť dovnútra</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys.</source>
+        <translation>V tomto systéme chýba služba, ktorá uchováva šifrovacie kľúče.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service reports damaged data. Nothing can be unlocked in this state.</source>
+        <translation>Zabezpečené úložisko zariadenia hlási poškodené dáta. V tomto stave sa nedá nič odomknúť.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service itself is locked. Every app on this phone that stores secrets is affected, not only Shoal Messages.</source>
+        <translation>Zabezpečené úložisko zariadenia je samo zamknuté. Týka sa to každej aplikácie v telefóne, ktorá ukladá tajomstvá, nielen Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages' own key store is locked and waiting for your confirmation.</source>
+        <translation>Vlastné úložisko kľúčov aplikácie Shoal Messages je zamknuté a čaká na tvoje potvrdenie.</translation>
+    </message>
+    <message>
+        <source>The secrets service did not hand out a key, and it did not say why.</source>
+        <translation>Zabezpečené úložisko nevydalo žiadny kľúč a nepovedalo prečo.</translation>
+    </message>
+    <message>
+        <source>This is a property of the operating system, not a fault in Shoal Messages. The package exists and can be installed; some Sailfish images simply do not ship it.</source>
+        <translation>Je to vlastnosť operačného systému, nie chyba Shoal Messages. Balík existuje a dá sa nainštalovať; niektoré obrazy Sailfishu ho jednoducho nedodávajú.</translation>
+    </message>
+    <message>
+        <source>This is beyond what Shoal Messages can reach. Repairing it means resetting the service&apos;s own data, which affects every app on the device that stores secrets — ask in the Sailfish support channels before doing that.</source>
+        <translation>To je mimo dosahu aplikácie Shoal Messages. Oprava znamená vynulovať vlastné dáta služby, čo sa dotkne každej aplikácie v zariadení, ktorá ukladá tajomstvá — spýtaj sa najprv v podporných kanáloch Sailfishu.</translation>
+    </message>
+    <message>
+        <source>The service is unlocked at start-up from your device lock code. Where that hand-off has stopped working, restarting lands in the same state every time — setting the code afresh is what starts it again.</source>
+        <translation>Služba sa odomyká pri štarte pomocou kódu zámku zariadenia. Ak toto odovzdanie prestalo fungovať, reštart skončí zakaždým v rovnakom stave — znovu nastaviť kód je to, čo ju opäť rozbehne.</translation>
+    </message>
+    <message>
+        <source>The approval lasts until the device is restarted. If no request appears at all, the system components that draw it may be missing.</source>
+        <translation>Schválenie platí do ďalšieho reštartu zariadenia. Ak sa žiadna požiadavka vôbec neobjaví, môžu chýbať systémové súčasti, ktoré ju vykresľujú.</translation>
+    </message>
+    <message>
+        <source>Setting the device lock code afresh and restarting is worth trying: it is what unlocks the service at start-up.</source>
+        <translation>Znovu nastaviť kód zámku zariadenia a reštartovať stojí za pokus: práve to odomyká službu pri štarte.</translation>
+    </message>
+    <message>
+        <source>What to do</source>
+        <translation>Čo robiť</translation>
+    </message>
+    <message>
+        <source>1. Switch on Developer mode in the system settings, under Settings › Developer tools.</source>
+        <translation>1. Zapni v systémových nastaveniach vývojársky režim, v Nastavenia › Vývojárske nástroje.</translation>
+    </message>
+    <message>
+        <source>2. Open the Terminal app and run the line below — tap it to copy. Then restart the device and start Shoal Messages again.</source>
+        <translation>2. Otvor aplikáciu Terminal a spusti riadok nižšie — klepnutím ho skopíruješ. Potom zariadenie reštartuj a znovu otvor Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Note down what this page reports below and take it to the Sailfish support channels. Signing out of Shoal Messages does not repair it.</source>
+        <translation>Poznač si, čo táto stránka nižšie hlási, a vezmi to do podporných kanálov Sailfishu. Odhlásenie z aplikácie Shoal Messages to neopraví.</translation>
+    </message>
+    <message>
+        <source>Go back and tap “Try again”, then confirm the system&apos;s request. If nothing appears, install the missing components (tap the line to copy) and restart the device.</source>
+        <translation>Vráť sa späť a klepni na „Skúsiť znovu“, potom potvrď požiadavku systému. Ak sa nič neobjaví, nainštaluj chýbajúce súčasti (klepnutím riadok skopíruješ) a reštartuj zariadenie.</translation>
+    </message>
+    <message>
+        <source>1. Open Settings › Device lock and set a new security code.</source>
+        <translation>1. Otvor Nastavenia › Zámok zariadenia a nastav nový bezpečnostný kód.</translation>
+    </message>
+    <message>
+        <source>2. Restart the device.</source>
+        <translation>2. Reštartuj zariadenie.</translation>
+    </message>
+    <message>
+        <source>3. Start Shoal Messages again.</source>
+        <translation>3. Znovu otvor Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Signing out does not help</source>
+        <translation>Odhlásenie nepomôže</translation>
+    </message>
+    <message>
+        <source>Signing out deletes this device&apos;s encryption keys along with the local data. You would then have to verify this device again from another one, and older messages would need your recovery key. It does not repair the secrets service.</source>
+        <translation>Pri odhlásení sa spolu s miestnymi dátami zmažú šifrovacie kľúče tohto zariadenia. Musel by si potom toto zariadenie znovu overiť z iného a staršie správy by vyžadovali tvoj obnovovací kľúč. Zabezpečené úložisko to neopraví.</translation>
+    </message>
+    <message>
+        <source>What this page measured</source>
+        <translation>Čo táto stránka namerala</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityRows</name>
+    <message>
+        <source>Backup</source>
+        <translation>Záloha</translation>
+    </message>
+    <message>
+        <source>Your room keys are backed up.</source>
+        <translation>Tvoje kľúče miestností sú zálohované.</translation>
+    </message>
+    <message>
+        <source>The backup is on the server but not unlocked on this device.</source>
+        <translation>Záloha je na serveri, ale na tomto zariadení nie je odomknutá.</translation>
+    </message>
+    <message>
+        <source>There is no key backup. Without one, messages become unreadable when this device is gone.</source>
+        <translation>Záloha kľúčov neexistuje. Bez nej sa správy stanú nečitateľnými, len čo toto zariadenie zmizne.</translation>
+    </message>
+    <message>
+        <source>Recovery</source>
+        <translation>Obnovenie</translation>
+    </message>
+    <message>
+        <source>Recovery is set up.</source>
+        <translation>Obnovenie je nastavené.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key to unlock the backup on this device.</source>
+        <translation>Zadaj svoj obnovovací kľúč, aby si na tomto zariadení odomkol zálohu.</translation>
+    </message>
+    <message>
+        <source>Cross-signing</source>
+        <translation>Krížové podpisovanie</translation>
+    </message>
+    <message>
+        <source>This device is signed as yours.</source>
+        <translation>Toto zariadenie je podpísané ako tvoje.</translation>
+    </message>
+    <message>
+        <source>Others see this device as unverified. The recovery key or a verification from another device settles it.</source>
+        <translation>Ostatní vidia toto zariadenie ako neoverené. Vyrieši to obnovovací kľúč alebo overenie z iného zariadenia.</translation>
+    </message>
+    <message>
+        <source>Local storage</source>
+        <translation>Miestne úložisko</translation>
+    </message>
+    <message>
+        <source>Session and message database are encrypted on this device.</source>
+        <translation>Relácia aj databáza správ sú na tomto zariadení šifrované.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because they were created before this app could encrypt them. An existing database cannot be encrypted in place.</source>
+        <translation>Ležia nešifrované, pretože vznikli skôr, než ich táto aplikácia vedela šifrovať. Existujúcu databázu nemožno zašifrovať dodatočne.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because the system&apos;s secure storage did not hand out a key.</source>
+        <translation>Ležia nešifrované, pretože zabezpečené úložisko systému nevydalo žiadny kľúč.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because this system is missing the service that keeps encryption keys.</source>
+        <translation>Ležia nešifrované, pretože v tomto systéme chýba služba, ktorá uchováva šifrovacie kľúče.</translation>
+    </message>
+    <message>
+        <source>Recovery key accepted — finishing. This can take a moment.</source>
+        <translation>Obnovovací kľúč prijatý — dokončuje sa. Môže to chvíľu trvať.</translation>
+    </message>
+    <message>
+        <source>There is no recovery for this account yet. Set up a key backup to create one.</source>
+        <translation>Pre tento účet zatiaľ nie je obnovenie. Nastav zálohu kľúčov, aby vzniklo.</translation>
+    </message>
+    <message>
+        <source>The server could not be asked whether a backup exists.</source>
+        <translation>Server sa nepodarilo opýtať, či záloha existuje.</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityStatusPage</name>
+    <message>
+        <source>Security</source>
+        <translation>Zabezpečenie</translation>
+    </message>
+    <message>
+        <source>Something on this device is not in order yet. You can settle it now or later.</source>
+        <translation>Niečo na tomto zariadení ešte nie je v poriadku. Môžeš to vyriešiť teraz alebo neskôr.</translation>
+    </message>
+    <message>
+        <source>Enter recovery key</source>
+        <translation>Zadať obnovovací kľúč</translation>
+    </message>
+    <message>
+        <source>Set up backup now</source>
+        <translation>Nastaviť zálohu teraz</translation>
+    </message>
+    <message>
+        <source>Encrypt storage now</source>
+        <translation>Zašifrovať úložisko</translation>
+    </message>
+    <message>
+        <source>Why is that</source>
+        <translation>Prečo je to tak</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Neskôr</translation>
+    </message>
+    <message>
+        <source>You will find all of this again under Account › Encryption.</source>
+        <translation>Všetko toto nájdeš znova v Účet › Šifrovanie.</translation>
+    </message>
+    <message>
+        <source>Everything on this device is in order.</source>
+        <translation>Na tomto zariadení je všetko v poriadku.</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Zavrieť</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Overiť toto zariadenie</translation>
+    </message>
+</context>
+<context>
+    <name>SendMediaPage</name>
+    <message>
+        <source>Reply</source>
+        <translation>Odpovedať</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Odoslať</translation>
+    </message>
+    <message>
+        <source>Caption</source>
+        <translation>Popis</translation>
+    </message>
+    <message>
+        <source>Caption (optional)</source>
+        <translation>Popis (nepovinný)</translation>
+    </message>
+    <message>
+        <source>%1 files, sent one after another. The caption goes with the first one.</source>
+        <translation>%1 súborov, odosielajú sa jeden po druhom. Popis ide s prvým.</translation>
+    </message>
+    <message>
+        <source>Send at original resolution</source>
+        <translation>Odoslať v pôvodnom rozlíšení</translation>
+    </message>
+    <message>
+        <source>Off, the picture is made smaller before it goes out and its metadata - the place it was taken, among them - does not travel with it.</source>
+        <translation>Vypnuté sa obrázok pred odoslaním zmenší a jeho metaúdaje – okrem iného miesto vzniku – s ním nejdú.</translation>
+    </message>
+</context>
+<context>
+    <name>SendQueueBanner</name>
+    <message>
+        <source>A message could not be sent.</source>
+        <translation>Správu sa nepodarilo odoslať.</translation>
+    </message>
+    <message>
+        <source>An edit could not be sent.</source>
+        <translation>Úpravu sa nepodarilo odoslať.</translation>
+    </message>
+    <message>
+        <source>A deletion could not be sent. The message is still there for everyone else.</source>
+        <translation>Zmazanie sa nepodarilo odoslať. Pre všetkých ostatných je správa stále viditeľná.</translation>
+    </message>
+    <message>
+        <source>A reaction could not be sent.</source>
+        <translation>Reakciu sa nepodarilo odoslať.</translation>
+    </message>
+    <message>
+        <source>A poll vote could not be sent.</source>
+        <translation>Hlas v ankete sa nepodarilo odoslať.</translation>
+    </message>
+    <message>
+        <source>A change could not be sent.</source>
+        <translation>Zmenu sa nepodarilo odoslať.</translation>
+    </message>
+    <message>
+        <source>Someone you verified has a new identity. Withdraw the verification on their profile, then send again.</source>
+        <translation>Osoba overená tebou má novú identitu. Odvolaj overenie v jej profile a potom odošli znova.</translation>
+    </message>
+    <message>
+        <source>This device has to be verified first.</source>
+        <translation>Toto zariadenie treba najprv overiť.</translation>
+    </message>
+    <message>
+        <source>Some devices in this room are not verified.</source>
+        <translation>Niektoré zariadenia v tejto miestnosti nie sú overené.</translation>
+    </message>
+    <message>
+        <source>Everything sent after it in this room waits behind it.</source>
+        <translation>Všetko, čo bolo v tejto miestnosti odoslané po nej, čaká za ňou.</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Odoslať znova</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Zahodiť</translation>
+    </message>
+    <message>
+        <source>A poll could not be sent.</source>
+        <translation>Anketu sa nepodarilo odoslať.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionLockedPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Odhlásiť sa a zmazať miestne dáta</translation>
+    </message>
+    <message>
+        <source>Locked</source>
+        <translation>Zamknuté</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pre Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your session is stored encrypted, and the key was not available when Shoal Messages started.</source>
+        <translation>Tvoja relácia je uložená šifrovane a kľúč nebol pri štarte Shoal Messages dostupný.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Skúsiť znovu</translation>
+    </message>
+    <message>
+        <source>The key lives in the device&apos;s secrets storage. Try again and confirm the system&apos;s request; the approval lasts until the next restart of the device. If no request appears at all, the secrets service itself is at fault rather than your account.</source>
+        <translation>Kľúč leží v zabezpečenom úložisku zariadenia. Skús to znovu a potvrď požiadavku systému; schválenie platí do ďalšieho reštartu zariadenia. Ak sa žiadna požiadavka vôbec neobjaví, chyba je v zabezpečenom úložisku, nie v tvojom účte.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Potrebuješ pomoc?</translation>
+    </message>
+</context>
+<context>
+    <name>SessionNewerPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Odhlásiť sa a zmazať miestne dáta</translation>
+    </message>
+    <message>
+        <source>Newer version needed</source>
+        <translation>Je potrebná novšia verzia</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pre Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Skúsiť znova</translation>
+    </message>
+    <message>
+        <source>Your session was saved in a format this version does not know, most likely by a newer version of Shoal Messages.</source>
+        <translation>Tvoja relácia bola uložená vo formáte, ktorý táto verzia nepozná, najskôr novšou verziou Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>If a newer version of Shoal Messages was installed before, installing it again opens everything as before. Signing out instead deletes the data and keys this device holds.</source>
+        <translation>Ak bola predtým nainštalovaná novšia verzia Shoal Messages, po jej opätovnej inštalácii sa všetko otvorí ako predtým. Odhlásenie naopak zmaže dáta a kľúče tohto zariadenia.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionOfflinePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Odhlásiť sa a zmazať miestne dáta</translation>
+    </message>
+    <message>
+        <source>No connection</source>
+        <translation>Bez pripojenia</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pre Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your homeserver could not be reached. You are still signed in, and nothing on this device has changed.</source>
+        <translation>Tvoj domovský server nebol dostupný. Tvoja relácia naďalej platí a v tomto zariadení sa nič nezmenilo.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages keeps trying on its own. Do not sign in again: that would start a new device and cost the keys to your encrypted history.</source>
+        <translation>Shoal Messages to skúša ďalej sám. Neprihlasuj sa znova: vzniklo by nové zariadenie a stratili by sa kľúče k tvojej šifrovanej histórii.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Skúsiť znova</translation>
+    </message>
+</context>
+<context>
+    <name>ShareLocationPage</name>
+    <message>
+        <source>Share location</source>
+        <translation>Zdieľať polohu</translation>
+    </message>
+    <message>
+        <source>Finding your position…</source>
+        <translation>Zisťujem tvoju polohu…</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Skúsiť znova</translation>
+    </message>
+    <message>
+        <source>Send this position</source>
+        <translation>Odoslať túto polohu</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Živá poloha</translation>
+    </message>
+    <message>
+        <source>Your position goes to this room when you move, while the app is open, until the time is up or you stop it. When the app is closed, the others see the last position until the end of the time.</source>
+        <translation>Tvoja poloha ide do tejto miestnosti, keď sa pohybuješ, kým je aplikácia otvorená, kým neuplynie čas alebo ju nezastavíš. Keď je aplikácia zatvorená, ostatní vidia poslednú polohu až do konca času.</translation>
+    </message>
+    <message>
+        <source>For</source>
+        <translation>Na</translation>
+    </message>
+    <message>
+        <source>1 hour</source>
+        <translation>1 hodinu</translation>
+    </message>
+    <message>
+        <source>Share live location</source>
+        <translation>Zdieľať živú polohu</translation>
+    </message>
+    <message>
+        <source>Sharing your live location until %1.</source>
+        <translation>Zdieľaš živú polohu do %1.</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Ukončiť zdieľanie</translation>
+    </message>
+    <message>
+        <source>6 hours</source>
+        <translation>6 hodín</translation>
+    </message>
+    <message>
+        <source>1 day</source>
+        <translation>1 deň</translation>
+    </message>
+</context>
+<context>
+    <name>ShareToRoomPage</name>
+    <message>
+        <source>Send to</source>
+        <translation>Odoslať do</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Žiadne miestnosti</translation>
+    </message>
+</context>
+<context>
+    <name>ShieldGlossaryPage</name>
+    <message>
+        <source>Message marks</source>
+        <translation>Značky pri správach</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Odoslané nešifrovane</translation>
+    </message>
+    <message>
+        <source>The message went out without encryption although the room uses it. Anybody who can read the server&apos;s copy can read the message.</source>
+        <translation>Správa odišla nešifrovane, hoci miestnosť šifrovanie používa. Ktokoľvek, kto si môže prečítať kópiu na serveri, si môže prečítať správu.</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Neodoslal to uvedený účet</translation>
+    </message>
+    <message>
+        <source>The message was encrypted by a device that does not belong to the account it claims to come from - somebody is sending under another name. Some bridges work this way and produce it harmlessly; anywhere else it is the one sign of an actual impersonation this app has.</source>
+        <translation>Správu zašifrovalo zariadenie, ktoré nepatrí k účtu, z ktorého údajne pochádza — niekto posiela pod cudzím menom. Niektoré mosty takto fungujú a robia to neškodne; kdekoľvek inde je to jediná známka skutočného podvrhnutia, ktorú táto aplikácia má.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Kľúče odosielateľa sa zmenili</translation>
+    </message>
+    <message>
+        <source>This person&apos;s cryptographic identity is no longer the one that was verified. Either they set up their account again, or somebody else is using it.</source>
+        <translation>Kryptografická identita tejto osoby už nie je tá, ktorá bola overená. Buď si účet nastavila nanovo, alebo ho používa niekto iný.</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Z neovereného zariadenia</translation>
+    </message>
+    <message>
+        <source>The device that sent this has not been confirmed by the account it belongs to. That is normal for a device somebody has just started using.</source>
+        <translation>Zariadenie, ktoré to odoslalo, nebolo potvrdené účtom, ku ktorému patrí. Pri čerstvo používanom zariadení je to bežné.</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Od neoverenej osoby</translation>
+    </message>
+    <message>
+        <source>This person&apos;s identity has never been verified, so there is nothing to check the message against.</source>
+        <translation>Identita tejto osoby nebola nikdy overená, takže niet s čím správu porovnať.</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Pravosť nepotvrdená</translation>
+    </message>
+    <message>
+        <source>The message could not be checked at all. It is not necessarily wrong - only unproven.</source>
+        <translation>Správu sa nedalo overiť vôbec. Nemusí byť nepravá — len nedoložená.</translation>
+    </message>
+    <message>
+        <source>A mark beside a message means its authenticity could not be fully confirmed. A red triangle says the message is not what it claims to be. An orange dot says something about it could not be checked. Tap a mark in the conversation to see which of the cases below it is.</source>
+        <translation>Značka pri správe znamená, že sa jej pravosť nepodarilo úplne potvrdiť. Červený trojuholník hovorí, že správa nie je tým, za čo sa vydáva. Oranžová bodka hovorí, že sa niečo nedalo overiť. Ťukni na značku v konverzácii a uvidíš, o ktorý z prípadov nižšie ide.</translation>
+    </message>
+</context>
+<context>
+    <name>SpaceColourPage</name>
+    <message>
+        <source>Colour</source>
+        <translation>Farba</translation>
+    </message>
+    <message>
+        <source>Automatic colour</source>
+        <translation>Automatická farba</translation>
+    </message>
+    <message>
+        <source>Taken from the space itself, a different one for each</source>
+        <translation>Odvodená zo samotného priestoru, pre každý iná</translation>
+    </message>
+    <message>
+        <source>Marking the space on a room&apos;s picture is switched off under Account, Appearance. Until it is on, this colour is drawn nowhere.</source>
+        <translation>Označenie Space na obrázku miestnosti je vypnuté v Účet, Vzhľad. Kým je vypnuté, táto farba sa nikde nevykresľuje.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacePage</name>
+    <message>
+        <source>Space</source>
+        <translation>Priestor</translation>
+    </message>
+    <message>
+        <source>Add rooms</source>
+        <translation>Pridať miestnosti</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Obnoviť</translation>
+    </message>
+    <message>
+        <source>Move to space</source>
+        <translation>Presunúť do priestoru</translation>
+    </message>
+    <message>
+        <source>Remove from space</source>
+        <translation>Odobrať z priestoru</translation>
+    </message>
+    <message>
+        <source>Linked, not joined</source>
+        <translation>Prepojená, bez vstupu</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n člen</numerusform>
+            <numerusform>%n členovia</numerusform>
+            <numerusform>%n členov</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Vstúpiť</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Vstupujem</translation>
+    </message>
+    <message>
+        <source>No rooms in this space</source>
+        <translation>V tomto priestore nie sú žiadne miestnosti</translation>
+    </message>
+    <message>
+        <source>Add rooms with the pulldown menu, or rooms of this space that you have joined show up here.</source>
+        <translation>Pridávaj miestnosti rozbaľovacou ponukou, alebo sa tu objavia miestnosti tohto priestoru, do ktorých si vstúpil.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacesPage</name>
+    <message>
+        <source>Really delete this space?</source>
+        <translation>Naozaj zmazať tento priestor?</translation>
+    </message>
+    <message>
+        <source>The space is left and forgotten. The rooms in it are not touched — they stay in the chat list.</source>
+        <translation>Priestor sa opustí a zabudne. Miestnosti v ňom zostanú nedotknuté — zostávajú v zozname rozhovorov.</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Zmazať</translation>
+    </message>
+    <message>
+        <source>Deleting space</source>
+        <translation>Mažem priestor</translation>
+    </message>
+    <message>
+        <source>Spaces</source>
+        <translation>Priestory</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — čakám na sieť</translation>
+    </message>
+    <message>
+        <source>Create space</source>
+        <translation>Vytvoriť priestor</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Nastaviť ako úvodnú stránku</translation>
+    </message>
+    <message>
+        <source>Delete space</source>
+        <translation>Zmazať priestor</translation>
+    </message>
+    <message>
+        <source>No spaces</source>
+        <translation>Žiadne priestory</translation>
+    </message>
+    <message>
+        <source>Spaces you are a member of show up here. Spaces group rooms together.</source>
+        <translation>Priestory, ktorých si členom, sa objavia tu. Priestory zoskupujú miestnosti.</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Poškodené lokálne údaje</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Farba</translation>
+    </message>
+</context>
+<context>
+    <name>StorageBlockedPage</name>
+    <message>
+        <source>Encryption not possible</source>
+        <translation>Šifrovanie nie je možné</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pre Sailfish OS</translation>
+    </message>
+    <message>
+        <source>The secure storage did not hand out a key, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Zabezpečené úložisko nevydalo žiadny kľúč, takže Shoal Messages nemôže vytvoriť šifrovanú databázu.</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>V tomto systéme chýba služba, ktorá uchováva šifrovacie kľúče, takže Shoal Messages nemôže vytvoriť šifrovanú databázu.</translation>
+    </message>
+    <message>
+        <source>Check again</source>
+        <translation>Skontrolovať znova</translation>
+    </message>
+    <message>
+        <source>Messages stay end-to-end encrypted on their way through the network either way. This is only about what lies on the device.</source>
+        <translation>Správy zostávajú na ceste sieťou tak či tak šifrované od konca ku koncu. Tu ide len o to, čo leží na zariadení.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Potrebuješ pomoc?</translation>
+    </message>
+    <message>
+        <source>Checked — the secure storage still will not hand out a key.</source>
+        <translation>Skontrolované — zabezpečené úložisko stále nevydáva žiadny kľúč.</translation>
+    </message>
+</context>
+<context>
+    <name>StoreUnreadablePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Odhlásiť sa a zmazať miestne dáta</translation>
+    </message>
+    <message>
+        <source>Local data unreadable</source>
+        <translation>Miestne dáta nie je možné prečítať</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pre Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Shoal Messages could not read back part of the data it keeps on this device. Your account, this device and its encryption keys are not affected.</source>
+        <translation>Shoal Messages nedokázal znova načítať časť dát, ktoré uchováva v tomto zariadení. Tvoj účet, toto zariadenie a jeho šifrovacie kľúče nie sú dotknuté.</translation>
+    </message>
+    <message>
+        <source>Rebuilding deletes the rooms and messages stored on this device and loads them again from your homeserver. This device and its keys stay; messages that were not sent yet are lost.</source>
+        <translation>Obnovenie zmaže miestnosti a správy uložené v tomto zariadení a znova ich načíta z tvojho domovského servera. Toto zariadenie a jeho kľúče zostanú; ešte neodoslané správy sa stratia.</translation>
+    </message>
+    <message>
+        <source>Rebuild local data</source>
+        <translation>Obnoviť miestne dáta</translation>
+    </message>
+</context>
+<context>
+    <name>ThreadPage</name>
+    <message>
+        <source>Load older posts</source>
+        <translation>Načítať staršie príspevky</translation>
+    </message>
+    <message>
+        <source>Thread</source>
+        <translation>Vlákno</translation>
+    </message>
+    <message>
+        <source>Event</source>
+        <translation>Udalosť</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Nedá sa dešifrovať — tomuto zariadeniu chýba kľúč</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Správa zmazaná</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Príloha</translation>
+    </message>
+    <message>
+        <source>Thread unavailable</source>
+        <translation>Vlákno nie je dostupné</translation>
+    </message>
+    <message>
+        <source>Loading thread</source>
+        <translation>Načítavam vlákno</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Odpovedať vo vlákne</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Odoslané nešifrovane</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Neodoslal to uvedený účet</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Kľúče odosielateľa sa zmenili</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Z neovereného zariadenia</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Od neoverenej osoby</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Pravosť nepotvrdená</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Otvoriť túto adresu?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Otvoriť</translation>
+    </message>
+</context>
+<context>
+    <name>UnverifiedRecipientsDialog</name>
+    <message>
+        <source>Send anyway</source>
+        <translation>Napriek tomu odoslať</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n unverified device(s)</source>
+        <translation>
+            <numerusform>%n neoverené zariadenie</numerusform>
+            <numerusform>%n neoverené zariadenia</numerusform>
+            <numerusform>%n neoverených zariadení</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Do not warn about this user again</source>
+        <translation>Na tohto používateľa už neupozorňovať</translation>
+    </message>
+    <message>
+        <source>Do not warn about these users again</source>
+        <translation>Na týchto používateľov už neupozorňovať</translation>
+    </message>
+    <message>
+        <source>Applies until you verify or clear it.</source>
+        <translation>Platí, kým neovieriš alebo nevynuluješ.</translation>
+    </message>
+    <message>
+        <source>keys changed since you verified them</source>
+        <translation>kľúče sa zmenili, odkedy si ich overil</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>neoverená</translation>
+    </message>
+    <message>
+        <source>This device is not verified</source>
+        <translation>Toto zariadenie nie je overené</translation>
+    </message>
+    <message>
+        <source>Unverified recipients</source>
+        <translation>Neoverení príjemcovia</translation>
+    </message>
+    <message>
+        <source>The message will be encrypted for recipients you have not verified. Verify them for real certainty, or send anyway.</source>
+        <translation>Správa bude zašifrovaná pre príjemcov, ktorých si neoveril. Over ich pre skutočnú istotu, alebo pošli aj tak.</translation>
+    </message>
+    <message>
+        <source>Do not warn again</source>
+        <translation>Už neupozorňovať</translation>
+    </message>
+    <message>
+        <source>As long as this device is unverified, no other device can be shown as verified — not even one that is. Verify it under Account → Encryption, or send anyway.</source>
+        <translation>Kým nie je toto zariadenie overené, žiadne iné zariadenie nemožno zobraziť ako overené — ani také, ktoré overené je. Over ho v Účet → Šifrovanie, alebo pošli aj tak.</translation>
+    </message>
+</context>
+<context>
+    <name>VerificationPage</name>
+    <message>
+        <source>Verification</source>
+        <translation>Overenie</translation>
+    </message>
+    <message>
+        <source>Another one of your devices</source>
+        <translation>Ďalšie z tvojich zariadení</translation>
+    </message>
+    <message>
+        <source>Your answer is in. Waiting for the other device.</source>
+        <translation>Tvoja odpoveď je zapísaná. Čaká sa na druhé zariadenie.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other device to accept.</source>
+        <translation>Čaká sa, kým druhé zariadenie potvrdí.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other side to accept the request on their device.</source>
+        <translation>Čaká sa, kým druhá strana prijme žiadosť na svojom zariadení.</translation>
+    </message>
+    <message>
+        <source>Confirm that this is really your other device. Once verified, both can share room keys and older messages become readable.</source>
+        <translation>Potvrď, že je to naozaj tvoje druhé zariadenie. Po overení môžu obe zdieľať kľúče miestností a staršie správy sa stanú čitateľnými.</translation>
+    </message>
+    <message>
+        <source>Confirm that you are really talking to this person and not to someone in between.</source>
+        <translation>Potvrď, že hovoríš naozaj s touto osobou a nie s niekým medzi tým.</translation>
+    </message>
+    <message>
+        <source>Both devices must show the same emoji, in the same order.</source>
+        <translation>Obe zariadenia musia ukazovať rovnaké emodži, v rovnakom poradí.</translation>
+    </message>
+    <message>
+        <source>Verified.</source>
+        <translation>Overené.</translation>
+    </message>
+    <message>
+        <source>The verification was cancelled.</source>
+        <translation>Overenie bolo zrušené.</translation>
+    </message>
+    <message>
+        <source>They do not match</source>
+        <translation>Nezhodujú sa</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Odmietnuť</translation>
+    </message>
+    <message>
+        <source>They match</source>
+        <translation>Zhodujú sa</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Prijať</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Zrušiť</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Zavrieť</translation>
+    </message>
+</context>
+<context>
+    <name>VerifyUserPage</name>
+    <message>
+        <source>Verify user</source>
+        <translation>Overiť používateľa</translation>
+    </message>
+    <message>
+        <source>Both sides then compare seven emoji. That is what says nobody is sitting in between — and it holds for every room you share with this person.</source>
+        <translation>Obe strany potom porovnajú sedem emodži. Práve to hovorí, že medzi vami nikto nesedí — a platí to pre každú miestnosť, ktorú s touto osobou zdieľaš.</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>ID používateľa</translation>
+    </message>
+    <message>
+        <source>For example @anna:example.org or @tom:example.net</source>
+        <translation>Napríklad @anna:example.org alebo @tom:example.net</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Overiť</translation>
+    </message>
+    <message>
+        <source>Your own device</source>
+        <translation>Tvoje vlastné zariadenie</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Porovná sedem emodži s tvojím druhým zariadením. Potrebuješ ho pred sebou; keď obe potvrdia, toto zariadenie môže čítať zdieľané kľúče miestností.</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Overiť toto zariadenie</translation>
+    </message>
+</context>
+<context>
+    <name>VideoPage</name>
+    <message>
+        <source>Save</source>
+        <translation>Uložiť</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Túto prílohu sa nepodarilo načítať</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Uložené do priečinka Stiahnuté</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nepodarilo sa uložiť</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Preposlať</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceRecorder</name>
+    <message>
+        <source>Nothing was recorded.</source>
+        <translation>Nič sa nenahralo.</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceTranscripts</name>
+    <message>
+        <source>This voice message has no file.</source>
+        <translation>Táto hlasová správa nemá súbor.</translation>
+    </message>
+    <message>
+        <source>The voice message is too long to convert.</source>
+        <translation>Hlasová správa je príliš dlhá na prevod.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be downloaded.</source>
+        <translation>Hlasovú správu sa nepodarilo stiahnuť.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be read.</source>
+        <translation>Hlasovú správu sa nepodarilo prečítať.</translation>
+    </message>
+    <message>
+        <source>This is not a voice message that can be converted.</source>
+        <translation>Toto nie je hlasová správa, ktorú možno previesť.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be decoded.</source>
+        <translation>Hlasovú správu sa nepodarilo dekódovať.</translation>
+    </message>
+    <message>
+        <source>Converting took too long and was stopped.</source>
+        <translation>Prevod trval príliš dlho a bol zastavený.</translation>
+    </message>
+    <message>
+        <source>Speech Note is not installed, or its service does not start.</source>
+        <translation>Speech Note nie je nainštalovaný alebo sa jeho služba nespustí.</translation>
+    </message>
+    <message>
+        <source>Speech Note has no model that recognises the language by itself. Download &quot;Auto (WhisperCpp Small)&quot; in Speech Note.</source>
+        <translation>Speech Note nemá model, ktorý sám rozpozná jazyk. Stiahni v Speech Note „Auto (WhisperCpp Small)“.</translation>
+    </message>
+    <message>
+        <source>The speech service is busy. Try again in a moment.</source>
+        <translation>Hlasová služba je zaneprázdnená. Skús to o chvíľu znova.</translation>
+    </message>
+    <message>
+        <source>The speech service refused the voice message.</source>
+        <translation>Hlasová služba odmietla hlasovú správu.</translation>
+    </message>
+    <message>
+        <source>The speech service reported an error.</source>
+        <translation>Hlasová služba ohlásila chybu.</translation>
+    </message>
+    <message>
+        <source>Everything works: voice messages can be converted.</source>
+        <translation>Všetko funguje: hlasové správy možno prevádzať.</translation>
+    </message>
+    <message>
+        <source>No speech was recognised.</source>
+        <translation>Nebola rozpoznaná žiadna reč.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages may not talk to the speech service. Reinstalling Shoal Messages puts the permission back.</source>
+        <translation>Shoal Messages nesmie komunikovať s hlasovou službou. Preinštalovanie Shoal Messages vráti povolenie.</translation>
+    </message>
+    <message>
+        <source>The speech service does not answer.</source>
+        <translation>Hlasová služba neodpovedá.</translation>
+    </message>
+</context>
+<context>
+    <name>shipwright-shoal-messages</name>
+    <message numerus="yes">
+        <source>%n mention(s)</source>
+        <translation>
+            <numerusform>%n zmienka</numerusform>
+            <numerusform>%n zmienky</numerusform>
+            <numerusform>%n zmienok</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new message(s)</source>
+        <translation>
+            <numerusform>%n nová správa</numerusform>
+            <numerusform>%n nové správy</numerusform>
+            <numerusform>%n nových správ</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Prichádzajúci videohovor</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Prichádzajúci hovor</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Nová správa</translation>
+    </message>
+</context>
+</TS>

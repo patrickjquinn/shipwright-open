@@ -1,0 +1,4183 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; the pull-down cut to four entries, Decline beside Accept invitation; Sailfish UI rules pass; Pilot context (Keel Actions); see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+import Sailfish.Pickers 1.0
+import QtMultimedia 5.6
+import "Formatting.js" as Formatting
+import "MatrixLinks.js" as MatrixLinks
+import "Composing.js" as Composing
+import "SecurityStatus.js" as SecurityStatus
+
+// A single room: history above, composer below. The list keeps the core's
+// order and follows the bottom unless the user has scrolled up.
+Page {
+    id: page
+
+    // Named so the window can see whether the room a notification is about is
+    // already the page on screen.
+    objectName: "roomPage"
+
+    property string roomId
+    property string roomName
+    property bool invited: false
+
+    // Shipwright: what Pilot may know when the person asks about this page.
+    ConversationContext {
+        roomId: page.roomId
+        roomName: page.roomName
+        invited: page.invited
+        active: page.status === PageStatus.Active
+    }
+    // Defaults to true so push sites that do not know the state never offer
+    // enabling encryption where it may already be on.
+    property bool encrypted: true
+    // Whether the encryption value came from the room itself. Half the ways in
+    // carry none, and a security mark whose failure state is "safe" is worse than none.
+    property bool encryptionKnown: false
+
+    /// How many message menus stand open - at most one, but counted rather than
+    /// flagged so a delegate that dies with its menu cannot leave it set.
+    property int openMenus: 0
+
+    /// The open came back as a failure, with the core's scrubbed reason. The
+    /// placeholder says so instead of leaving a spinner over nothing.
+    property bool openFailed: false
+    property string openFailedReason: ""
+
+    // Media keys whose fetch failed - refused, dropped, given up on. Without them
+    // the row cannot tell "still loading" from "never coming".
+    property var failedMedia: ({})
+
+    // Set while an already sent message is being rewritten.
+    property string editingEventId: ""
+    // Set while a reply is being composed.
+    property string replyingEventId: ""
+    /// The quoted message's text, for the quote on the send page.
+    property string replyingBody: ""
+    property string replyingTo: ""
+
+    allowedOrientations: Orientation.All
+
+    // The sender's picture and the gap it leaves. One number for picture, bubble
+    // margin and text width - never read off the item, which is the width rule.
+    readonly property real avatarSize: Theme.iconSizeMedium
+    // The same for a system line, where the picture only marks who acted.
+    readonly property real systemAvatarSize: Theme.iconSizeExtraSmall
+
+    // Whether new messages should scroll the view along.
+    property bool followTail: true
+
+    // The timeline's height before the last change: keyboard, banner and composer
+    // all take height away, and what was on screen has to stay there.
+    property real lastTimelineHeight: 0
+    /// Whether the reader stood at the newest message when the viewport began to
+    /// change. Asked before the keyboard shortens the page, answered after.
+    property bool wasAtEnd: false
+
+    // A save that is waiting for its download to finish.
+    property string pendingSaveKey: ""
+    /// Forwarding an attachment needs the file on this device first - the target
+    /// room encrypts under its own keys, and a thumbnail is not the file.
+    property string pendingForwardKey: ""
+    property string pendingForwardMime: ""
+
+    // The audio item currently loaded into the player, and one waiting for its
+    // download.
+    property string playingId: ""
+    /// Videos chosen to open silent, by row id. Per video and per visit: it
+    /// answers "not this one, not now", not "never again".
+    property var mutedVideos: ({})
+    property string pendingPlayKey: ""
+    property bool pendingSaveIsImage: false
+    property string pendingSaveName: ""
+
+    // Set from the pinned overview: once the live timeline is back, scroll to
+    // this message — in this normal window, not in a separate view.
+    property string jumpTargetId: ""
+    // How many pages of history a jump may still fetch before giving up. An
+    // old pin can sit far beyond what is loaded.
+    property int jumpPagesLeft: 0
+    // How many turns it may spend waiting for the live timeline to be there at
+    // all - roughly ten seconds, after which the room is plainly not coming.
+    property int jumpWaitsLeft: 0
+    readonly property int jumpWaitLimit: 15
+    // A jump may open a slice: search hit yes, restored position no.
+    property bool jumpMayFocus: true
+    // Target time, where known: far beyond the loaded history opens a slice.
+    property double jumpTimestamp: 0
+    // A slice around one message instead of the live conversation. Empty: live.
+    property string focusedEventId: ""
+    // Writing actions return to live first.
+    readonly property bool inSlice: focusedEventId.length > 0
+    // Set by "Back to the latest messages": open at the end.
+    property bool returningToEnd: false
+
+    // Recipients with unverified devices, from `checkRecipients`. Drives the
+    // pre-send warning; each entry is { userId, name, devices }.
+    property var unverifiedUsers: []
+
+    // Set while the join into the room that replaced this one is in flight.
+    // Its own flag, not `busy`: that one is true for any command at all.
+    property bool followingSuccessor: false
+
+    // What the actions page chose, applied once this page is on top again: focus
+    // set while the stack animates does not stick, and a push during a pop is lost.
+    property var pendingAction: null
+
+    // Fires before the children go, so the field can still be read. An edit is not
+    // a draft, and an empty field removes what stood there before.
+    Component.onDestruction: {
+        if (!invited) {
+            // Same reason as in submit(): without this the draft keeps
+            // everything except the word the user stopped in the middle of.
+            Qt.inputMethod.commit()
+            matrix.setDraft(roomId,
+                            page.editingEventId.length > 0 ? "" : messageComposer.text)
+        }
+    }
+
+    // Leaving the foreground aborts a running countdown at once: suppressing it at
+    // expiry left it firing on return from a minimised app.
+    property var activeRemorse: null
+    readonly property bool appForeground: Qt.application.active
+    onAppForegroundChanged: {
+        if (!appForeground && activeRemorse && activeRemorse.pending) {
+            activeRemorse.cancel()
+        }
+    }
+
+
+    Component.onCompleted: {
+        if (!invited) {
+            // What was typed here last time. Going back destroys this page, so the field
+            // is filled from somewhere that outlives it.
+            messageComposer.text = matrix.draft(roomId)
+            matrix.openRoom(roomId)
+            refreshRecipients(true)
+            // The lock has to state the room's answer, not the caller's guess - not every
+            // way in carries one, and the property defaults to encrypted.
+            matrix.loadRoomInfo(roomId)
+        } else if (roomName.length === 0) {
+            // An invitation opens nothing: where the way in carried no name - a
+            // notification - this answer is the only thing that fills the header.
+            matrix.loadRoomInfo(roomId)
+        }
+    }
+
+    // When the recipients were last asked about, so a return to this page does
+    // not ask again straight away.
+    property double lastRecipientCheck: 0
+    readonly property int recipientCheckInterval: 60000
+
+    // Encrypted rooms only, and throttled: this walks every member and asks the
+    // server about unknown devices. Devices do not change by the minute.
+    function refreshRecipients(force) {
+        if (!page.encrypted) {
+            return
+        }
+        var now = new Date().getTime()
+        if (!force && page.lastRecipientCheck > 0
+                && now - page.lastRecipientCheck < page.recipientCheckInterval) {
+            return
+        }
+        page.lastRecipientCheck = now
+        matrix.checkRecipients(page.roomId)
+    }
+
+    // Where reading stopped last time, until the row it names is on screen.
+    property string unreadFromId: ""
+
+    // The line's own event, frozen at entry. The SDK's marker row moves the moment
+    // this visit's receipt goes out and would end up under the newest message.
+    property string markerEventId: ""
+
+    // The second guess: a marker can name an event this room has no row for.
+    // Cleared as it is used, so the search can never become a loop.
+    property string unreadFallbackId: ""
+
+    // How many pages the search may still ask for. The first batch is the newest
+    // slice, and the more is unread the further back the marker sits.
+    property int unreadPagesLeft: 0
+    readonly property int unreadPageLimit: 8
+    /// How many rounds the search may wait while the rows are still arriving. At
+    /// the retry timer's 700 ms that is about seven seconds.
+    property int unreadEmptyRounds: 0
+    readonly property int unreadEmptyLimit: 10
+    /// Set where the search gave up: the page then sits at the end without the
+    /// reader having been there, and marking read would move the very marker the
+    /// next attempt needs - the failure would delete its own evidence.
+    property bool unreadJumpFailed: false
+    /// The count the last round saw, so "still filling" can be told from "done".
+    property int unreadLastCount: -1
+
+    // Once per built timeline: coming back from a sub-page must not jump. A
+    // rebuilt timeline is a different matter - the rows are new.
+    property bool unreadHandled: false
+
+    Connections {
+        target: matrix
+
+        onMediaFailed: {
+            var marked = page.failedMedia
+            marked[key] = true
+            // Reassigned, not mutated in place: a JavaScript object changed
+            // through its own reference tells no binding anything.
+            page.failedMedia = marked
+        }
+
+        // What the room says about itself against what the caller believed: encryption,
+        // and the name where a notification tap arrived with the id alone.
+        onRoomInfoReady: {
+            if (info.roomId !== page.roomId) {
+                return
+            }
+            // An invitation is stripped state: "not encrypted" read off it would open
+            // the padlock and take the recipient warning with it. The name is safe.
+            if (!page.invited) {
+                page.encrypted = info.encrypted === true
+                page.encryptionKnown = true
+            }
+            if (page.roomName.length === 0 && info.name.length > 0) {
+                page.roomName = info.name
+            }
+        }
+
+        onTimelineOpened: {
+            // The live timeline is back, which is what a pending jump waited for. It goes
+            // first: the message the user asked for beats where reading stopped.
+            if (page.jumpTargetId.length > 0) {
+                page.tryJump()
+            }
+            if (page.returningToEnd) {
+                page.returningToEnd = false
+                page.unreadHandled = true
+                page.followTail = true
+                timelineView.positionViewAtEnd()
+                return
+            }
+            if (rebuilt) {
+                page.unreadHandled = false
+            }
+            if (page.unreadHandled) {
+                return
+            }
+            page.unreadHandled = true
+            page.markerEventId = readMarker
+            page.unreadFallbackId = readReceipt
+            // The line is drawn either way; only the opening position is a choice. Off,
+            // the room stays at its newest message and the line is met by scrolling.
+            if (!settings.jumpToReadMarker) {
+                return
+            }
+            // Where the reader stood when this room was last left, for as long as the app
+            // runs. Only ever set away from the end, so the unread search keeps that case.
+            var kept = positions.recall(page.roomId)
+            if (kept.eventId) {
+                // The line still has to say where the new messages start, and nothing
+                // else will look for it on this path: where the marker names no event,
+                // the receipt does. The unread search does the same, one step later.
+                if (page.markerEventId.length === 0) {
+                    page.markerEventId = page.unreadFallbackId
+                }
+                page.jumpToEvent(kept.eventId, ListView.Beginning, kept.offset, 0, false)
+                // The live view is back - that is what this signal says - but the page
+                // itself may still be coming up, and `jumpToEvent` waits for `Active`.
+                page.tryJump()
+                return
+            }
+            page.unreadFromId = readMarker
+            page.unreadPagesLeft = page.unreadPageLimit
+            page.unreadEmptyRounds = page.unreadEmptyLimit
+            page.unreadLastCount = -1
+            page.unreadJumpFailed = false
+            // The tail is let go before the search starts: a view that follows the newest
+            // row marks the room read, which moves the marker being looked for.
+            if (readMarker.length > 0) {
+                page.followTail = false
+            }
+            unreadTimer.restart()
+        }
+    }
+
+    // Positioning right after a model change lands on the old geometry.
+    Timer {
+        id: unreadTimer
+
+        interval: 1
+        onTriggered: page.showFirstUnread()
+    }
+
+    // Throttled so a burst of rows does not produce one command per row. The SDK
+    // drops a receipt already covered, so a late one costs nothing.
+    Timer {
+        id: readTimer
+
+        interval: 800
+        onTriggered: {
+            // Only from the tail, and `atYEnd` counts as much as the flag - a jump or an
+            // unread open switches it off with the newest message on screen.
+            if (page.unreadFromId.length > 0) {
+                return
+            }
+            if ((page.followTail || timelineView.atYEnd)
+                    && page.status === PageStatus.Active
+                    && Qt.application.active) {
+                matrix.markRead()
+            }
+        }
+    }
+
+    // Not while the marker search runs: a room opens at its end, and marking read
+    // there moves the very marker it is looking for.
+    // The member page has no composer; it hands the mention to the room page,
+    // which is the one that stays. Applied when this page is on top again -
+    // a focus set while the stack animates does not stick.
+    Connections {
+        target: matrix.mentions
+
+        onInsertRequested: {
+            if (roomId !== page.roomId || page.invited) {
+                return
+            }
+            // The composer lives in the live conversation only.
+            if (page.inSlice) {
+                page.backToLive()
+            }
+            if (page.status === PageStatus.Active) {
+                messageComposer.insertMention(userId, displayName)
+                return
+            }
+            page.pendingAction = {
+                "kind": "mention",
+                "userId": userId,
+                "displayName": displayName
+            }
+            pageStack.pop(page)
+        }
+    }
+
+    Connections {
+        target: Qt.application
+        onActiveChanged: {
+            if (page.status !== PageStatus.Active || page.invited) {
+                return
+            }
+            if (Qt.application.active) {
+                // Back in front: whether this counts as reading is decided by
+                // the same test as everywhere else, one timer tick later.
+                readTimer.restart()
+            } else {
+                page.markReadIfDue()
+            }
+        }
+    }
+
+    // Leaving is the last moment to say the room was read, and it has to be taken
+    // on `Deactivating` - a popped page never reaches `Inactive`.
+    function markReadIfDue() {
+        // The block from a failed jump only applies where there is something to
+        // scroll: a room that fits on one screen was seen whole, and holding it
+        // unread would be the reported complaint at a new place.
+        if (invited || page.unreadFromId.length > 0
+                || (page.unreadJumpFailed
+                    && timelineView.contentHeight > timelineView.height)) {
+            return
+        }
+        // `atYEnd` is false while the list still coasts after a flick, so leaving
+        // right after scrolling to the newest message left the room unread - the
+        // second of waiting the field reported. The last half screen counts.
+        if (page.followTail || timelineView.atYEnd || page.nearTail) {
+            matrix.markRead()
+        }
+    }
+
+    readonly property bool nearTail:
+        timelineView.contentHeight > 0
+        && timelineView.contentY + timelineView.height
+           >= timelineView.contentHeight - timelineView.height / 2
+
+    // Opens where reading stopped, with the last read message at the top so the
+    // line and the first unread are both in view. Bounded pagination.
+    function showFirstUnread() {
+        var marker = page.unreadFromId
+        if (marker.length === 0 || page.jumpTargetId.length > 0) {
+            page.unreadFromId = ""
+            unreadRetry.stop()
+            return
+        }
+        var idx = matrix.timeline.indexOfEvent(marker)
+        if (idx >= 0) {
+            page.unreadFromId = ""
+            unreadRetry.stop()
+            // The marker on the newest row means everything is read: nothing
+            // to jump to, and the room belongs at its end.
+            if (idx >= matrix.timeline.count - 1) {
+                console.warn("shoal-messages: read marker is the newest row ("
+                             + idx + " of " + matrix.timeline.count
+                             + "), staying at the end")
+                page.stayAtEnd(true)
+                return
+            }
+            console.warn("shoal-messages: opening at the read marker, row " + idx
+                         + " of " + matrix.timeline.count)
+            timelineView.positionViewAtIndex(idx, ListView.Beginning)
+            // What "at the end" means is only known once the view settled: two unread
+            // messages fit, a longer run does not, and without asking the room parked.
+            followCheck.restart()
+            return
+        }
+        // The core answers `timeline.open` before the rows arrive, so the first look
+        // is too early. Wait while the model is still filling - "empty" was the wrong
+        // measure: one row ends it while the marker is still on its way, and a small
+        // room is then out of pages before it began. Bounded, so a room that never
+        // delivers cannot hold the view.
+        if (page.unreadEmptyRounds > 0
+                && matrix.timeline.count !== page.unreadLastCount) {
+            page.unreadLastCount = matrix.timeline.count
+            page.unreadEmptyRounds--
+            unreadRetry.restart()
+            return
+        }
+        if (page.unreadPagesLeft > 0 && !matrix.timelineAtStart) {
+            // One request at a time; the timer brings us back. On a timer, not on the row
+            // count: a page can arrive full of events that render as nothing.
+            if (!matrix.paginating) {
+                page.unreadPagesLeft--
+                matrix.loadOlder()
+            }
+            unreadRetry.restart()
+            return
+        }
+        // The beginning is loaded and the row is still missing, so the marker names no
+        // row here. The receipt is tried once, on the pagination budget that is left.
+        if (page.unreadFallbackId.length > 0 && page.unreadFallbackId !== marker) {
+            console.warn("shoal-messages: read marker is not a row in this room, "
+                         + "falling back to the read receipt")
+            page.unreadFromId = page.unreadFallbackId
+            page.markerEventId = page.unreadFallbackId
+            page.unreadFallbackId = ""
+            unreadRetry.restart()
+            return
+        }
+        // Out of reach: the room opens at its newest message, which is where
+        // it stood before this looked.
+        console.warn("shoal-messages: read marker not found, "
+                     + matrix.timeline.count + " rows, "
+                     + page.unreadPagesLeft + " pages left, at start "
+                     + matrix.timelineAtStart + " - staying at the end")
+        page.unreadFromId = ""
+        unreadRetry.stop()
+        page.stayAtEnd(false)
+    }
+
+    // The end, and the newest rows followed again. `read` is false where the jump
+    // failed: marking read there moves the anchor the next attempt needs, so the
+    // failure would delete its own evidence and the room never jumps again.
+    function stayAtEnd(read) {
+        page.followTail = true
+        page.unreadJumpFailed = !read
+        timelineView.positionViewAtEnd()
+        if (read) {
+            readTimer.restart()
+        }
+    }
+
+    Timer {
+        id: unreadRetry
+
+        interval: 700
+        onTriggered: page.showFirstUnread()
+    }
+
+    Timer {
+        id: followCheck
+
+        interval: 50
+        onTriggered: {
+            page.followTail = timelineView.atYEnd
+            if (page.followTail) {
+                readTimer.restart()
+            }
+        }
+    }
+
+    Connections {
+        target: matrix
+        // Verifying somebody is the moment the warning should stop naming them - the
+        // throttle would keep the old answer for a minute.
+        onVerificationChanged: page.refreshRecipients(true)
+        onTimelineFailed: {
+            page.openFailed = true
+            page.openFailedReason = reason
+        }
+        // Any open that gets under way clears the last failure: the flag
+        // belongs to one attempt, not to the page.
+        onOpenRoomChanged: page.openFailed = false
+
+        onRecipientsChecked: {
+            if (roomId === page.roomId) {
+                page.unverifiedUsers = users
+            }
+        }
+    }
+
+    // Deliberately not closed on leaving: the kept subscription makes stepping
+    // back instant. The core keeps one, and opening another room replaces it.
+
+    onStatusChanged: {
+        // Which room is on screen, which is not the open room: the core keeps that
+        // one's timeline subscribed after the page is gone.
+        if (status === PageStatus.Active) {
+            matrix.setVisibleRoom(roomId)
+        } else if (status === PageStatus.Deactivating
+                   || status === PageStatus.Inactive) {
+            matrix.setVisibleRoom("")
+            page.markReadIfDue()
+            // A hands-free take has no finger that lifts on leaving: dropped, not sent.
+            if (matrix.recorder.handsFree) {
+                matrix.recorder.cancel()
+            }
+            if (status === PageStatus.Deactivating) {
+                page.keepAnchor()
+                page.keepReadingPosition()
+            }
+        }
+
+        // The page is on screen during the transition already, so this cannot wait
+        // for `Active`: what is painted there is what the reader sees jump.
+        if (status === PageStatus.Activating || status === PageStatus.Active) {
+            page.restoreAnchor()
+        }
+        // Let go a moment after the return - held for ever, the anchor would
+        // refuse every scroll.
+        if (status === PageStatus.Active && page.keptIndex >= 0) {
+            anchorHold.restart()
+        }
+
+        if (status === PageStatus.Active && !invited) {
+            // Coming back from the pinned view, the shared timeline has to show live
+            // events again - or the slice this page was showing. Otherwise a no-op.
+            if (page.focusedEventId.length === 0) {
+                matrix.openRoom(roomId)
+            } else if (matrix.timelineFocus !== page.focusedEventId) {
+                matrix.openRoom(roomId, page.focusedEventId)
+            }
+            // Not marked read outright: the view may open at the first unread message, and
+            // everything below it is unread until the user gets there.
+            readTimer.restart()
+            tryJump()
+            // The room's state again: encryption can have been switched on one page
+            // further in, and the lock would still stand open.
+            matrix.loadRoomInfo(roomId)
+            // Devices may have been verified (or new ones appeared) while the
+            // page was covered; re-check so the warning stays current.
+            refreshRecipients()
+
+            // Extra work goes inside this handler: QML refuses a type that binds
+            // `onStatusChanged` twice, and the page then fails to load.
+            if (pendingAction) {
+                var action = pendingAction
+                pendingAction = null
+                if (action.kind === "reply") {
+                    beginReply(action.eventId, action.senderName, action.body)
+                } else if (action.kind === "edit") {
+                    beginEdit(action.eventId, action.body)
+                } else if (action.kind === "sendMedia") {
+                    submitMedia(action)
+                } else if (action.kind === "otherFiles") {
+                    pageStack.push(multiContentPicker)
+                } else if (action.kind === "textFile") {
+                    sendTextFile()
+                } else if (action.kind === "poll") {
+                    // Made from the attachment picker; the room only starts it.
+                    pageStack.push(Qt.resolvedUrl("CreatePollDialog.qml"))
+                } else if (action.kind === "location") {
+                    pageStack.push(Qt.resolvedUrl("ShareLocationPage.qml"), {
+                                       roomId: page.roomId,
+                                       encrypted: page.encrypted || !page.encryptionKnown
+                                   })
+                } else if (action.kind === "react") {
+                    // These three push a page of their own. From the actions page, after its pop
+                    // had started, `push()` handed nothing back and the picker never appeared.
+                    pickReaction(action.eventId)
+                } else if (action.kind === "thread") {
+                    openThread(action.eventId)
+                } else if (action.kind === "forwardAttachment") {
+                    forwardAttachment(action.item)
+                } else if (action.kind === "mention") {
+                    messageComposer.insertMention(action.userId, action.displayName)
+                } else if (action.kind === "transcribe") {
+                    matrix.transcripts.transcribe(action.item.id, action.eventId, action.item.media)
+                } else if (action.kind === "delete") {
+                    // The countdown belongs on the page that stays: started on the actions page,
+                    // Silica executes it the moment that page pops.
+                    confirmDelete(action.eventId, action.txnId, action.unsent)
+                }
+            }
+        }
+    }
+
+    // Leaving is irreversible and used to be one tug away: a dialog that names the
+    // room, then the remorse as the undo.
+    function confirmLeave() {
+        var dialog = pageStack.push(
+                    Qt.resolvedUrl("ConfirmDialog.qml"),
+                    {
+                        question: page.invited ? qsTr("Really decline this invitation?")
+                                               : qsTr("Really leave this room?"),
+                        subject: page.roomName,
+                        explanation: page.invited
+                                     ? qsTr("The invitation is gone afterwards. You can only get back in if somebody invites you again.")
+                                     : qsTr("The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address."),
+                        acceptLabel: page.invited ? qsTr("Decline") : qsTr("Leave")
+                    })
+        dialog.accepted.connect(function() { page.startLeave() })
+    }
+
+    function startLeave() {
+        page.activeRemorse = Remorse.popupAction(
+                    page,
+                    page.invited ? qsTr("Declining") : qsTr("Leaving room"),
+                    function() {
+                        // Silica executes a running remorse the moment its page deactivates, so going
+                        // back completed it. Only a countdown on its own page, app in front, counts.
+                        if (page.status !== PageStatus.Active || !Qt.application.active) {
+                            return
+                        }
+                        matrix.leaveRoom(page.roomId)
+                        if (pageStack.currentPage === page) {
+                            pageStack.pop()
+                        }
+                    })
+    }
+
+    // Where the reader stood, as a row and a distance into it. A pixel position
+    // means nothing across a page change: covered, the list destroys its
+    // delegates, and on return it re-estimates. Measured on the device, four
+    // times over: contentHeight 31135 -> 42134 with an unchanged count of 50,
+    // originY moving with it, and the kept contentY then twelve rows too high.
+    property int keptIndex: -1
+    property real keptOffset: 0
+
+    /// Takes the anchor. At the end there is nothing to keep - the tail logic
+    /// owns that case and puts the view back exactly.
+    function keepAnchor() {
+        page.keptIndex = -1
+        if (page.followTail || timelineView.atYEnd
+                || page.jumpTargetId.length > 0 || page.unreadFromId.length > 0) {
+            return
+        }
+        var probeY = timelineView.contentY + 1
+        var idx = timelineView.indexAt(timelineView.width / 2, probeY)
+        if (idx < 0) {
+            return
+        }
+        var item = timelineView.itemAt(timelineView.width / 2, probeY)
+        page.keptIndex = idx
+        page.keptOffset = item ? (timelineView.contentY - item.y) : 0
+    }
+
+    property bool restoringAnchor: false
+
+    /// Puts the row back under the top edge. Re-applied while the list is still
+    /// re-measuring, because one application lands on the geometry of that frame.
+    function restoreAnchor() {
+        // Positioning creates delegates, which changes the content height, which is
+        // where this is called from: without the guard it calls itself.
+        if (page.keptIndex < 0 || page.restoringAnchor) {
+            return
+        }
+        // A hand on the list outranks the anchor, and so does a jump the user asked
+        // for. Both end the restore rather than fight it.
+        if (page.jumpTargetId.length > 0 || page.unreadFromId.length > 0
+                || ((timelineView.moving || timelineView.dragging)
+                    && page.status === PageStatus.Active)) {
+            page.keptIndex = -1
+            return
+        }
+        page.restoringAnchor = true
+        timelineView.positionViewAtIndex(page.keptIndex, ListView.Beginning)
+        timelineView.contentY += page.keptOffset
+        page.restoringAnchor = false
+    }
+
+    // The re-measuring runs on for a while after the page is back, so the anchor
+    // is held for a moment and then let go - a restore that never ends would
+    // refuse every scroll.
+    Timer {
+        id: anchorHold
+
+        interval: 900
+        onTriggered: page.keptIndex = -1
+    }
+
+    // Asked once for the page: the plugin set does not change while it is open.
+    readonly property var animatableFormats: matrix.animatableImageFormats()
+
+    // Someone else's message: only in a two-party chat and only where the room
+    // says this account may redact for others. `=== true` on both, not the
+    // `!== false` the pin entry uses - an unanswered room offers nothing here.
+    readonly property bool canRedactOthers: matrix.roomPermissions.redactOthers === true
+                                            && matrix.roomPermissions.direct === true
+
+    // Deleting is not undoable and used to be one tap away. The countdown runs on
+    // this page; a failed send is discarded rather than deleted.
+    function confirmDelete(eventId, txnId, unsent) {
+        page.activeRemorse = Remorse.popupAction(
+                    page,
+                    unsent ? qsTr("Discarding") : qsTr("Deleting"),
+                    function() {
+                        // The same test the room's own remorse makes: Silica executes a countdown when
+                        // its page deactivates, and minimising leaves it running unseen.
+                        if (page.status !== PageStatus.Active || !Qt.application.active) {
+                            return
+                        }
+                        matrix.deleteMessage(eventId || "", txnId || "")
+                    })
+    }
+
+    // What the row says instead of "not decryptable": withheld key or older than
+    // this device is what decides whether anything can be done about it.
+    function undecryptableText(cause) {
+        switch (cause) {
+        case "withheldInsecure":
+            return qsTr("The sender did not share the key: they consider this device insecure. Verify this device.")
+        case "withheldBySender":
+            return qsTr("The sender could not deliver the key to this device.")
+        case "verificationViolation":
+            return qsTr("The sender's identity has changed since you verified them, so the key was withheld.")
+        case "unsignedDevice":
+            return qsTr("The sender's device is not signed by its owner.")
+        case "unknownDevice":
+            return qsTr("The sender's device is unknown here.")
+        case "sentBeforeJoin":
+            return qsTr("Sent before you joined the room.")
+        case "historicalNoBackup":
+            return qsTr("Older than this device, and there is no key backup.")
+        case "historicalUnverifiedDevice":
+            return qsTr("Older than this device. Verify this device to read it.")
+        default:
+            return qsTr("Can't be decrypted. This phone doesn't have the key")
+        }
+    }
+
+    /// The row a restored reading position sits on, held by event id while the list
+    /// re-estimates its height: one positioning lands on the geometry of that frame,
+    /// and delegates coming into being move everything under them.
+    property string holdEventId: ""
+    property real holdOffset: 0
+
+    function holdPosition() {
+        if (page.holdEventId.length === 0 || page.restoringAnchor) {
+            return
+        }
+        // A hand on the list outranks the hold, the same way it outranks the anchor.
+        if ((timelineView.moving || timelineView.dragging)
+                && page.status === PageStatus.Active) {
+            page.holdEventId = ""
+            return
+        }
+        // By id, never by index: a pagination inserts older rows above and every
+        // index moves with it.
+        var idx = matrix.timeline.indexOfEvent(page.holdEventId)
+        if (idx < 0) {
+            return
+        }
+        page.restoringAnchor = true
+        timelineView.positionViewAtIndex(idx, ListView.Beginning)
+        timelineView.contentY += page.holdOffset
+        page.restoringAnchor = false
+    }
+
+    // Long enough to outlast the re-estimating, short enough not to refuse a scroll.
+    Timer {
+        id: holdRelease
+
+        interval: 1500
+        onTriggered: page.holdEventId = ""
+    }
+
+    /// Where a jump puts its target, and how far it is then shifted.
+    property int jumpAlign: ListView.Center
+    property real jumpOffset: 0
+
+    /// The topmost visible row, kept by event id for as long as the app runs: a
+    /// room left in the middle of its history opens there again. The end is not
+    /// kept - a room opens there anyway, and the unread logic owns that case.
+    function keepReadingPosition() {
+        // A jump that has not landed yet is not a position; what is held stays held.
+        // Nor is a place in a slice: coming back, the room opens live.
+        if (page.invited || page.roomId.length === 0 || page.jumpTargetId.length > 0
+                || page.focusedEventId.length > 0) {
+            return
+        }
+        if (page.followTail || timelineView.atYEnd) {
+            positions.forget(page.roomId)
+            return
+        }
+        var probeY = timelineView.contentY + 1
+        var item = timelineView.itemAt(timelineView.width / 2, probeY)
+        // A row that is still on its way to the server has no id to come back to.
+        if (!item || !item.rowEventId || item.rowEventId.length === 0) {
+            return
+        }
+        positions.remember(page.roomId, item.rowEventId, timelineView.contentY - item.y)
+    }
+
+    // Scrolls to a message, loading older history until it shows up. Called by
+    // the pinned overview before it pops back, and by tapping a quote.
+    function jumpToEvent(eventId, align, offset, timestamp, mayFocus) {
+        if (!eventId || eventId.length === 0) {
+            return
+        }
+        jumpTimestamp = timestamp || 0
+        jumpMayFocus = mayFocus !== false
+        // A new jump beats a pending return to the end.
+        returningToEnd = false
+        // A quote lands in the middle of the view; a reading position goes back under
+        // the top edge, where it stood.
+        jumpAlign = align === undefined ? ListView.Center : align
+        jumpOffset = offset === undefined ? 0 : offset
+        jumpTargetId = eventId
+        jumpPagesLeft = 10
+        jumpWaitsLeft = jumpWaitLimit
+        // Only when this page is on screen: the pinned overview calls this while the
+        // shared model still holds the pinned view, and the switch back throws it away.
+        if (page.status === PageStatus.Active) {
+            tryJump()
+        }
+    }
+
+    // Kept under its old name for the pinned overview, which calls it on the
+    // page underneath.
+    function jumpToPinned(eventId) {
+        jumpToEvent(eventId)
+    }
+
+    function tryJump() {
+        if (jumpTargetId.length === 0) {
+            return
+        }
+        // Nothing to look in yet - coming back from the pinned view empties the model.
+        // Bounded, so a room that never delivers stops asking.
+        if (!matrix.timelineReady || matrix.timeline.count === 0) {
+            if (jumpWaitsLeft > 0) {
+                jumpWaitsLeft--
+                jumpRetry.restart()
+                return
+            }
+            jumpTargetId = ""
+            jumpRetry.stop()
+            // Slice not built: say so; the button leads back.
+            if (inSlice) {
+                showNotice(qsTr("That message is not in the loaded history"))
+            }
+            return
+        }
+        var idx = matrix.timeline.indexOfEvent(jumpTargetId)
+        if (idx >= 0) {
+            var landed = jumpTargetId
+            jumpTargetId = ""
+            jumpRetry.stop()
+            followTail = false
+            timelineView.positionViewAtIndex(idx, jumpAlign)
+            timelineView.contentY += jumpOffset
+            // A restored reading position is held for a moment; a jump the user asked
+            // for is a single act and keeps none.
+            if (jumpAlign === ListView.Beginning) {
+                page.holdEventId = landed
+                page.holdOffset = jumpOffset
+                holdRelease.restart()
+            }
+            return
+        }
+        // Far beyond the loaded history: one slice instead of many pages.
+        var oldest = matrix.timeline.oldestTimestamp()
+        if (jumpMayFocus && jumpTimestamp > 0 && oldest > 0
+                && jumpTimestamp < oldest - 24 * 3600 * 1000) {
+            openFocused(jumpTargetId)
+            return
+        }
+        // From a slice: the next slice, no paging.
+        if (jumpMayFocus && inSlice) {
+            openFocused(jumpTargetId)
+            return
+        }
+        if (jumpPagesLeft > 0 && !matrix.timelineAtStart) {
+            // Only one request at a time; the timer brings us back either way.
+            if (!matrix.paginating) {
+                jumpPagesLeft--
+                matrix.loadOlder()
+            }
+            // Retried on a timer, not on the row count: a page of history can arrive full
+            // of events that render as nothing, and the jump would die without a word.
+            jumpRetry.restart()
+            return
+        }
+        var missed = jumpTargetId
+        jumpTargetId = ""
+        jumpRetry.stop()
+        // Pages ran out: a slice, once per target.
+        if (jumpMayFocus && missed !== focusedEventId) {
+            openFocused(missed)
+            return
+        }
+        showNotice(qsTr("That message is not in the loaded history"))
+    }
+
+    // The message in a slice; the jump waits for the model as for live.
+    function openFocused(eventId) {
+        focusedEventId = eventId
+        followTail = false
+        jumpTargetId = eventId
+        jumpAlign = ListView.Center
+        jumpOffset = 0
+        jumpPagesLeft = 0
+        jumpWaitsLeft = jumpWaitLimit
+        jumpMayFocus = false
+        matrix.openRoom(roomId, eventId)
+        jumpRetry.restart()
+    }
+
+    // Back from the slice to the conversation as it is now.
+    function backToLive() {
+        // A kept row index belongs to the slice.
+        keptIndex = -1
+        focusedEventId = ""
+        jumpTargetId = ""
+        jumpRetry.stop()
+        followTail = true
+        returningToEnd = true
+        positions.forget(roomId)
+        matrix.openRoom(roomId)
+    }
+
+    Timer {
+        id: jumpRetry
+
+        interval: 700
+        onTriggered: page.tryJump()
+    }
+
+    // A list shorter than the screen cannot be scrolled, so nothing triggers older
+    // messages. Bounded: rows that render as nothing look like growth.
+    property int fillEmptyRounds: 0
+    readonly property int fillEmptyLimit: 3
+    /// Height, not row count: the loop runs while the content is shorter than the
+    /// screen, and a pure profile change raises the count by no pixel.
+    property real fillLastHeight: -1
+
+    function fillScreen() {
+        if (page.invited || !matrix.timelineReady || matrix.paginating
+                || matrix.timelineAtStart || timelineView.count === 0) {
+            return
+        }
+        if (timelineView.contentHeight > timelineView.height) {
+            return
+        }
+
+        // Whether a round brought anything is decided here, not when its reply
+        // arrived: the rows come through the diff stream, regularly later.
+        if (page.fillLastHeight >= 0
+                && timelineView.contentHeight <= page.fillLastHeight) {
+            if (++page.fillEmptyRounds >= page.fillEmptyLimit) {
+                return
+            }
+        } else {
+            page.fillEmptyRounds = 0
+        }
+
+        page.fillLastHeight = timelineView.contentHeight
+        matrix.loadOlder()
+    }
+
+    Connections {
+        target: matrix
+
+        // The round is over, and where it brought nothing no diff will arrive to
+        // trigger the fill. Not `busyChanged`: a downloading avatar drove history.
+        onPaginated: page.fillScreen()
+
+        // A different room, a fresh start.
+        onTimelineReadyChanged: {
+            page.fillEmptyRounds = 0
+            page.fillLastHeight = -1
+            page.fillScreen()
+        }
+    }
+
+    Connections {
+        target: matrix
+        onMediaReady: {
+            if (key === page.pendingPlayKey) {
+                page.pendingPlayKey = ""
+                audioPlayer.source = "file://" + path
+                audioPlayer.play()
+                return
+            }
+            if (key === page.pendingForwardKey) {
+                page.pendingForwardKey = ""
+                pageStack.push(Qt.resolvedUrl("ForwardPage.qml"), {
+                                   path: "file://" + path,
+                                   mimeType: page.pendingForwardMime
+                               })
+                return
+            }
+            if (key !== page.pendingSaveKey) {
+                return
+            }
+            page.pendingSaveKey = ""
+            page.storeTo(path, page.pendingSaveName, page.pendingSaveIsImage)
+        }
+    }
+
+    // The switch into the replacement room is over. A failed join has to clear the
+    // wait too, or the banner keeps announcing a move that is not happening.
+    Connections {
+        target: matrix
+        onSuccessorReady: page.followingSuccessor = false
+        onLastErrorChanged: page.followingSuccessor = false
+    }
+
+    // Unlocking the backup makes keys available that this room was missing.
+    Connections {
+        target: matrix
+        onEncryptionChanged: {
+            if (!page.invited && matrix.encryptionStatus.backupEnabled) {
+                matrix.fetchRoomKeys(page.roomId)
+            }
+        }
+    }
+
+    // The room's menu hangs on a page-sized flickable, not on the timeline whose
+    // top is arbitrarily far away. Dragging the strip opens it, the list scrolls.
+    SilicaFlickable {
+        id: roomView
+
+        anchors.fill: parent
+        contentHeight: height
+        contentWidth: width
+        // Back to rest whenever nothing holds this flickable: Silica activates a
+        // pulley only from `contentY == 0`, and its own snap-back skips a one-screen
+        onContentYChanged: {
+            if (contentY > 0) {
+                contentY = 0
+            }
+            settleTimer.restart()
+        }
+
+        Timer {
+            id: settleTimer
+            interval: 500
+            onTriggered: {
+                if (roomView.contentY === 0) {
+                    return
+                }
+                // Re-armed, not dropped: a resting finger stops changing
+                // contentY, so nothing would wind this up again.
+                if (roomView.dragging || roomView.moving || roomMenu.active) {
+                    settleTimer.restart()
+                    return
+                }
+                roomView.contentY = 0
+            }
+        }
+
+        // Never visible while the content fits, which on this page it always does:
+        // the rule is one decorator per flickable, and the timeline carries its own.
+        VerticalScrollDecorator { }
+
+        // Conditions belong on the entries, never on the menu: hiding the pull-down
+        // takes every other entry with it and the page has no way out.
+        // Four entries at most. Leaving, the room link, verifying the contact and
+        // searching live on the room's info page; a poll and a location are sent
+        // from the attachment picker; declining an invitation sits beside accepting.
+        PullDownMenu {
+            id: roomMenu
+
+            // Reverse of reading order: the *last* entry is the bottom one, where a short
+            // tug lands.
+            // Deliberately without a visibility condition: the room's info page holds
+            // the way out of the room, so this entry is always there.
+            MenuItem {
+                text: qsTr("Room info")
+                onClicked: pageStack.push(Qt.resolvedUrl("RoomInfoPage.qml"), {
+                                              roomId: page.roomId,
+                                              roomName: page.roomName,
+                                              invited: page.invited
+                                          })
+            }
+
+            MenuItem {
+                text: qsTr("Video call")
+                visible: !page.invited && matrix.calls.available
+                         && matrix.calls.state === "idle"
+                onClicked: {
+                    matrix.calls.placeCall(page.roomId, true)
+                    pageStack.push(Qt.resolvedUrl("CallPage.qml"))
+                }
+            }
+
+            // One entry for starting a call and for getting back to one: a call that is
+            // still running must always be reachable, or a stuck state leaves the menu
+            // looking broken.
+            MenuItem {
+                text: matrix.calls.state !== "idle" ? qsTr("Back to the call") : qsTr("Call")
+                visible: matrix.calls.state !== "idle"
+                         || (!page.invited && matrix.calls.available)
+                onClicked: {
+                    if (matrix.calls.state === "idle") {
+                        matrix.calls.placeCall(page.roomId)
+                    }
+                    pageStack.push(Qt.resolvedUrl("CallPage.qml"))
+                }
+            }
+
+            // Last, so the shortest tug reaches it: reading further back is what one
+            // reaches for in a conversation.
+            MenuItem {
+                text: qsTr("Load older messages")
+                visible: !page.invited && !matrix.timelineAtStart
+                // Only a running pagination disables this. The global busy flag greyed it out
+                // while some unrelated thumbnail was downloading.
+                enabled: !matrix.paginating
+                onClicked: matrix.loadOlder()
+            }
+        }
+
+        // The room's name stays put instead of scrolling away with the list,
+        // which is what makes the menu above reachable at all.
+        BackgroundItem {
+            id: roomHeader
+
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: parent.top
+                // Out from under the camera cutout: this strip is the room's own, and Silica
+                // gives only its own headers that margin. Portrait only, as Silica has it.
+                topMargin: page.orientation === Orientation.Portrait
+                           ? Screen.topCutout.height : 0
+            }
+            height: headerColumn.height + 2 * Theme.paddingMedium
+            // The room's name leads to what the room is - including, for an invitation,
+            // the topic that decides whether to accept.
+            onClicked: pageStack.push(Qt.resolvedUrl("RoomInfoPage.qml"), {
+                                          roomId: page.roomId,
+                                          roomName: page.roomName,
+                                          invited: page.invited
+                                      })
+
+            Column {
+                id: headerColumn
+
+                anchors {
+                    left: parent.left
+                    leftMargin: Theme.horizontalPageMargin
+                    right: parent.right
+                    rightMargin: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
+                }
+
+                // The lock leads the name: closed and green for an encrypted room, open and
+                // red without. A shape is looked at; a sentence was read once.
+                Row {
+                    anchors.right: parent.right
+                    spacing: Theme.paddingLarge
+
+                    LockIcon {
+                        id: headerLock
+
+                        // Against the Row, not the name beside it: a positioner sets its children's
+                        // y, and two of them reaching into each other is a fight nobody needs.
+                        anchors.verticalCenter: parent.verticalCenter
+                        // An invitation says nothing reliable about encryption, and neither does a
+                        // room that has not answered: both claim nothing rather than the wrong thing.
+                        visible: !page.invited && page.encryptionKnown
+                        size: Math.round(Theme.fontSizeLarge * 1.2)
+                        locked: page.encrypted
+                        // Faint in both states: the name is what the strip is for. Set by eye on the
+                        // device - half was still too present.
+                        opacity: 0.30
+                    }
+
+                    Label {
+                        id: nameLabel
+
+                        // The name takes what the lock leaves. Reading the column's width is safe: it
+                        // comes from the strip's anchors, never from inside this Row.
+                        width: Math.min(implicitWidth,
+                                        headerColumn.width
+                                        - (headerLock.visible
+                                           ? headerLock.width + parent.spacing : 0))
+                        horizontalAlignment: Text.AlignRight
+                        text: page.roomName
+                        font.pixelSize: Theme.fontSizeLarge
+                        font.family: Theme.fontFamilyHeading
+                        color: roomHeader.highlighted ? Theme.highlightColor
+                                                      : Theme.primaryColor
+                        truncationMode: TruncationMode.Fade
+                        // A room name with a newline in it would push the strip
+                        // open and take the space the conversation needs.
+                        wrapMode: Text.NoWrap
+                        maximumLineCount: 1
+                    }
+                }
+
+                Label {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignRight
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: roomHeader.highlighted ? Theme.secondaryHighlightColor
+                                                  : Theme.secondaryColor
+                    truncationMode: TruncationMode.Fade
+                    wrapMode: Text.NoWrap
+                    maximumLineCount: 1
+                    // Only what the lock cannot say. Being cut off outranks anything about the
+                    // room: a silently stale conversation is what the user cannot see.
+                    visible: text.length > 0
+                    text: matrix.syncState === "offline"
+                          ? qsTr("Offline. Waiting for a connection")
+                          : page.invited ? qsTr("Invitation") : ""
+                }
+            }
+        }
+
+        // An upgraded room takes no new messages - the upgrade raises the send level -
+        // so this says so and leads on. Above the pinned banner: the rest is history.
+        BackgroundItem {
+            id: tombstoneBanner
+
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: roomHeader.bottom
+            }
+            height: visible ? Theme.itemSizeSmall : 0
+            visible: !page.invited && matrix.roomReplaced
+            clip: true
+            onClicked: {
+                page.followingSuccessor = true
+                matrix.followSuccessor(page.roomId)
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                z: -1
+                color: Theme.rgba(Theme.errorColor, 0.15)
+            }
+
+            Column {
+                anchors {
+                    left: parent.left
+                    leftMargin: Theme.horizontalPageMargin
+                    right: parent.right
+                    rightMargin: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
+                }
+
+                Label {
+                    width: parent.width
+                    truncationMode: TruncationMode.Fade
+                    wrapMode: Text.NoWrap
+                    maximumLineCount: 1
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: tombstoneBanner.highlighted ? Theme.highlightColor
+                                                       : Theme.primaryColor
+                    text: qsTr("This room has been replaced")
+                }
+
+                Label {
+                    width: parent.width
+                    truncationMode: TruncationMode.Fade
+                    wrapMode: Text.NoWrap
+                    maximumLineCount: 1
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: tombstoneBanner.highlighted ? Theme.secondaryHighlightColor
+                                                       : Theme.secondaryColor
+                    // The reason is free text from whoever upgraded and may say nothing useful,
+                    // so the way out comes first.
+                    text: page.followingSuccessor
+                          ? qsTr("Switching to the new room…")
+                          : (matrix.replacementJoined
+                             ? qsTr("Tap to open the new room")
+                             : qsTr("Tap to join the new room"))
+                            + (matrix.replacementReason.length > 0
+                               ? " · " + matrix.replacementReason : "")
+                }
+            }
+        }
+
+        // Pinned messages sit under the room's name while the conversation scrolls
+        // underneath: the banner is outside the list, so it never moves.
+        BackgroundItem {
+            id: pinnedBanner
+
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: tombstoneBanner.bottom
+            }
+            height: visible ? Theme.itemSizeExtraSmall : 0
+            visible: !page.invited && matrix.pinnedEventIds.length > 0
+            // One line high and outside the list: a preview that grew taller would paint
+            // over the conversation instead of being cut off.
+            clip: true
+            onClicked: pageStack.push(Qt.resolvedUrl("PinnedMessagesPage.qml"), {
+                                          roomId: page.roomId,
+                                          roomName: page.roomName
+                                      })
+
+            Rectangle {
+                anchors.fill: parent
+                z: -1
+                color: Theme.rgba(Theme.highlightBackgroundColor, 0.2)
+            }
+
+            Label {
+                anchors {
+                    left: parent.left
+                    leftMargin: Theme.horizontalPageMargin
+                    right: parent.right
+                    rightMargin: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
+                }
+                truncationMode: TruncationMode.Fade
+                // Fading alone only shortens a line; a body with newlines still
+                // breaks into as many lines as it likes and the Label grows with it.
+                wrapMode: Text.NoWrap
+                maximumLineCount: 1
+                font.pixelSize: Theme.fontSizeSmall
+                color: pinnedBanner.highlighted ? Theme.highlightColor
+                                                : Theme.secondaryHighlightColor
+                // The newest pin's text; the count is the fallback while it loads or where the
+                // body cannot be read, and a prefix when there are more.
+                text: "📌 "
+                      + (matrix.pinnedEventIds.length > 1
+                         ? "(" + matrix.pinnedEventIds.length + ") " : "")
+                      + (matrix.pinnedPreview.length > 0
+                         ? matrix.pinnedPreview
+                         : qsTr("%n pinned message(s)", "", matrix.pinnedEventIds.length))
+            }
+        }
+
+        SendQueueBanner {
+            id: sendQueueBanner
+
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: pinnedBanner.bottom
+            }
+            visible: !page.invited && head !== null
+        }
+
+        SilicaListView {
+            id: timelineView
+
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: sendQueueBanner.bottom
+                bottom: composer.top
+            }
+            clip: true
+            // The model belongs to whichever room the core has open, and an
+            // invitation never opens one - bound, it shows the room visited before.
+            model: page.invited ? [] : matrix.timeline
+            cacheBuffer: page.height
+
+            // Air under the last message: the read mark's tap area reaches a finger's
+            // width below the bubble, which is exactly where the message field begins.
+            footer: Item {
+                width: 1
+                height: Math.round(Theme.fontSizeTiny * 1.7)
+                        + 2 * Theme.paddingMedium
+            }
+
+            header: Column {
+                width: timelineView.width
+
+                // Nothing but breathing room: the room's name is the fixed
+                // strip above, so the first message must not start glued to it.
+                Item {
+                    width: 1
+                    height: Theme.paddingLarge
+                }
+
+                // Without this, "load older messages" simply does nothing once the history is
+                // complete, which reads like a broken button.
+                Label {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryHighlightColor
+                    visible: matrix.timelineAtStart && timelineView.count > 0
+                    text: qsTr("Beginning of the conversation")
+                }
+            }
+
+            delegate: ListItem {
+                id: row
+
+                // Undecryptable and deleted events get a bubble too, so a gap in
+                // the conversation is visible rather than silently skipped.
+                readonly property bool isBubble: model.kind === "message"
+                                                 || model.kind === "undecryptable"
+                                                 || model.kind === "redacted"
+                // The last message read before this visit carries the line. Not the SDK's
+                // marker row: that needs receipt tracking and it moves as the room is read.
+                readonly property bool showMarker: rowEventId.length > 0
+                                                   && rowEventId === page.markerEventId
+                                                   && index < timelineView.count - 1
+                // The text an attachment was sent with. Empty for one sent
+                // without, where `body` holds the file name instead.
+                readonly property string rowEventId: model.eventId || ""
+                readonly property var reactionList: model.reactions || []
+                readonly property bool hasReactions: reactionList.length > 0
+                // Six fit next to each other on the narrow device; the rest are
+                // a count.
+                readonly property var reactionsShown: reactionList.slice(0, 6)
+                readonly property int reactionsHidden: Math.max(0, reactionList.length - 6)
+                readonly property string captionText: model.caption || ""
+                readonly property bool hasCaption: captionText.length > 0
+                readonly property bool isImage: model.kind === "message"
+                                                && model.msgtype === "m.image"
+                                                && !!model.media
+                readonly property bool isAudio: model.kind === "message"
+                                                && model.msgtype === "m.audio"
+                                                && !!model.media
+                // Offered where the switch is on; whether it can work is the check's
+                // business on the privacy page, and the answer's in the bubble.
+                readonly property bool canTranscribe: row.isAudio && settings.voiceTranscripts
+                                                      && row.rowEventId.length > 0
+                readonly property string transcriptState: matrix.transcripts.revision >= 0
+                        ? matrix.transcripts.state(row.rowEventId) : ""
+                readonly property bool isVideo: model.kind === "message"
+                                                && model.msgtype === "m.video"
+                                                && !!model.media
+                // A picture whose kind this device can animate. Asked of Qt rather
+                // than listed here: the WebP handler on this Qt reads a file but
+                // does not animate it, and a mark the viewer cannot honour is a lie.
+                // Only the mark is drawn here; it plays in the viewer, when asked.
+                /// The sender's own figure, where there is one. Not every client
+                /// declares it, and none is written rather than guessed.
+                readonly property string mediaSizeText:
+                    (row.isVideo || row.isFile || row.isAudio || row.isImage)
+                    && model.media && model.media.size > 0
+                    ? Format.formatFileSize(model.media.size) : ""
+
+                readonly property bool isAnimated: row.isImage
+                        && page.animatableFormats.indexOf(
+                            String(model.media.mimetype || "").toLowerCase()
+                                .replace(/^image\//, "")) >= 0
+                readonly property bool isFile: model.kind === "message"
+                                               && !!model.media
+                                               && !isImage
+                // The first web address in the text, where the setting allows a
+                // preview here. Empty means no card - and no question to the server.
+                readonly property string previewUrl: {
+                    if (model.kind !== "message" || !!model.media || row.isPoll
+                            || row.isLocation) {
+                        return ""
+                    }
+                    // Unknown counts as encrypted: the failure direction of this
+                    // gate is the one that asks the server nothing.
+                    if (settings.linkPreviews === "never"
+                            || (settings.linkPreviews === "unencrypted"
+                                && (page.encrypted || !page.encryptionKnown))) {
+                        return ""
+                    }
+                    // The same alphabet linkifyBody uses, so the card describes
+                    // the address a tap on the text would open.
+                    var found = /https?:\/\/[^\s<>"]+/.exec(model.body || "")
+                    if (!found) {
+                        return ""
+                    }
+                    var address = found[0].replace(/[.,;:!?]+$/, "")
+                    // A closing bracket without its opener belongs to the sentence.
+                    if (/\)$/.test(address) && address.indexOf("(") < 0) {
+                        address = address.slice(0, -1)
+                    }
+                    // Through the same gate as the link in the text. The card is
+                    // a link too: it is tappable and it leads to the address it
+                    // shows. Without this, an address the text refused - not
+                    // ASCII, or a user name in front of the host - came back as a
+                    // card, and the homeserver was asked to fetch it as well.
+                    return page.safeHref(address)
+                }
+                // A poll draws itself; its fallback text would repeat the
+                // question and list the answers a second time.
+                readonly property bool isPoll: model.kind === "message" && !!model.poll
+                // A location draws itself; its fallback is a geo: URI.
+                readonly property bool isLocation: model.kind === "message" && !!model.location
+                readonly property bool isOwn: model.own === true
+                // A sent message of someone else's, where the room allows it.
+                readonly property bool canDeleteForOther: !row.isOwn
+                        && page.canRedactOthers
+                        && model.kind === "message"
+                        && (model.eventId || "").length > 0
+                // Only a body that visibly carries a link pays the rich-text path, behind a
+                // setting. Never for a file row: its caption is a stranger's text.
+                readonly property bool hasLink: model.kind === "message"
+                                                && !model.media
+                                                && ((settings.clickableLinks
+                                                     && /https?:\/\//.test(model.body || ""))
+                                                    || MatrixLinks.hasAddress(model.body))
+                // The core made this markup itself and escaped the sender's characters, so it
+                // can go to StyledText like a linkified body.
+                readonly property bool hasFormatted: model.kind === "message"
+                                                     && !model.media
+                                                     && (model.formatted || "").length > 0
+
+                // The body as markup, or empty where plain text will do. One property for
+                // format and text, so a Label can never parse what was not built for it.
+                readonly property int emojiPixels: Math.round(Theme.fontSizeSmall * 1.3)
+                readonly property string richBody: {
+                    if (model.kind !== "message" || !!model.media) {
+                        return ""
+                    }
+                    var base = ""
+                    if (hasFormatted) {
+                        base = Formatting.renderFormatted(model.formatted,
+                                                          settings.clickableLinks,
+                                                          Theme.highlightColor)
+                    } else if (hasLink) {
+                        base = page.linkifyBody(model.body || "")
+                    } else if (settings.emojiImages) {
+                        base = page.escapeBody(model.body || "")
+                    } else {
+                        return ""
+                    }
+                    if (!settings.emojiImages) {
+                        return base
+                    }
+                    var pictured = Formatting.withEmojiPictures(
+                                base, emojiPixels,
+                                function(key) { return matrix.emojiSource(key) })
+                    // A plain body with no picture in it stays plain text -
+                    // the markup renderer costs more and buys nothing.
+                    if (!hasFormatted && !hasLink && pictured === base) {
+                        return ""
+                    }
+                    return pictured
+                }
+
+                // Calls and membership changes show as a centred line so a room made of them
+                // is not empty. Pure profile changes collapse but stay, or indices drift.
+                readonly property bool isSystem: model.kind === "system"
+                                                 && model.system !== "profile"
+
+                // Localised here, not in the core: the token comes from Rust, the
+                // wording and language belong to the UI.
+                function systemText() {
+                    // The person the change is about, and the one who made it. For a ban
+                    // those are two different people, and naming only one named the wrong.
+                    var who = (model.name && model.name.length > 0)
+                              ? model.name : model.senderName
+                    var by = model.senderName
+                    var line = ""
+                    switch (model.system) {
+                    case "call":            return qsTr("Call", "timeline system line, a noun")
+                    case "member.joined":   line = qsTr("%1 joined").arg(who); break
+                    case "member.left":     line = qsTr("%1 left").arg(who); break
+                    case "member.invited":  line = qsTr("%1 invited %2").arg(by).arg(who); break
+                    case "member.kicked":   line = qsTr("%1 removed %2").arg(by).arg(who); break
+                    case "member.banned":   line = qsTr("%1 banned %2").arg(by).arg(who); break
+                    case "member.unbanned": line = qsTr("%1 unbanned %2").arg(by).arg(who); break
+                    case "member.revoked":  line = qsTr("%1 withdrew the invitation for %2").arg(by).arg(who); break
+                    case "member.declined": line = qsTr("%1 declined the invitation").arg(who); break
+                    case "member.knocked":  line = qsTr("%1 asked to join").arg(who); break
+                    case "member":          line = qsTr("%1 changed membership").arg(who); break
+                    case "profile":         line = qsTr("%1 changed their profile").arg(who); break
+                    default:                return ""
+                    }
+                    // Only where the core vouches for one - see member_reason().
+                    if (model.reason && model.reason.length > 0) {
+                        line = qsTr("%1: %2", "system line and the reason given for it")
+                               .arg(line).arg(model.reason)
+                    }
+                    return line
+                }
+
+                // What the sender declares about a picture. `sourceSize` is a hint an
+                // interlaced PNG may ignore, so absurd dimensions are not loaded at all.
+                readonly property bool saneDimensions: !model.media
+                        || ((model.media.width || 0) <= 8192
+                            && (model.media.height || 0) <= 8192)
+
+                readonly property bool sanePicture: !model.media
+                        || (saneDimensions
+                            // The declared size, before anything is fetched. Nothing is required of it: a
+                            // missing size is the common case, and `media::fetch` weighs what arrives.
+                            && (model.media.size || 0) <= 100 * 1024 * 1024)
+
+                // Taller than the page: Silica's menu renders the row into one texture, and past
+                // the GPU's limit that texture is black. Such a row gets the actions as a page.
+                readonly property bool tall: contentHeight > page.height
+                // Folded to three lines, past a page of text, until opened.
+                readonly property bool expanded: page.expandedRevision >= 0
+                                                 && !!page.expandedRows[model.id]
+                readonly property bool longBody: bodyFull.implicitHeight > page.height
+
+                function holdMenu() {
+                    if (row.tall) {
+                        row.showActions()
+                    } else {
+                        row.openMenu()
+                    }
+                }
+
+                function showActions() {
+                    pageStack.push(Qt.resolvedUrl("MessageActionsPage.qml"), {
+                                       roomPage: page,
+                                       eventId: model.eventId || "",
+                                       txnId: model.txnId || "",
+                                       unsent: model.sendState === "failed",
+                                       body: model.body || "",
+                                       senderName: model.senderName || "",
+                                       isOwn: row.isOwn,
+                                       canDelete: row.isOwn || row.canDeleteForOther,
+                                       // Not in the live view an edit needs.
+                                       editable: model.editable === true && !page.inSlice,
+                                       isImage: row.isImage,
+                                       canSave: row.isFile || row.isImage,
+                                       canTranscribe: row.canTranscribe
+                                                      && row.transcriptState !== "working"
+                                                      && row.transcriptState !== "done",
+                                       // Copied out, not handed over: the model row is gone once it leaves the
+                                       // cache.
+                                       item: {
+                                           "id": model.id,
+                                           "msgtype": model.msgtype,
+                                           "media": model.media
+                                       }
+                                   })
+                }
+
+                readonly property bool hasPreview: sanePicture
+                                                   && (isImage
+                                                       || (isVideo && !!model.media.thumbnailSource))
+
+                width: timelineView.width
+                contentHeight: (isBubble
+                                ? Math.max(bubble.height,
+                                           row.isOwn ? 0 : page.avatarSize)
+                                  + Theme.paddingMedium
+                                : (model.kind === "date"
+                                   ? dayLabel.height + Theme.paddingLarge
+                                   : (isSystem
+                                      ? Math.max(systemLabel.height,
+                                                 page.systemAvatarSize)
+                                        + Theme.paddingLarge
+                                      : 0)))
+                               // The gap the line sits in. Any row can carry it, so it is added to the row's
+                               // own height rather than being a row of its own.
+                               + (showMarker ? Theme.paddingLarge : 0)
+
+                // Only real messages react; dividers are not something to press.
+                enabled: model.kind === "message" || row.isSystem
+                // Every entry of the menu is about a message; a system line would
+                // open it empty.
+                showMenuOnPressAndHold: model.kind === "message" && !row.tall
+                onPressAndHold: {
+                    if (model.kind === "message" && row.tall) {
+                        row.showActions()
+                    }
+                }
+                _showPress: false
+
+                // A growing height under an open menu is the menu, not new rows:
+                // following it scrolls the pressed row off the top.
+                onMenuOpenChanged: page.openMenus = Math.max(0, page.openMenus
+                                                             + (menuOpen ? 1 : -1))
+                // A recycled delegate takes its menu with it, and that closing
+                // does not always come back as a `menuOpen` change.
+                Component.onDestruction: {
+                    if (menuOpen) {
+                        page.openMenus = Math.max(0, page.openMenus - 1)
+                    }
+                }
+
+                // `!page.isLandscape` on most entries: there the conversation keeps under
+                // 600 px, four menu rows, and a message's menu needs six. Those move to a page.
+                menu: ContextMenu {
+
+                    MenuItem {
+                        // Also the only way out for a send that failed for good: it has no event id,
+                        // and without this it sits in the room for ever.
+                        text: model.sendState === "failed"
+                              ? qsTr("Discard") : qsTr("Delete")
+                        visible: !page.isLandscape
+                                 && (row.isOwn || row.canDeleteForOther)
+                        onClicked: page.confirmDelete(model.eventId || "",
+                                                      model.txnId || "",
+                                                      model.sendState === "failed")
+                    }
+
+                    MenuItem {
+                        text: qsTr("Pin")
+                        // Only where this account may write the pinned list. `!== false`: until the
+                        // room answers there is no entry, and a slow answer must not remove an action.
+                        visible: model.kind === "message" && (model.eventId || "").length > 0
+                                 && !page.isLandscape
+                                 && matrix.roomPermissions.pin !== false
+                        onClicked: matrix.pinMessage(model.eventId, true)
+                    }
+
+
+
+
+                    MenuItem {
+                        // Starting one, not only answering in one that exists: the marker opens a
+                        // thread that is already there.
+                        text: qsTr("Reply in thread")
+                        visible: model.kind === "message"
+                                 && (model.eventId || "").length > 0
+                                 && !page.isLandscape
+                        onClicked: pageStack.push(Qt.resolvedUrl("ThreadPage.qml"), {
+                                                      roomId: page.roomId,
+                                                      roomName: page.roomName,
+                                                      rootEventId: model.threadRoot
+                                                                   && model.threadRoot.length > 0
+                                                                   ? model.threadRoot
+                                                                   : model.eventId,
+                                                      encrypted: page.encrypted
+                                                  })
+                    }
+
+
+
+                    MenuItem {
+                        // The queue gave up on this one; this puts it back in
+                        // line. Nothing else in the app could move it.
+                        text: qsTr("Send again")
+                        visible: model.sendState === "failed" && !page.isLandscape
+                        onClicked: matrix.retryMessage(model.txnId || "")
+                    }
+
+
+
+                    MenuItem {
+                        text: qsTr("Save")
+                        visible: (row.isFile || row.isImage) && !page.isLandscape
+                        onClicked: page.saveAttachment(model)
+                    }
+
+                    MenuItem {
+                        text: qsTr("Convert to text")
+                        visible: row.canTranscribe && !page.isLandscape
+                                 && row.transcriptState !== "working"
+                                 && row.transcriptState !== "done"
+                        onClicked: matrix.transcripts.transcribe(model.id, model.eventId, model.media)
+                    }
+
+
+
+                    MenuItem {
+                        text: qsTr("Copy")
+                        visible: (model.body || "").length > 0
+                        onClicked: Clipboard.text = model.body
+                    }
+
+
+
+                    MenuItem {
+                        text: qsTr("Forward")
+                        // An attachment goes as the file, never as its name: hung off the body
+                        // alone, this forwarded a video as the sentence "clip.mp4".
+                        visible: (row.isFile || row.isImage
+                                  || (model.body || "").length > 0)
+                                 && !page.isLandscape
+                        onClicked: {
+                            if (row.isFile || row.isImage) {
+                                page.forwardAttachment(model)
+                                return
+                            }
+                            pageStack.push(Qt.resolvedUrl("ForwardPage.qml"), {
+                                               body: model.body
+                                           })
+                        }
+                    }
+
+
+
+                    MenuItem {
+                        text: qsTr("Edit")
+                        visible: row.isOwn && model.editable === true && !page.isLandscape
+                                 && !page.inSlice
+                        onClicked: page.beginEdit(model.eventId, model.body)
+                    }
+
+
+
+                    MenuItem {
+                        text: qsTr("React")
+                        visible: model.kind === "message"
+                                 && (model.eventId || "").length > 0
+                                 && !page.isLandscape
+                        onClicked: page.pickReaction(model.eventId)
+                    }
+
+
+
+                    MenuItem {
+                        text: qsTr("Reply")
+                        visible: model.kind === "message"
+                        onClicked: page.beginReply(model.eventId, model.senderName, model.body)
+                    }
+
+
+
+                    MenuItem {
+                        text: qsTr("More…")
+                        visible: page.isLandscape
+                        onClicked: row.showActions()
+                    }
+                }
+
+                // The sender's picture, for other people only. Keyed by the address, so five
+                // senders in two hundred messages cost five downloads.
+                Avatar {
+                    id: senderAvatar
+
+                    visible: row.isBubble && !row.isOwn
+                    anchors {
+                        left: parent.left
+                        leftMargin: Theme.horizontalPageMargin
+                        top: parent.top
+                    }
+                    size: page.avatarSize
+                    source: model.senderAvatar || ""
+                    name: model.senderName || model.sender || ""
+
+                    // Tap opens the sender's profile. The margin stays inside the gap to the
+                    // bubble, or it takes taps meant for the message.
+                    MouseArea {
+                        anchors {
+                            fill: parent
+                            margins: -Theme.paddingSmall
+                        }
+                        onClicked: pageStack.push(
+                                       Qt.resolvedUrl("MemberProfilePage.qml"),
+                                       { roomId: page.roomId, userId: model.sender })
+                        onPressAndHold: row.holdMenu()
+                    }
+                }
+
+                // A message. Own messages sit on the right in the highlight colour,
+                // everyone else's on the left — the usual reading cue.
+                Rectangle {
+                    id: bubble
+
+                    visible: row.isBubble
+                    anchors {
+                        right: row.isOwn ? parent.right : undefined
+                        left: row.isOwn ? undefined : parent.left
+                        rightMargin: Theme.horizontalPageMargin
+                        // A constant, never the avatar's width: reading a sibling's width here and
+                        // its height there is how this delegate earns a binding loop.
+                        leftMargin: Theme.horizontalPageMargin
+                                    + page.avatarSize + Theme.paddingSmall
+                        top: parent.top
+                    }
+                    // Width follows the column, which sizes itself from the texts. Deriving it
+                    // from the labels would close the loop - their width comes from the bubble.
+                    width: bubbleColumn.width + 2 * Theme.paddingMedium
+                    height: bubbleColumn.height + 2 * Theme.paddingMedium
+                    radius: Theme.paddingMedium
+                    // Both fills stay faint: an opaque highlight can land on any lightness under
+                    // an ambience. The stronger tint marks the own side; both are settable.
+                    color: row.isOwn
+                           ? Theme.rgba(appearance.ownBubbleColor.length > 0
+                                        ? appearance.ownBubbleColor
+                                        : Theme.highlightBackgroundColor,
+                                        appearance.ownBubbleOpacity)
+                           : Theme.rgba(appearance.otherBubbleColor.length > 0
+                                        ? appearance.otherBubbleColor
+                                        : Theme.highlightBackgroundColor,
+                                        appearance.otherBubbleOpacity)
+                    opacity: model.pending === true ? 0.5 : 1.0
+
+                    Column {
+                        id: bubbleColumn
+
+                        // The widest a bubble's text may get before wrapping. Someone else's starts
+                        // further right and gets correspondingly less.
+                        property real maxTextWidth: timelineView.width * 0.82
+                                                    - 2 * Theme.paddingMedium
+                                                    - (row.isOwn ? 0 : page.avatarSize
+                                                                      + Theme.paddingSmall)
+
+                        /// How light it is behind a picture: the bubble's tint over the
+                        /// ambience. The picture's own content is none of the frame's business.
+                        readonly property real backgroundLightness: {
+                            var fill = bubble.color
+                            var tint = 0.299 * fill.r + 0.587 * fill.g + 0.114 * fill.b
+                            var base = Theme.colorScheme === Theme.LightOnDark ? 0.0 : 1.0
+                            return base * (1.0 - fill.a) + tint * fill.a
+                        }
+
+                        /// The opposite grey: dark on light, light on dark. A grey, not
+                        /// a colour - a colour would be decoration, this is an edge.
+                        readonly property color frameLine:
+                            backgroundLightness > 0.5 ? Theme.rgba(Theme.darkPrimaryColor, 0.55)
+                                                      : Theme.rgba(Theme.lightPrimaryColor, 0.55)
+
+                        /// One device pixel: two would read as a border, one reads as
+                        /// an edge.
+                        readonly property real frameLineWidth:
+                            Math.max(1, Math.round(Theme.pixelRatio))
+
+                        /// Between the line and the picture, so the frame reads as a
+                        /// frame and not as a rim the picture is pressed against.
+                        readonly property real frameMat: Theme.paddingSmall / 2
+
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            margins: Theme.paddingMedium
+                        }
+                        // No explicit width: a Column is as wide as its widest child, and every child
+                        // derives its width from its own - which keeps the loops out.
+                        spacing: Theme.paddingSmall / 2
+
+                        // Which edge the children stand on: an own bubble grows leftwards, so its
+                        // content hangs off the right edge. `x` from the parent's width, never width.
+                        readonly property bool holdRight: row.isOwn
+
+                        Label {
+                            id: senderLabel
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+
+                            width: Math.min(implicitWidth, bubbleColumn.maxTextWidth)
+                            visible: !row.isOwn
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: appearance.nameColor.length > 0
+                                   ? appearance.nameColor : Theme.highlightColor
+                            truncationMode: TruncationMode.Fade
+                            textFormat: Text.PlainText
+                            text: model.senderName || ""
+                        }
+
+                        // The quoted message, bar on the LEFT so name and text hang off it.
+                        Item {
+                            id: replyBlock
+
+                            // On the column's child, not inside: there it was a no-op
+                            // and the quote stayed left while an own bubble grew.
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            // Not for a thread row: the SDK marks every threaded event a reply to the
+                            // previous one, which drew a quote no other client shows, one fetch each.
+                            visible: !!model.replyTo
+                                     && (model.threadRoot || "").length === 0
+                            // Anchors, no `Row`: the row sized itself from these children
+                            // while one of them took its share from the row.
+                            width: bubbleColumn.maxTextWidth
+                            height: Math.max(quoteTexts.height, quoteThumbFrame.height)
+
+
+                            Rectangle {
+                                id: quoteBar
+
+                                anchors.left: parent.left
+                                width: Theme.paddingSmall / 2
+                                height: parent.height
+                                radius: width / 2
+                                color: Theme.rgba(Theme.highlightColor, 0.6)
+                            }
+
+                            // A quoted picture as a picture - its body is only the file name. In a frame
+                            // of its own, which is also what a picture that has not arrived stands in.
+                            Rectangle {
+                                id: quoteThumbFrame
+
+                                readonly property var quotedMedia: model.replyTo
+                                                                   ? model.replyTo.media : null
+                                readonly property string mediaKey: model.replyTo
+                                                                   ? model.replyTo.eventId + "/quote" : ""
+
+                                visible: !!quotedMedia
+                                         && (model.replyTo.msgtype === "m.image"
+                                             || model.replyTo.msgtype === "m.video")
+
+                                anchors {
+                                    left: quoteBar.right
+                                    leftMargin: Theme.paddingSmall
+                                    verticalCenter: parent.verticalCenter
+                                }
+
+
+                                /// The longest side of the picture. Square while the event names
+                                /// no size - the only shape that claims nothing.
+                                readonly property real box: Theme.itemSizeMedium
+                                readonly property real aspect:
+                                    quotedMedia && quotedMedia.width > 0 && quotedMedia.height > 0
+                                    ? quotedMedia.width / quotedMedia.height : 1
+
+                                // The event's own measurements, never the loaded picture's:
+                                // `PreserveAspectFit` recomputes the implicit size from the given one.
+                                width: visible ? (aspect >= 1 ? box : Math.round(box * aspect)) : 0
+                                height: visible ? (aspect >= 1 ? Math.round(box / aspect) : box) : 0
+                                radius: Theme.paddingSmall / 2
+                                // The same edge as a picture in a message: the grey
+                                // opposite the background it stands on.
+                                color: Theme.rgba(Theme.primaryColor, 0.1)
+                                border.width: bubbleColumn.frameLineWidth
+                                border.color: bubbleColumn.frameLine
+
+                                Image {
+                                    id: quoteThumb
+
+                                    readonly property var quotedMedia: quoteThumbFrame.quotedMedia
+                                    readonly property string mediaKey: quoteThumbFrame.mediaKey
+
+                                    // Inside the box, mat all round. The proportions are the
+                                    // fill mode's business, not the layout's.
+                                    anchors {
+                                        fill: parent
+                                        margins: quoteThumbFrame.border.width + bubbleColumn.frameMat
+                                    }
+
+                                    // The whole picture, not its middle: `PreserveAspectCrop` cuts away exactly
+                                    // what a quote is meant to identify.
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                    // A fixed decode ceiling - a picture from outside must not ask for arbitrary
+                                    // memory. Both dimensions means "scale to fit inside this".
+                                    sourceSize.width: Theme.itemSizeMedium * 2
+                                    sourceSize.height: Theme.itemSizeMedium * 2
+
+                                    // Also on a change of key: the delegate is recycled while scrolling and would
+                                    // keep the picture of the row it was last used for.
+                                    Component.onCompleted: load()
+                                    onMediaKeyChanged: {
+                                        source = ""
+                                        load()
+                                    }
+
+                                    function load() {
+                                        // The frame carries the condition; this
+                                        // one is inside it and always visible.
+                                        if (!quoteThumbFrame.visible
+                                                || mediaKey.length === 0) {
+                                            return
+                                        }
+                                        var known = matrix.mediaPath(mediaKey)
+                                        if (known.length > 0) {
+                                            source = "file://" + known
+                                        } else if (!settings.autoLoadMedia) {
+                                            // "Load pictures: off" covers quotes.
+                                            return
+                                        } else if (quotedMedia.thumbnailSource) {
+                                            matrix.requestMedia(mediaKey, quotedMedia.thumbnailSource, false,
+                                                                quotedMedia.size || 0)
+                                        } else {
+                                            matrix.requestMedia(mediaKey, quotedMedia.source, true,
+                                                                quotedMedia.size || 0)
+                                        }
+                                    }
+
+                                    Connections {
+                                        target: matrix
+                                        onMediaReady: {
+                                            if (key === quoteThumb.mediaKey) {
+                                                quoteThumb.source = "file://" + path
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Column {
+                                id: quoteTexts
+
+                                // Beside the picture, not above its top edge.
+                                anchors {
+                                    left: quoteThumbFrame.visible
+                                          ? quoteThumbFrame.right : quoteBar.right
+                                    leftMargin: Theme.paddingSmall
+                                    verticalCenter: parent.verticalCenter
+                                }
+
+                                // What the labels may use once the bar, the
+                                // picture and the spacing took their share.
+                                readonly property real maxWidth: replyBlock.width
+                                                                 - quoteBar.width
+                                                                 - Theme.paddingSmall
+                                                                 - (quoteThumbFrame.visible
+                                                                    ? quoteThumbFrame.width + Theme.paddingSmall
+                                                                    : 0)
+
+                                Label {
+                                    id: quoteSender
+
+                                    width: Math.min(implicitWidth, quoteTexts.maxWidth)
+                                    // An empty line above the quote reads as a glitch; the box collapses to the
+                                    // body line until the sender is known.
+                                    visible: text.length > 0
+                                    font.pixelSize: Theme.fontSizeExtraSmall
+                                    color: appearance.nameColor.length > 0
+                                           ? appearance.nameColor : Theme.highlightColor
+                                    truncationMode: TruncationMode.Fade
+                                    textFormat: Text.PlainText
+                                    // While the quoted event is being fetched its sender is unknown - the same
+                                    // ellipsis the body uses says so.
+                                    text: {
+                                        if (!model.replyTo) {
+                                            return ""
+                                        }
+                                        if ((model.replyTo.sender || "").length > 0) {
+                                            return model.replyTo.sender
+                                        }
+                                        return model.replyTo.state === "loading" ? "…" : ""
+                                    }
+                                }
+
+                                Label {
+                                    id: quoteBody
+
+                                    // Fixed to the full text width, never the own implicit width: with wrap and
+                                    // elide that follows the set width in this Qt, and reading it back loops.
+                                    width: quoteTexts.maxWidth
+                                    font.pixelSize: Theme.fontSizeExtraSmall
+                                    color: model.replyTo && model.replyTo.state === "error"
+                                           ? Theme.errorColor : Theme.secondaryColor
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Text.ElideRight
+                                    textFormat: Text.PlainText
+                                    // "…" while fetching or for a quote with
+                                    // no text; the error state names itself.
+                                    text: {
+                                        if (!model.replyTo) {
+                                            return ""
+                                        }
+                                        if (model.replyTo.state === "error") {
+                                            return qsTr("The quoted message cannot be loaded: it no longer exists or you are not allowed to see it.")
+                                        }
+                                        var body = model.replyTo.body || ""
+                                        // Next to the picture the file name
+                                        // is noise; a caption is not.
+                                        if (quoteThumbFrame.visible && model.replyTo.media
+                                                && body === model.replyTo.media.filename) {
+                                            return ""
+                                        }
+                                        return body.length > 0 ? body : "…"
+                                    }
+                                    visible: text.length > 0
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                // A quote whose original was never fetched has nowhere to
+                                // go; the row says so and a tap would only look broken.
+                                enabled: !!model.replyTo && model.replyTo.state !== "error"
+                                onClicked: page.jumpToEvent(model.replyTo.eventId)
+                                // The long press still belongs to the message, not to the
+                                // quote — otherwise this corner of the bubble has no menu.
+                                onPressAndHold: row.holdMenu()
+                            }
+                        }
+
+                        // A frame, so the picture does not run into the background.
+                        // Sized to the reserved box, so it does not jump when the file lands.
+                        Rectangle {
+                            id: attachmentFrame
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+
+                            visible: row.hasPreview
+                            width: visible ? attachment.width + 2 * (border.width + bubbleColumn.frameMat) : 0
+                            height: visible ? attachment.height + 2 * (border.width + bubbleColumn.frameMat) : 0
+                            radius: Theme.paddingSmall / 2
+                            // The body a picture that has not arrived stands in; the
+                            // picture covers it once it lands.
+                            color: Theme.rgba(Theme.primaryColor, 0.1)
+                            border.width: bubbleColumn.frameLineWidth
+                            border.color: bubbleColumn.frameLine
+
+                            // Attachments are fetched on demand and cached on disk, so
+                            // scrolling past the same image does not download it twice.
+                            Image {
+                                id: attachment
+
+                                x: attachmentFrame.border.width + bubbleColumn.frameMat
+                                y: attachmentFrame.border.width + bubbleColumn.frameMat
+
+                                visible: row.hasPreview
+                                width: row.hasPreview
+                                       ? bubbleColumn.maxTextWidth
+                                         - 2 * (bubbleColumn.frameLineWidth + bubbleColumn.frameMat)
+                                       : 0
+                                height: visible
+                                        ? (model.media && model.media.width > 0 && model.media.height > 0
+                                           ? width * model.media.height / model.media.width
+                                           : width * 0.75)
+                                        : 0
+                                fillMode: Image.PreserveAspectFit
+                                asynchronous: true
+                                // A ceiling on what is decoded, on both axes: a 64x200000 picture is a few
+                                // kilobytes on the wire and gigabytes in memory. The bound is an area.
+                                sourceSize.width: Math.round(bubbleColumn.maxTextWidth)
+                                sourceSize.height: Math.round(bubbleColumn.maxTextWidth * 3)
+                                source: {
+                                    if (!row.hasPreview) {
+                                        return ""
+                                    }
+                                    var known = matrix.mediaPath(model.id)
+                                    if (known.length === 0) {
+                                        return ""
+                                    }
+                                    // Measured from the file that arrived, not
+                                    // from what the sender declared. The file is
+                                    // there and can be saved; it is only too big
+                                    // to hand to a decoder on this device.
+                                    return matrix.mediaShowable(model.id)
+                                            ? "file://" + known : ""
+                                }
+
+                                Component.onCompleted: {
+                                    if (!row.hasPreview || source != "") {
+                                        return
+                                    }
+                                    // Only when asked, where the user said so: scrolling past a picture
+                                    // is a request to the sender's server. The line stays tappable.
+                                    if (!settings.autoLoadMedia) {
+                                        return
+                                    }
+                                    // A sender's thumbnail is already small and, in encrypted rooms, the only one
+                                    // there is. A video has no other preview at all.
+                                    if (model.media.thumbnailSource) {
+                                        matrix.requestMedia(model.id, model.media.thumbnailSource, false,
+                                                            model.media.size || 0)
+                                    } else {
+                                        matrix.requestMedia(model.id, model.media.source, true,
+                                                            model.media.size || 0)
+                                    }
+                                }
+
+                                // Play affordance over the still.
+                                Image {
+                                    anchors.centerIn: parent
+                                    visible: (row.isVideo || row.isAnimated)
+                                             && attachment.source != ""
+                                    source: "image://theme/icon-l-play?" + Theme.lightPrimaryColor
+                                }
+
+                                // Decided before opening: a video that turns out to be loud
+                                // should never get to play a note. Above the tap area, so it
+                                // answers for itself.
+                                IconButton {
+                                    // Left, as on the player: the same control belongs in
+                                    // the same corner in both places.
+                                    anchors {
+                                        left: parent.left
+                                        bottom: parent.bottom
+                                        margins: Theme.paddingSmall
+                                    }
+                                    z: 1
+                                    visible: row.isVideo && attachment.source != ""
+                                    opacity: 0.7
+                                    icon.source: page.mutedVideos[model.id] === true
+                                                 ? "image://theme/icon-m-speaker-mute"
+                                                 : "image://theme/icon-m-speaker"
+                                    onClicked: {
+                                        // Reassigned, not mutated in place, as with
+                                        // `failedMedia`: a binding is told nothing otherwise.
+                                        var chosen = page.mutedVideos
+                                        chosen[model.id] = chosen[model.id] !== true
+                                        page.mutedVideos = chosen
+                                        page.mutedVideosChanged()
+                                    }
+                                }
+
+                                Connections {
+                                    target: matrix
+                                    onMediaReady: {
+                                        if (key === model.id) {
+                                            attachment.source = "file://" + path
+                                        }
+                                    }
+                                }
+
+                                BusyIndicator {
+                                    anchors.centerIn: parent
+                                    size: BusyIndicatorSize.Medium
+                                    // Not while waiting for something that is not coming: a refused or failed
+                                    // download left this turning for the life of the page.
+                                    running: attachment.visible && attachment.source == ""
+                                             && !page.failedMedia[model.id]
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: row.hasPreview && attachment.source != ""
+                                    onClicked: row.isVideo
+                                               ? page.openVideo(model.id, model.media)
+                                               : page.openImage(model.id, model.media)
+                                    // The delegate's own menu still has to be reachable.
+                                    onPressAndHold: row.holdMenu()
+                                }
+
+                            }
+                        }
+
+                        // Voice messages are played in place: switching to a page
+                        // for a five second clip is more disruptive than useful.
+                        Row {
+                            id: audioRow
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+
+                            visible: row.isAudio
+                            spacing: Theme.paddingMedium
+
+                            IconButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                icon.source: page.playingId === model.id && audioPlayer.playbackState === Audio.PlayingState
+                                             ? "image://theme/icon-m-pause"
+                                             : "image://theme/icon-m-play"
+                                onClicked: page.toggleAudio(model.id, model.media)
+                            }
+
+                            Label {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.min(implicitWidth,
+                                                bubbleColumn.maxTextWidth - Theme.itemSizeSmall)
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                                truncationMode: TruncationMode.Fade
+                                text: page.playingId === model.id && audioPlayer.duration > 0
+                                      ? Format.formatDuration(Math.round(audioPlayer.position / 1000),
+                                                              Formatter.DurationShort)
+                                        + " / "
+                                        + Format.formatDuration(Math.round(audioPlayer.duration / 1000),
+                                                                Formatter.DurationShort)
+                                      : (model.body || qsTr("Voice message"))
+                            }
+                        }
+
+                        // A voice message converted on request: text a machine heard, from a
+                        // stranger. Plain, capped in src/voicetranscripts.cpp, never linked.
+                        Label {
+                            id: transcriptLabel
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            // Measured by its twin, as the body is: a wrapped label's own implicit
+                            // width follows its laid-out width, and reading that back loops.
+                            width: Math.min(transcriptMeasure.implicitWidth,
+                                            bubbleColumn.maxTextWidth)
+                            visible: row.isAudio && row.transcriptState.length > 0
+
+                            Label {
+                                id: transcriptMeasure
+
+                                visible: false
+                                textFormat: Text.PlainText
+                                font.pixelSize: transcriptLabel.font.pixelSize
+                                text: transcriptLabel.text
+                            }
+                            textFormat: Text.PlainText
+                            wrapMode: Text.Wrap
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: {
+                                if (row.transcriptState !== "done") {
+                                    return Theme.secondaryColor
+                                }
+                                var own = row.isOwn ? appearance.ownTextColor
+                                                    : appearance.otherTextColor
+                                return own.length > 0 ? own : Theme.primaryColor
+                            }
+                            text: {
+                                if (matrix.transcripts.revision < 0) {
+                                    return ""
+                                }
+                                switch (row.transcriptState) {
+                                case "working": return qsTr("Converting to text…")
+                                case "failed": return matrix.transcripts.failure(row.rowEventId)
+                                case "done": return matrix.transcripts.text(row.rowEventId)
+                                default: return ""
+                                }
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                onPressAndHold: row.holdMenu()
+                            }
+                        }
+
+                        Label {
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            width: Math.min(implicitWidth, bubbleColumn.maxTextWidth)
+                            visible: row.isAudio && row.transcriptState === "done"
+                            truncationMode: TruncationMode.Fade
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            textFormat: Text.PlainText
+                            text: qsTr("Recognised automatically, may contain mistakes")
+                        }
+
+                        Label {
+                            id: bodyLabel
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+
+                            // Measured by the invisible twin, never by the own implicit width: with wrap
+                            // that follows the laid-out width in this Qt, and reading it back loops.
+                            width: Math.min(bodyMeasure.implicitWidth,
+                                            bubbleColumn.maxTextWidth)
+                            // A picture or a voice message shows itself; its
+                            // caption is the one thing that still needs a line.
+                            visible: !row.isPoll && !row.isLocation
+                                     && ((!row.hasPreview && !row.isAudio)
+                                         || row.hasCaption)
+
+                            Label {
+                                id: bodyMeasure
+
+                                visible: false
+                                // The twin measures what the label renders, so
+                                // it has to parse the same markup.
+                                textFormat: bodyLabel.textFormat
+                                font.pixelSize: bodyLabel.font.pixelSize
+                                font.italic: bodyLabel.font.italic
+                                text: bodyLabel.text
+                            }
+                            // The unfolded height, at the label's own width. Short text cannot fill a page.
+                            Label {
+                                id: bodyFull
+
+                                visible: false
+                                width: bodyLabel.width
+                                wrapMode: Text.Wrap
+                                textFormat: bodyLabel.textFormat
+                                font.pixelSize: bodyLabel.font.pixelSize
+                                text: bodyLabel.text.length > 40 ? bodyLabel.text : ""
+                            }
+                            maximumLineCount: row.longBody && !row.expanded ? 3 : 1000000
+                            elide: row.longBody && !row.expanded ? Text.ElideRight : Text.ElideNone
+                            // Plain text on purpose: a body is untrusted and AutoText renders anything
+                            // HTML-shaped, `<img>` included. StyledText only after linkifyBody escaped it.
+                            textFormat: row.richBody.length > 0
+                                        ? Text.StyledText : Text.PlainText
+                            linkColor: Theme.highlightColor
+                            onLinkActivated: page.followLink(link)
+                            wrapMode: Text.Wrap
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.italic: model.kind !== "message"
+                            color: {
+                                if (model.kind !== "message") {
+                                    return Theme.secondaryColor
+                                }
+                                var own = row.isOwn ? appearance.ownTextColor
+                                                    : appearance.otherTextColor
+                                return own.length > 0 ? own : Theme.primaryColor
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                // Whatever carries a picture or film and got no preview - a video without a
+                                // thumbnail, a picture whose size nobody declared. Otherwise it is text only.
+                                enabled: (row.isVideo || row.isImage) && !row.hasPreview
+                                         && row.saneDimensions
+                                onClicked: {
+                                    if (row.isVideo) {
+                                        page.openVideo(model.id, model.media)
+                                        return
+                                    }
+                                    page.openImage(model.id, model.media)
+                                }
+                                onPressAndHold: row.holdMenu()
+                            }
+
+                            text: {
+                                if (row.hasPreview || row.isAudio) {
+                                    return row.captionText
+                                }
+                                if (model.kind === "undecryptable") {
+                                    return page.undecryptableText(model.utdCause)
+                                }
+                                if (model.kind === "redacted") {
+                                    return qsTr("Message deleted")
+                                }
+                                if (row.isImage) {
+                                    // No preview, so the row says what it is
+                                    // and that it can be opened.
+                                    return "🖼 " + (model.body || qsTr("Picture"))
+                                }
+                                if (row.isFile) {
+                                    return "📎 " + (model.body || "")
+                                }
+                                if (row.richBody.length > 0) {
+                                    return row.richBody
+                                }
+                                return model.body || ""
+                            }
+                        }
+
+                        Label {
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            visible: bodyLabel.visible && row.longBody
+                            width: Math.min(implicitWidth, bubbleColumn.maxTextWidth)
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: foldArea.pressed ? Theme.secondaryHighlightColor
+                                                    : Theme.highlightColor
+                            textFormat: Text.PlainText
+                            text: row.expanded ? qsTr("Show less") : qsTr("Show more")
+
+                            MouseArea {
+                                id: foldArea
+                                anchors {
+                                    fill: parent
+                                    margins: -Theme.paddingSmall
+                                }
+                                onClicked: page.toggleExpanded(model.id)
+                                onPressAndHold: row.holdMenu()
+                            }
+                        }
+
+                        // The poll. Loaded only for a poll row - two hundred rows must
+                        // not carry its repeater - and its width handed in, never
+                        // measured back out of it.
+                        Loader {
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            active: row.isPoll
+                            visible: active
+                            sourceComponent: PollBlock {
+                                availableWidth: bubbleColumn.maxTextWidth
+                                poll: model.poll
+                                eventId: row.rowEventId
+                                own: row.isOwn
+                                // Not before the server has it: an echo has no id to vote on.
+                                pending: model.pending === true
+                                highlighted: row.highlighted
+                            }
+                        }
+
+                        // A location or a live share. Width handed in, as for the poll.
+                        Loader {
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            active: row.isLocation
+                            visible: active
+                            sourceComponent: LocationBlock {
+                                availableWidth: bubbleColumn.maxTextWidth
+                                location: model.location
+                                own: row.isOwn
+                                avatarSource: model.senderAvatar || ""
+                                avatarName: model.senderName || model.sender || ""
+                                roomId: page.roomId
+                                encrypted: page.encrypted || !page.encryptionKnown
+                                onActivated: page.followLink(link, map)
+                            }
+                        }
+
+                        // The linked page, as the homeserver describes it. Loaded only
+                        // where a preview may be asked for, shown once there is one.
+                        Loader {
+                            id: previewLoader
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            active: row.previewUrl.length > 0
+                            visible: active && !!item && item.available
+                            sourceComponent: LinkPreviewCard {
+                                availableWidth: bubbleColumn.maxTextWidth
+                                url: row.previewUrl
+                                // The same switch the link in the text obeys. Without
+                                // it "links stay plain text" left the card openable.
+                                tappable: settings.clickableLinks
+                                highlighted: row.highlighted
+                                onActivated: page.followLink(link)
+                            }
+                        }
+
+                        // What the SDK will not vouch for: red is a message that is not what it
+                        // claims to be, grey one it cannot check. Both silent otherwise.
+                        Label {
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            width: Math.min(implicitWidth, bubbleColumn.maxTextWidth)
+                            visible: row.isBubble && !!model.shield
+                                     && page.shieldEventId === model.eventId
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: page.shieldColor(model.shield)
+                            textFormat: Text.PlainText
+                            text: page.shieldText(model.shield)
+                        }
+
+                        // The way from one sentence to all of them, shown with the sentence: a mark
+                        // that is never tapped needs no glossary either.
+                        Label {
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+                            visible: row.isBubble && !!model.shield
+                                     && page.shieldEventId === model.eventId
+                            width: Math.min(implicitWidth, bubbleColumn.maxTextWidth)
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: glossaryArea.pressed ? Theme.secondaryHighlightColor
+                                                        : Theme.highlightColor
+                            textFormat: Text.PlainText
+                            text: qsTr("What do these marks mean?")
+
+                            MouseArea {
+                                id: glossaryArea
+
+                                // Taller than the small line: a link that misses
+                                // its tap reads as one that does nothing.
+                                anchors.centerIn: parent
+                                width: parent.width + 2 * Theme.paddingSmall
+                                height: Math.max(parent.height + 2 * Theme.paddingSmall,
+                                                 Theme.itemSizeSmall)
+                                onClicked: pageStack.push(
+                                               Qt.resolvedUrl("ShieldGlossaryPage.qml"))
+                            }
+                        }
+
+                        // Thread marker: the root shows the reply count, a
+                        // reply shown inline names its thread. Both open it.
+                        Label {
+                            id: threadLabel
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+
+                            visible: row.isBubble
+                                     && (model.threadCount > 0
+                                         || (model.threadRoot || "").length > 0)
+                            width: Math.min(implicitWidth, bubbleColumn.maxTextWidth)
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: threadArea.pressed ? Theme.secondaryHighlightColor
+                                                      : Theme.highlightColor
+                            text: model.threadCount > 0
+                                  ? qsTr("Thread · %1").arg(model.threadCount)
+                                  : qsTr("In thread")
+
+                            MouseArea {
+                                id: threadArea
+                                anchors {
+                                    fill: parent
+                                    margins: -Theme.paddingSmall
+                                }
+                                onClicked: pageStack.push(
+                                               Qt.resolvedUrl("ThreadPage.qml"),
+                                               {
+                                                   roomId: page.roomId,
+                                                   roomName: page.roomName,
+                                                   rootEventId: model.threadCount > 0
+                                                                ? model.eventId
+                                                                : model.threadRoot,
+                                                   encrypted: page.encrypted
+                                               })
+                                onPressAndHold: row.holdMenu()
+                            }
+                        }
+
+                        // Reactions, and only where there are any. A Row, not a Flow: a Flow's width
+                        // comes from its own implicit width, which is the loop that drew chips on text.
+                        Loader {
+                            id: reactionBar
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+
+                            active: row.hasReactions
+                            visible: active
+                            // No size here: a Loader that has one resizes what it loaded, so taking the
+                            // size from that item is a circle - and Qt answers a circle with zero.
+                            sourceComponent: Row {
+                                // No padding properties: they arrived in QtQuick 2.7 and 5.6 is the ceiling.
+                                // The column's spacing separates the bar from the text.
+                                spacing: Theme.paddingSmall
+
+                                Repeater {
+                                    model: row.reactionsShown
+
+                                    BackgroundItem {
+                                        width: chip.width + 2 * Theme.paddingSmall
+                                        height: chip.height + Theme.paddingSmall
+                                        // The delegate's model is out of scope inside the Loader; the row hands the
+                                        // event id over instead.
+                                        onClicked: {
+                                            // Drawn is filtered and cut to 32 characters, sent is the raw key: a stranger
+                                            // can hide text behind zero-width characters and have it signed by one tap.
+                                            var sendKey = modelData.sendKey || modelData.key
+                                            if (!modelData.mine && sendKey !== modelData.key) {
+                                                page.showNotice(qsTr("This reaction hides text and was not sent"))
+                                                return
+                                            }
+                                            matrix.toggleReaction(row.rowEventId, sendKey)
+                                        }
+                                        // Held down, the chip says who set it. It takes the long press for the width
+                                        // of a chip; the rest of the bubble keeps the message's menu.
+                                        onPressAndHold: page.showReactors(
+                                                            row.rowEventId,
+                                                            modelData.sendKey || modelData.key,
+                                                            modelData.key)
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: Theme.paddingSmall
+                                            // Ours is the one worth telling
+                                            // apart; the rest carry the bubble.
+                                            // Own reaction the queue gave up; a tap withdraws it.
+                                            color: modelData.failed
+                                                   ? Theme.rgba(Theme.errorColor, 0.35)
+                                                   : modelData.mine
+                                                   ? Theme.rgba(Theme.highlightColor, 0.35)
+                                                   : Theme.rgba(Theme.secondaryColor, 0.15)
+                                        }
+
+                                        Row {
+                                            id: chip
+
+                                            anchors.centerIn: parent
+                                            spacing: Theme.paddingSmall / 2
+
+                                            // One rule for drawing an emoji, in `EmojiItem`: the user's picture where
+                                            // there is one, otherwise the character.
+                                            EmojiItem {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                character: modelData.key
+                                                // Half again the icon size it was drawn at: on a small screen an emoji that
+                                                // size is a coloured speck.
+                                                size: Math.round(Theme.iconSizeExtraSmall * 1.5)
+                                            }
+
+                                            Label {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                visible: modelData.count > 1
+                                                font.pixelSize: Theme.fontSizeExtraSmall
+                                                text: modelData.count
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // A room can carry more distinct reactions than a bubble has room for; the
+                                // rest are counted rather than pushing the bubble off screen.
+                                Label {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: row.reactionsHidden > 0
+                                    font.pixelSize: Theme.fontSizeExtraSmall
+                                    color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                                    text: "+" + row.reactionsHidden
+                                }
+                            }
+                        }
+
+                        // The time, and how many have read this far. An Item because the read mark is
+                        // a drawn icon and an icon cannot sit in a string.
+                        Item {
+                            id: metaLine
+
+                            // Right-aligned inside whatever the bubble ended up
+                            // being, so it reads from the widest sibling.
+                            width: Math.max(bodyLabel.visible ? bodyLabel.width : 0,
+                                            attachment.width,
+                                            audioRow.visible ? audioRow.width : 0,
+                                            senderLabel.visible ? senderLabel.width : 0,
+                                            replyBlock.visible ? replyBlock.width : 0,
+                                            threadLabel.visible ? threadLabel.width : 0,
+                                            // The names below can be the widest thing in the bubble; without them here
+                                            // the time would stand right of nothing.
+                                            readersLabel.visible ? readersLabel.width : 0,
+                                            reactionBar.visible ? reactionBar.width : 0,
+                                            metaContent.width)
+                            height: metaContent.height
+
+                            Row {
+                                id: metaContent
+
+                                anchors.right: parent.right
+                                spacing: Theme.paddingSmall
+
+                                // The shield as a mark, not a sentence: the report was about the repetition.
+                                // Shape carries the level - triangle warns, dot is unchecked.
+                                Item {
+                                    id: shieldMark
+
+                                    visible: row.isBubble && !!model.shield
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: visible ? shieldGlyph.width : 0
+                                    height: shieldGlyph.height
+
+                                    Label {
+                                        id: shieldGlyph
+
+                                        text: model.shield
+                                              && model.shield.level === "red" ? "\u25B2" : "\u25CF"
+                                        // A step larger than the time beside it, like the read-by eye over its digit:
+                                        // a mark at text size is read as text.
+                                        font.pixelSize: Theme.fontSizeExtraSmall
+                                        color: page.shieldColor(model.shield)
+                                    }
+
+                                    MouseArea {
+                                        // Larger than the glyph: a triangle at
+                                        // tiny size is not a touch target.
+                                        anchors.centerIn: parent
+                                        width: Theme.itemSizeSmall
+                                        height: Theme.itemSizeSmall
+                                        onClicked: page.showShield(model.eventId)
+                                    }
+                                }
+
+                                Label {
+                                    id: metaLabel
+
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    font.pixelSize: Theme.fontSizeTiny
+                                    // A message that did not get out is the one thing in this line worth a colour.
+                                    color: model.sendState === "failed"
+                                           || model.editState === "failed"
+                                           || model.redactionState === "failed"
+                                           ? Theme.errorColor : Theme.secondaryColor
+                                    // Only messages carry a timestamp; the shared delegate instantiates this
+                                    // label for every row regardless.
+                                    text: row.isBubble
+                                          ? (matrix.pinnedEventIds.indexOf(model.eventId) >= 0 ? "📌 " : "")
+                                            + (model.sendState === "failed"
+                                               ? qsTr("not sent") + " · " : "")
+                                            // Edit or deletion not sent; the banner has the way out.
+                                            + (model.redactionState === "failed"
+                                               ? qsTr("deletion not sent") + " · " : "")
+                                            + (model.editState === "failed"
+                                               ? qsTr("edit not sent") + " · " : "")
+                                            + (model.edited === true ? qsTr("edited") + " · " : "")
+                                            + (row.mediaSizeText.length > 0
+                                               ? row.mediaSizeText + " · " : "")
+                                            + Format.formatDate(new Date(model.timestamp), Formatter.TimeValue)
+                                          : ""
+                                }
+
+                                // On the newest own message the others have read up to - a receipt usually
+                                // hangs on their own message. An eye and a number, not words: the line is full.
+                                Item {
+                                    id: readMark
+
+                                    visible: model.readMark === true && model.readMarkBy > 0
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: readMarkRow.width
+                                    height: readMarkRow.height
+
+                                    Row {
+                                        id: readMarkRow
+
+                                        spacing: Theme.paddingSmall / 2
+
+                                        EyeIcon {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            // A step larger than the digit next to it, the way the composer's icon stands
+                                            // over its text.
+                                            size: Math.round(Theme.fontSizeTiny * 1.7)
+                                            color: Theme.secondaryColor
+                                        }
+
+                                        Label {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            font.pixelSize: Theme.fontSizeTiny
+                                            color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                                            text: model.readMarkBy
+                                        }
+                                    }
+
+                                    // Eye, number and a good deal of air: the mark is a couple of millimetres and
+                                    // a finger is not. Negative margins grow the target without moving anything.
+                                    MouseArea {
+                                        anchors {
+                                            fill: parent
+                                            margins: -Theme.paddingMedium
+                                        }
+                                        onClicked: page.showReaders(model.eventId)
+                                        onPressAndHold: page.showReaders(model.eventId)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Who they are, as one line: a name per row would push the conversation off
+                        // the screen for an aside.
+                        Label {
+                            id: readersLabel
+
+                            anchors.right: bubbleColumn.holdRight ? parent.right : undefined
+
+                            visible: page.namesEventId === model.eventId
+                                     && page.namesText.length > 0
+                            // The names widen the bubble to the same limit as every other text, and only
+                            // what is longer wraps. Measured by the twin - the own implicit width loops.
+                            width: Math.min(readersMeasure.implicitWidth,
+                                            bubbleColumn.maxTextWidth)
+                            // Left, unlike the time above: this runs over several lines, and a ragged
+                            // left edge is read line by line instead of at a glance.
+                            horizontalAlignment: Text.AlignLeft
+                            wrapMode: Text.Wrap
+                            font.pixelSize: Theme.fontSizeTiny
+                            color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                            textFormat: Text.PlainText
+                            // Only the row the names belong to carries them: the string is the page's, so
+                            // otherwise every row would hold it and its twin would lay it out.
+                            text: readersLabel.visible ? page.namesText : ""
+
+                            Label {
+                                id: readersMeasure
+
+                                visible: false
+                                textFormat: Text.PlainText
+                                font.pixelSize: readersLabel.font.pixelSize
+                                text: readersLabel.text
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    visible: row.showMarker
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        leftMargin: Theme.horizontalPageMargin
+                        rightMargin: Theme.horizontalPageMargin
+                        top: parent.top
+                        topMargin: row.contentHeight
+                                   - Math.round(Theme.paddingLarge / 2)
+                    }
+                    // Two device pixels in the full colour: it is the one thing that says
+                    // where the new messages start, and at one faint pixel it was missed.
+                    height: Math.round(Math.max(1, Theme.pixelRatio) * 2)
+                    color: Theme.highlightColor
+                }
+
+                Label {
+                    id: dayLabel
+
+                    visible: model.kind === "date"
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        top: parent.top
+                        topMargin: Theme.paddingMedium
+                    }
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                    text: model.kind === "date"
+                          ? Format.formatDate(new Date(model.timestamp), Formatter.DateMedium)
+                          : ""
+                }
+
+                // Who acted. Fixed size and fixed left edge, so the line beside it
+                // never measures back.
+                Avatar {
+                    id: systemAvatar
+
+                    visible: row.isSystem
+                    anchors {
+                        left: parent.left
+                        leftMargin: Theme.horizontalPageMargin
+                        verticalCenter: systemLabel.verticalCenter
+                    }
+                    size: page.systemAvatarSize
+                    source: model.senderAvatar || ""
+                    name: model.senderName || model.sender || ""
+
+                    // The same tap as on a message avatar. No press-and-hold: a
+                    // system line has no menu. The margin stops at the text, or it
+                    // grows a target over words it does not open.
+                    MouseArea {
+                        anchors {
+                            fill: parent
+                            margins: -Theme.paddingMedium
+                        }
+                        onClicked: pageStack.push(
+                                       Qt.resolvedUrl("MemberProfilePage.qml"),
+                                       { roomId: page.roomId, userId: model.sender })
+                    }
+                }
+
+                Label {
+                    id: systemTime
+
+                    visible: row.isSystem
+                    anchors {
+                        right: parent.right
+                        rightMargin: Theme.horizontalPageMargin
+                        verticalCenter: systemLabel.verticalCenter
+                    }
+                    font.pixelSize: Theme.fontSizeTiny
+                    color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                    textFormat: Text.PlainText
+                    text: row.isSystem
+                          ? Format.formatDate(new Date(model.timestamp), Formatter.TimeValue)
+                          : ""
+                }
+
+                Label {
+                    id: systemLabel
+
+                    visible: row.isSystem
+                    anchors {
+                        left: parent.left
+                        leftMargin: Theme.horizontalPageMargin
+                                    + page.systemAvatarSize + Theme.paddingMedium
+                        top: parent.top
+                        topMargin: Theme.paddingMedium
+                    }
+                    // A system line carries two names and a reason; it wraps rather
+                    // than fading away, and stops after three lines.
+                    // Between picture and time: both size themselves from their own
+                    // content, so reading the time's width closes no loop.
+                    width: timelineView.width - 2 * Theme.horizontalPageMargin
+                           - page.systemAvatarSize - 2 * Theme.paddingMedium
+                           - systemTime.width
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 3
+                    elide: Text.ElideRight
+                    // Names and reasons are text a stranger wrote: AutoText would
+                    // hand a body with a tag to the rich-text renderer.
+                    textFormat: Text.PlainText
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    font.italic: true
+                    color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+                    text: row.isSystem ? row.systemText() : ""
+                }
+            }
+
+            onCountChanged: {
+                page.fillScreen()
+                if (page.jumpTargetId.length > 0) {
+                    page.tryJump()
+                } else if (page.followTail) {
+                    tailTimer.restart()
+                    // Read where it is actually read: marking only on entering left a message
+                    // that arrived while the room was open unread in the chat list.
+                    readTimer.restart()
+                }
+            }
+
+            // The run of height changes is over once none has come for a moment. A
+            // reader who stood at the end is put back there exactly, not arithmetically.
+            Timer {
+                id: viewportSettle
+
+                interval: 120
+                onTriggered: {
+                    if (page.wasAtEnd && page.jumpTargetId.length === 0
+                            && page.holdEventId.length === 0) {
+                        timelineView.positionViewAtEnd()
+                        page.followTail = true
+                    }
+                }
+            }
+
+            onMovementEnded: {
+                page.followTail = atYEnd
+                // A hand on the list outranks the marker search: being carried off to a jump
+                // one has just scrolled away from is worse than not being taken there.
+                page.unreadFromId = ""
+                unreadRetry.stop()
+                // Moved by hand, so where the list stands is where the reader put it -
+                // the block a failed jump left behind has done its job.
+                page.unreadJumpFailed = false
+                // Scrolling down to the newest message is the other moment
+                // something becomes read.
+                if (atYEnd) {
+                    readTimer.restart()
+                }
+            }
+
+            // Reaching the top is the natural moment to fetch older messages, so the
+            // fill's give-up does not apply - only a running pagination or a loaded start.
+            onAtYBeginningChanged: {
+                if (atYBeginning && count > 0 && !matrix.paginating
+                        && !matrix.timelineAtStart) {
+                    matrix.loadOlder()
+                }
+            }
+
+            // Fill and tail both hang off a changing content height: a row that grows
+            // after layout pushes the end out of view without changing the count.
+            onContentHeightChanged: {
+                // The estimate moved: whatever the anchor was pointing at is
+                // somewhere else now, so it is applied again. Deliberately not
+                // only while the page is on top - the re-measuring happens while
+                // it is covered, and correcting it afterwards is a visible jump.
+                if (page.keptIndex >= 0) {
+                    page.restoreAnchor()
+                }
+                page.holdPosition()
+                // An open menu grows the content by its own height, which is not
+                // new content: following the tail takes the pressed row off the top.
+                if (page.openMenus > 0) {
+                    return
+                }
+                page.fillScreen()
+                // A jump still looking for its row outranks the tail: the rows of the very
+                // pagination it asked for would drag the view back to the end.
+                if (page.followTail && page.jumpTargetId.length === 0) {
+                    tailTimer.restart()
+                }
+            }
+
+            // The viewport loses height at its bottom edge while Qt keeps the content's
+            // top, so the newest message slides away. Shrinking, push the content down.
+            onHeightChanged: {
+                var lost = page.lastTimelineHeight - height
+                page.lastTimelineHeight = height
+                // A height of nothing is a moment during layout, not a viewport the reader
+                // lost: measured, the list is briefly negative in height while the composer
+                // is laid out, and acting on that pins it to its first row.
+                if (height <= 0 || lost === 0) {
+                    return
+                }
+                // Not while the room is still deciding where to open. The unread
+                // marker positions the list itself, and `followTail` is still at its
+                // default `true` then - the settle below would answer "the reader
+                // stood at the end" and undo the very jump the room was opened for.
+                if (page.status !== PageStatus.Active
+                        || page.jumpTargetId.length > 0
+                        || page.holdEventId.length > 0
+                        || page.unreadFromId.length > 0
+                        || unreadRetry.running || followCheck.running) {
+                    return
+                }
+                // The keyboard arrives over many frames. Where the reader stood is asked
+                // once, at the first of them, and answered again when they stop coming:
+                // this list's content height is an estimate that halves and doubles as
+                // delegates come and go, so holding contentY does not hold the position.
+                if (!viewportSettle.running) {
+                    page.wasAtEnd = page.followTail || atYEnd
+                }
+                viewportSettle.restart()
+                if (lost > 0 && contentHeight > height) {
+                    contentY = Math.min(contentY + lost,
+                                        originY + contentHeight - height)
+                } else if (lost < 0 && page.followTail
+                           && page.jumpTargetId.length === 0) {
+                    tailTimer.restart()
+                }
+            }
+
+            // Empty, still loading and could not be opened are three states:
+            // without the third the spinner ran for ever.
+            ViewPlaceholder {
+                enabled: timelineView.count === 0 && !page.invited && matrix.timelineReady
+                text: page.openFailed ? qsTr("The conversation could not be loaded")
+                                      : qsTr("No messages")
+                hintText: page.openFailed ? page.openFailedReason : ""
+            }
+
+            BusyIndicator {
+                anchors.centerIn: parent
+                size: BusyIndicatorSize.Medium
+                running: timelineView.count === 0 && !page.invited && !matrix.timelineReady
+            }
+
+            VerticalScrollDecorator { }
+        }
+
+        // One player for the page: two voice messages never play at once, and the
+        // delegate is recycled while scrolling.
+        Audio {
+            id: audioPlayer
+
+            onStopped: {
+                if (status === Audio.EndOfMedia) {
+                    page.playingId = ""
+                }
+            }
+        }
+
+        // Positioning right after a model change lands on the old geometry, so it
+        // is deferred by one event loop turn.
+        Timer {
+            id: tailTimer
+
+            interval: 1
+            onTriggered: {
+                // Never against a hand on the list: rows arriving from a pagination tell the
+                // tail to follow, which jumped to the end mid-swipe.
+                if (timelineView.moving || timelineView.dragging) {
+                    return
+                }
+                timelineView.positionViewAtEnd()
+            }
+        }
+
+        // Composer, or the invitation prompt when the room has not been joined.
+        Item {
+            id: composer
+
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+            height: page.invited
+                    ? inviteButtons.height + 2 * Theme.paddingLarge
+                    : page.focusedEventId.length > 0
+                    ? liveButton.height + 2 * Theme.paddingLarge
+                    : composerColumn.height + Theme.paddingSmall
+
+            // Declining stands beside accepting: the pull-down no longer carries it.
+            // ButtonLayout puts them on two lines when both do not fit.
+            ButtonLayout {
+                id: inviteButtons
+
+                visible: page.invited
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width
+
+                Button {
+                    text: qsTr("Decline")
+                    onClicked: page.confirmLeave()
+                }
+
+                Button {
+                    id: joinButton
+
+                    text: qsTr("Accept invitation")
+                    onClicked: {
+                        matrix.joinRoom(page.roomId)
+                        // Open first: it empties the model, so the list never binds to
+                        // the previous room's rows.
+                        matrix.openRoom(page.roomId)
+                        page.invited = false
+                        // The invitation's encryption answer came off stripped state: back
+                        // to the default, which counts as encrypted where that is safer.
+                        page.encrypted = true
+                        // Not through refreshRecipients: no status change follows, so
+                        // nothing else asks - and its stamp would throttle the real check.
+                        matrix.checkRecipients(page.roomId)
+                    }
+                }
+            }
+
+            // No sending in a slice: the send would take its thread.
+            Button {
+                id: liveButton
+
+                visible: !page.invited && page.focusedEventId.length > 0
+                anchors.centerIn: parent
+                text: qsTr("Back to the latest messages")
+                onClicked: page.backToLive()
+            }
+
+            Column {
+                id: composerColumn
+
+                visible: !page.invited && page.focusedEventId.length === 0
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+
+                // While recording, the elapsed time replaces the hints above the
+                // field so it is obvious that the microphone is live.
+                Item {
+                    width: parent.width
+                    height: recordingLabel.visible
+                            ? Math.max(recordingLabel.height,
+                                       cancelRecording.visible ? cancelRecording.height : 0)
+                            : 0
+
+                    Label {
+                        id: recordingLabel
+
+                        x: Theme.horizontalPageMargin
+                        width: parent.width - 2 * Theme.horizontalPageMargin
+                               - (cancelRecording.visible ? cancelRecording.width : 0)
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: matrix.recorder.recording
+                        wrapMode: Text.Wrap
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.errorColor
+                        text: matrix.recorder.handsFree
+                              ? qsTr("Recording… %1 s. Tap the microphone to send.")
+                                    .arg(Math.round(matrix.recorder.duration / 1000))
+                              : qsTr("Recording… %1 s").arg(Math.round(matrix.recorder.duration / 1000))
+                    }
+
+                    // Hands-free has no finger to lift: this is its way out without sending.
+                    IconButton {
+                        id: cancelRecording
+
+                        anchors {
+                            right: parent.right
+                            verticalCenter: parent.verticalCenter
+                        }
+                        visible: matrix.recorder.handsFree
+                        icon.source: "image://theme/icon-m-clear"
+                        onClicked: matrix.recorder.cancel()
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    visible: page.replyingEventId.length > 0
+                    spacing: Theme.paddingSmall
+
+                    Label {
+                        x: Theme.horizontalPageMargin
+                        width: parent.width - Theme.horizontalPageMargin - cancelReply.width
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.highlightColor
+                        truncationMode: TruncationMode.Fade
+                        text: qsTr("Reply to %1").arg(page.replyingTo)
+                    }
+
+                    IconButton {
+                        id: cancelReply
+
+                        icon.source: "image://theme/icon-m-clear"
+                        onClicked: page.cancelReply()
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    visible: page.editingEventId.length > 0
+                    spacing: Theme.paddingSmall
+
+                    Label {
+                        x: Theme.horizontalPageMargin
+                        width: parent.width - Theme.horizontalPageMargin - cancelEdit.width
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.highlightColor
+                        truncationMode: TruncationMode.Fade
+                        text: qsTr("Editing message")
+                    }
+
+                    IconButton {
+                        id: cancelEdit
+
+                        icon.source: "image://theme/icon-m-clear"
+                        onClicked: page.cancelEdit()
+                    }
+                }
+
+                Composer {
+                    id: messageComposer
+
+                    // Anchored, not bound: a width that is briefly zero makes the
+                    // field's implicit height enormous, and the list under it loses
+                    // its viewport for a frame.
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                    }
+                    roomId: page.roomId
+                    attachments: true
+                    emoji: true
+                    voice: true
+                    editing: page.editingEventId.length > 0
+                    placeholderText: page.editingEventId.length > 0
+                                     ? qsTr("New text") : qsTr("Message")
+
+                    onSubmitted: page.submit()
+                    onAttachRequested: pageStack.push(picturePicker)
+                    onTextFileRequested: page.sendTextFile()
+                    onEmojiRequested: page.pickEmoji()
+                    onRecordingStopped: page.followTail = true
+                }
+            }
+        }
+    }
+
+
+    // Gallery by folder or the file system, in one page. The platform offers
+    // each of them but not together, and its gallery is one undivided grid.
+    Component {
+        id: picturePicker
+
+        AttachmentPickerPage {
+            // Only whether there is one: the text stays on this page.
+            draftText: messageComposer.text.trim().length > 0
+
+            onAccepted: {
+                // Handed to the room, never pushed from here: a dialog that is
+                // popping does not hand back the page it would push.
+                if (textFileWanted) {
+                    page.pendingAction = { "kind": "textFile" }
+                    return
+                }
+                if (otherFilesWanted) {
+                    page.pendingAction = { "kind": "otherFiles" }
+                    return
+                }
+                if (otherWanted.length > 0) {
+                    page.pendingAction = { "kind": otherWanted }
+                    return
+                }
+                if (picked.length > 0) {
+                    page.pendingAttachment = picked
+                    attachmentWait.restart()
+                }
+            }
+        }
+    }
+
+    // Several files in one go. Matrix has no album: each one is its own event,
+    // and the caption belongs to the first of them.
+    Component {
+        id: multiContentPicker
+
+        MultiContentPickerDialog {
+            title: qsTr("Select files")
+
+            onAccepted: {
+                var picked = []
+                for (var i = 0; i < selectedContent.count; i++) {
+                    var item = selectedContent.get(i)
+                    picked.push({ path: item.filePath, mimeType: item.mimeType })
+                }
+                if (picked.length === 0) {
+                    return
+                }
+                page.pendingAttachment = picked
+                attachmentWait.restart()
+            }
+        }
+    }
+
+    // The files picked, until the conversation is back on top and the send page
+    // can be opened over it.
+    property var pendingAttachment: null
+
+    Timer {
+        id: attachmentWait
+
+        property int tries: 0
+
+        interval: 60
+        repeat: true
+        onTriggered: {
+            if (!page.pendingAttachment) {
+                stop()
+                tries = 0
+                return
+            }
+            if (page.status === PageStatus.Active) {
+                stop()
+                tries = 0
+                var picked = page.pendingAttachment
+                page.pendingAttachment = null
+                // What was typed goes along as the caption - one message. The field is
+                // cleared so it cannot be sent twice, and refilled if the send is called off.
+                var typed = messageComposer.text
+                messageComposer.clearField()
+                pageStack.push(Qt.resolvedUrl("SendMediaPage.qml"), {
+                    files: picked,
+                    caption: typed,
+                    replyTo: page.replyingEventId,
+                    replySender: page.replyingTo,
+                    replyBody: page.replyingBody,
+                    // Handed back here rather than sent from the dialog: the unverified-recipient
+                    // warning lives on this page, and an attachment went past it.
+                    send: function (files, caption, replyTo, original) {
+                        page.pendingAction = {
+                            "kind": "sendMedia",
+                            "files": files,
+                            "caption": caption,
+                            "replyTo": replyTo,
+                            "original": original
+                        }
+                    },
+                    // Only reached where this page does not take the send over itself; kept so
+                    // the dialog still works for any other caller.
+                    afterSend: function () {
+                        page.clearReplyState()
+                        page.followTail = true
+                    },
+                    afterCancel: function (text) {
+                        messageComposer.text = text
+                        // A photo taken for this send goes with it; gallery files are not ours.
+                        for (var i = 0; i < picked.length; i++) {
+                            matrix.cameraShots.discard(picked[i].path)
+                        }
+                    }
+                })
+                return
+            }
+            // The picker did not come back by itself; ask for the way back
+            // rather than waiting for it forever.
+            if (++tries > 25) {
+                tries = 0
+                // Stopped, not just reset: otherwise "give up" meant asking the stack to pop
+                // every second and a half for the life of the page.
+                stop()
+                page.pendingAttachment = null
+                pageStack.pop(page)
+            }
+        }
+    }
+
+    function submit() {
+        // The word being typed is in the input method's preedit, not in `text`: whoever
+        // reaches straight for send sent everything but the last word.
+        Qt.inputMethod.commit()
+        // In an encrypted room, warn once before a message reaches a recipient with
+        // unverified devices. The dialog handles "send anyway" and calls back.
+        var pending = Composing.pendingUnverified(page.unverifiedUsers, matrix)
+        if (pending.length > 0) {
+            var dialog = pageStack.push(Qt.resolvedUrl("UnverifiedRecipientsDialog.qml"),
+                                        { users: pending })
+            dialog.accepted.connect(page.doSubmit)
+            return
+        }
+        doSubmit()
+    }
+
+    // The keyboard after a message has gone out: what one wants to see is the
+    // conversation, not the emptied field. The setting keeps it up.
+    function afterSend() {
+        page.followTail = true
+        if (settings.hideKeyboardOnSend) {
+            messageComposer.releaseField()
+            return
+        }
+        // Keeping the keyboard is an action, not the absence of one: the arrow
+        // that was just tapped is a press outside the field.
+        messageComposer.holdKeyboard()
+        messageComposer.focusField()
+    }
+
+    function doSubmit() {
+        if (page.editingEventId.length > 0) {
+            // An edit carries no mentions: it replaces a body, and the ping
+            // went out with the original.
+            matrix.editMessage(page.editingEventId, messageComposer.text)
+            // cancelEdit drops the focus by itself - an edit that is done is
+            // done, whatever the setting says.
+            page.cancelEdit()
+            return
+        }
+        var mentions = messageComposer.mentionIds()
+        if (page.replyingEventId.length > 0) {
+            matrix.replyToMessage(page.replyingEventId, messageComposer.text, mentions)
+            messageComposer.clearMentions()
+            page.cancelReply()
+            page.afterSend()
+            return
+        }
+        matrix.sendMessage(messageComposer.text, mentions)
+        messageComposer.clearField()
+        messageComposer.clearMentions()
+        page.afterSend()
+    }
+
+    /// The draft as a .txt attachment, asked for in the attachment picker. Through
+    /// the same gate a typed message goes through: a file reaches the same recipients.
+    function sendTextFile() {
+        Qt.inputMethod.commit()
+        if (messageComposer.text.trim().length === 0) {
+            return
+        }
+        var pending = Composing.pendingUnverified(page.unverifiedUsers, matrix)
+        if (pending.length > 0) {
+            var dialog = pageStack.push(Qt.resolvedUrl("UnverifiedRecipientsDialog.qml"),
+                                        { users: pending })
+            dialog.accepted.connect(page.doSendTextFile)
+            return
+        }
+        page.doSendTextFile()
+    }
+
+    function doSendTextFile() {
+        if (!matrix.sendTextAsFile(messageComposer.text, page.replyingEventId)) {
+            page.showNotice(qsTr("The text could not be written as a file"))
+            return
+        }
+        messageComposer.clearField()
+        messageComposer.clearMentions()
+        page.clearReplyState()
+        page.afterSend()
+    }
+
+    /// Long messages start folded; this remembers which are open. Keyed by row id,
+    /// since a delegate that scrolls away forgets.
+    property var expandedRows: ({})
+    property int expandedRevision: 0
+
+    function toggleExpanded(rowId) {
+        if (page.expandedRows[rowId]) {
+            delete page.expandedRows[rowId]
+        } else {
+            page.expandedRows[rowId] = true
+        }
+        page.expandedRevision++
+    }
+
+    /// An attachment through the same gate a typed message goes through. What
+    /// follows a send happens after it, so calling off at the warning changes nothing.
+    function submitMedia(action) {
+        // Not while the stack is moving: Silica drops a push issued during a
+        // transition, and the picture with its caption was simply gone.
+        if (pageStack.busy) {
+            page.deferredMedia = action
+            return
+        }
+        var pending = Composing.pendingUnverified(page.unverifiedUsers, matrix)
+        if (pending.length > 0) {
+            var dialog = pageStack.push(Qt.resolvedUrl("UnverifiedRecipientsDialog.qml"),
+                                        { users: pending })
+            // A push that was refused after all hands the attachment back
+            // rather than dropping it.
+            if (!dialog) {
+                page.deferredMedia = action
+                return
+            }
+            dialog.accepted.connect(function() { page.sendMediaNow(action) })
+            dialog.rejected.connect(function() { page.mediaDeclined() })
+            return
+        }
+        page.sendMediaNow(action)
+    }
+
+    /// An attachment waiting for the page stack to stand still. Never dropped:
+    /// it is the only copy of what the user chose.
+    property var deferredMedia: null
+
+    /// The user said no to the warning. Nothing is sent, and the attachment is
+    /// let go of - it was their decision, not a lost message.
+    function mediaDeclined() {
+        page.deferredMedia = null
+    }
+
+    Connections {
+        target: pageStack
+        onBusyChanged: {
+            if (!pageStack.busy && page.deferredMedia
+                    && page.status === PageStatus.Active) {
+                var action = page.deferredMedia
+                page.deferredMedia = null
+                page.submitMedia(action)
+            }
+        }
+    }
+
+    function sendMediaNow(action) {
+        // One event per file, in the order they were picked. Caption and reply
+        // belong to the first: a reply answers one event, not a batch.
+        for (var i = 0; i < action.files.length; i++) {
+            var file = action.files[i]
+            matrix.sendMedia(file.path, file.mimeType,
+                             i === 0 ? action.caption : "",
+                             i === 0 ? action.replyTo : "",
+                             0, action.original === true)
+        }
+        page.clearReplyState()
+        page.followTail = true
+    }
+
+    function beginReply(eventId, sender, body) {
+        // Written from live: a slice would take the thread.
+        if (inSlice) {
+            backToLive()
+        }
+        page.replyingEventId = eventId
+        page.replyingTo = sender && sender.length > 0 ? sender : body
+        // Kept separately from replyingTo: the send page shows sender and text
+        // as two lines, the way the quote in the conversation does.
+        page.replyingBody = body || ""
+        page.editingEventId = ""
+        messageComposer.focusField()
+    }
+
+    function cancelReply() {
+        page.replyingEventId = ""
+        page.replyingTo = ""
+        page.replyingBody = ""
+        messageComposer.clearField()
+    }
+
+    // After an attachment went out as a reply. Unlike `cancelReply` this leaves
+    // the composer alone - a half-typed message is not part of what was sent.
+    function clearReplyState() {
+        page.replyingEventId = ""
+        page.replyingTo = ""
+        page.replyingBody = ""
+    }
+
+    function toggleAudio(itemId, media) {
+        if (page.playingId === itemId) {
+            if (audioPlayer.playbackState === Audio.PlayingState) {
+                audioPlayer.pause()
+            } else {
+                audioPlayer.play()
+            }
+            return
+        }
+
+        var key = itemId + "/full"
+        var known = matrix.mediaPath(key)
+        page.playingId = itemId
+        if (known.length > 0) {
+            audioPlayer.source = "file://" + known
+            audioPlayer.play()
+            return
+        }
+        page.pendingPlayKey = key
+        matrix.requestMedia(key, media.source, false, media.size || 0)
+    }
+
+    function openVideo(itemId, media) {
+        var silent = page.mutedVideos[itemId] === true
+        var key = itemId + "/full"
+        var known = matrix.mediaPath(key)
+        matrix.requestMedia(key, media.source, false, media.size || 0)
+        pageStack.push(Qt.resolvedUrl("VideoPage.qml"), {
+                           mediaKey: key,
+                           source: known.length > 0 ? "file://" + known : "",
+                           fileName: media.filename || "",
+                           mimeType: media.mimetype || "",
+                           declaredSize: media.size || 0,
+                           startMuted: silent
+                       })
+    }
+
+    // Forwarding re-sends rather than references: the target room encrypts under
+    // its own keys, so the file is fetched first and the page opens when it lands.
+    function forwardAttachment(item) {
+        if (!item || !item.media) {
+            return
+        }
+        var key = item.id + "/full"
+        var mime = item.media.mimetype || ""
+        var known = matrix.mediaPath(key)
+        if (known.length > 0) {
+            pageStack.push(Qt.resolvedUrl("ForwardPage.qml"), {
+                               path: "file://" + known,
+                               mimeType: mime
+                           })
+            return
+        }
+        page.pendingForwardKey = key
+        page.pendingForwardMime = mime
+        matrix.requestMedia(key, item.media.source, false, item.media.size || 0)
+    }
+
+    function saveAttachment(item) {
+        var key = item.id + "/full"
+        var known = matrix.mediaPath(key)
+        if (known.length > 0) {
+            page.storeFile(known, item)
+            return
+        }
+        page.pendingSaveKey = key
+        page.pendingSaveIsImage = item.msgtype === "m.image"
+        page.pendingSaveName = item.media ? (item.media.filename || "") : ""
+        matrix.requestMedia(key, item.media.source, false, item.media.size || 0)
+    }
+
+    // Opens a message's thread, starting one where there is none. The landscape
+    // action page calls this too.
+    function openThread(eventId) {
+        pageStack.push(Qt.resolvedUrl("ThreadPage.qml"), {
+                           roomId: page.roomId,
+                           roomName: page.roomName,
+                           rootEventId: eventId,
+                           encrypted: page.encrypted
+                       })
+    }
+
+    // Choosing a reaction for a message. The dialog hands the character back;
+    // sending it is a toggle, so choosing the one already given takes it back.
+    function pickReaction(eventId) {
+        var dialog = pageStack.push(Qt.resolvedUrl("ReactionDialog.qml"),
+                                    { eventId: eventId })
+        dialog.accepted.connect(function() {
+            if (dialog.key.length > 0) {
+                matrix.toggleReaction(eventId, dialog.key)
+            }
+        })
+    }
+
+    // Names under a message, unfolded on demand: readers behind the eye, or who
+    // set one reaction. One line and one state for both - the rows are the cost.
+    property string namesEventId: ""
+
+    // Which message shows its authenticity sentence. The mark stands on every
+    // affected message; the sentence is one at a time, on request.
+    property string shieldEventId: ""
+
+    // The two levels in the security page's colours. Grey at the size of a mark
+    // is indistinguishable from the text, so the orange is the project's own.
+    readonly property color shieldRedColor: Theme.errorColor
+    readonly property color shieldGreyColor:
+        SecurityStatus.color(SecurityStatus.ORANGE, Theme,
+                             Theme.colorScheme === Theme.LightOnDark)
+    /// The colour of a message's shield: "red" is the SDK's level name.
+    function shieldColor(shield) {
+        return shield && shield.level === "red" ? shieldRedColor : shieldGreyColor
+    }
+    /// Which reaction the names belong to; empty when they are the readers.
+    property string namesKey: ""
+    /// What stands in front of them - the reaction itself, so the line says
+    /// what it is a list of without a word.
+    property string namesPrefix: ""
+    property string namesText: ""
+
+    function clearNames() {
+        page.namesEventId = ""
+        page.namesKey = ""
+        page.namesPrefix = ""
+        page.namesText = ""
+    }
+
+    /// Toggle: a second tap on the same mark puts the sentence away again.
+    function showShield(eventId) {
+        page.shieldEventId = page.shieldEventId === eventId ? "" : eventId
+    }
+
+    function showReaders(eventId) {
+        if (page.namesEventId === eventId && page.namesKey.length === 0) {
+            page.clearNames()
+            return
+        }
+        page.clearNames()
+        page.namesEventId = eventId
+        matrix.loadReaders(eventId)
+    }
+
+    /// Press and hold on a reaction: who set it. The key that goes to the core is
+    /// the one the row sends with, not the one it draws.
+    function showReactors(eventId, sendKey, shownKey) {
+        if (page.namesEventId === eventId && page.namesKey === sendKey) {
+            page.clearNames()
+            return
+        }
+        page.clearNames()
+        page.namesEventId = eventId
+        page.namesKey = sendKey
+        page.namesPrefix = shownKey + " "
+        matrix.loadReactors(eventId, sendKey)
+    }
+
+
+    Connections {
+        target: matrix
+        onReadersReady: {
+            if (eventId !== page.namesEventId || page.namesKey.length > 0) {
+                return
+            }
+            var names = []
+            for (var i = 0; i < readers.length; i++) {
+                names.push(readers[i].name)
+            }
+            page.namesText = names.join(", ")
+        }
+
+        onReactorsReady: {
+            if (eventId !== page.namesEventId || key !== page.namesKey) {
+                return
+            }
+            var who = []
+            for (var i = 0; i < reactors.length; i++) {
+                who.push(reactors[i].name)
+            }
+            // Nobody to name: fold the line away rather than leave the reaction standing
+            // alone, which reads as a line that failed to load.
+            if (who.length === 0) {
+                page.clearNames()
+                return
+            }
+            page.namesText = page.namesPrefix + who.join(", ")
+        }
+    }
+
+    // The face opens the reaction page in the mode that hands the character back.
+    // It goes where the cursor is: an emoji belongs mid-sentence as often as at the end.
+    function pickEmoji() {
+        var dialog = pageStack.push(Qt.resolvedUrl("ReactionDialog.qml"),
+                                    { forMessage: true })
+        dialog.accepted.connect(function() {
+            if (dialog.key.length > 0) {
+                messageComposer.insertAtCursor(dialog.key)
+            }
+            messageComposer.focusField()
+        })
+    }
+
+    /// The one line a message carries when its authenticity is in doubt. The
+    /// reasons are the SDK's own codes; the wording is ours.
+    function shieldText(shield) {
+        if (!shield) {
+            return ""
+        }
+        switch (shield.reason) {
+        case "sentInClear": return qsTr("Sent unencrypted")
+        case "mismatchedSender": return qsTr("Not sent by the account it names")
+        case "identityChanged": return qsTr("The sender's keys changed")
+        case "unsignedDevice":
+        case "unknownDevice": return qsTr("From an unverified device")
+        case "unverifiedIdentity": return qsTr("From an unverified person")
+        default: return qsTr("Authenticity not confirmed")
+        }
+    }
+
+    // A tapped link. A Matrix address is answered inside the app; anything
+    // else is a web address and goes where it always went.
+    // `map`: a location card's cached map, shown under the address.
+    function followLink(link, map) {
+        var target = MatrixLinks.decide(link)
+        if (target.kind === "none") {
+            return
+        }
+        if (target.kind === "web") {
+            // The address before it is opened: what a link says and where it
+            // goes are two strings a stranger writes.
+            var properties = {
+                question: qsTr("Open this address?"),
+                subject: link,
+                acceptLabel: qsTr("Open"),
+                plainCancel: true
+            }
+            if (map && map.available === true) {
+                properties.extraSource = Qt.resolvedUrl("LocationMap.qml")
+                properties.extraProperties = { mapData: map }
+            }
+            var dialog = pageStack.push(Qt.resolvedUrl("ConfirmDialog.qml"), properties)
+            dialog.accepted.connect(function() { Qt.openUrlExternally(link) })
+            return
+        }
+        if (target.kind === "user") {
+            // Not a silent direct chat: the dialog names the address and the
+            // user accepts it.
+            pageStack.push(Qt.resolvedUrl("NewChatDialog.qml"),
+                           { prefill: target.id })
+            return
+        }
+        page.pendingAddress = target.id
+        matrix.resolveRoom(target.id)
+    }
+
+    // The address a tapped link asked about, until the core has answered.
+    property string pendingAddress: ""
+
+    Connections {
+        target: matrix
+
+        onRoomResolved: {
+            if (page.pendingAddress.length === 0) {
+                return
+            }
+            page.pendingAddress = ""
+            if (joined) {
+                pageStack.push(Qt.resolvedUrl("RoomPage.qml"),
+                               { roomId: roomId, roomName: "" })
+                return
+            }
+            // Never from the link itself: joining is the user's decision, and
+            // the dialog is where it is made.
+            pageStack.push(Qt.resolvedUrl("JoinRoomDialog.qml"),
+                           { prefill: address })
+        }
+
+        onRoomResolveFailed: {
+            if (page.pendingAddress.length === 0) {
+                return
+            }
+            page.pendingAddress = ""
+        }
+    }
+
+    /// Everything a sender wrote loses its meaning as markup here, and only
+    /// here. Whatever is appended afterwards was written by this app.
+    function escapeBody(body) {
+        return body.replace(/&/g, "&amp;")
+                   .replace(/</g, "&lt;")
+                   .replace(/>/g, "&gt;")
+    }
+
+    /// A URL inside an href, where Qt decodes no entities: the ampersand has to
+    /// stay itself. Anything that could end the attribute is refused.
+    function safeHref(url) {
+        if (/["'<>`\\\s]/.test(url)) {
+            return ""
+        }
+        // The same rule the core applies to a formatted link: an address is
+        // ASCII. Anything else is invisible, a homograph, or both — and this
+        // one is drawn from the plain body, which keeps its zero-width
+        // characters because an emoji sequence needs them.
+        if (/[^\x20-\x7e]/.test(url)) {
+            return ""
+        }
+        // Everything before an "@" in the authority is a user name; the host
+        // that decides sits behind it, past where the dialog wraps.
+        var authority = url.replace(/^https?:\/\//i, "").split(/[\/?#]/)[0]
+        return authority.indexOf("@") >= 0 ? "" : url
+    }
+
+    function linkifyBody(body) {
+        var escaped = page.escapeBody(body)
+        // One pass over both kinds, web address first: a matrix.to permalink carries
+        // a room address inside itself.
+        var pattern = /(https?:\/\/[^\s<>"]+)|([#@!][A-Za-z0-9._=\-\/+]+:[A-Za-z0-9.\-]+(?::[0-9]+)?)/g
+        return escaped.replace(pattern, function(match, url, address) {
+            var trail = ""
+            var target = url || address
+            // Sentence punctuation glued to the end is not part of the link.
+            var punctuation = target.match(/[.,;:!?]+$/)
+            if (punctuation) {
+                trail = punctuation[0]
+                target = target.slice(0, target.length - trail.length)
+            }
+            if (url) {
+                // A closing parenthesis only when none was opened.
+                if (target.charAt(target.length - 1) === ")" && target.indexOf("(") < 0) {
+                    target = target.slice(0, target.length - 1)
+                    trail = ")" + trail
+                }
+                // A Matrix permalink is handled in the app, so it stays tappable even where
+                // web links are off - it never reaches a browser.
+                if (!settings.clickableLinks && !MatrixLinks.parse(target)) {
+                    return target + trail
+                }
+                // The href as written, not as shown: `target` left the escaper with
+                // `&amp;`, and Qt decodes no entities in an attribute.
+                var href = page.safeHref(target.replace(/&amp;/g, "&"))
+                if (href.length === 0) {
+                    return target + trail
+                }
+                return "<a href=\"" + href + "\">" + target + "</a>" + trail
+            }
+            return "<a href=\"shoal-messages:" + target + "\">" + target + "</a>" + trail
+        })
+    }
+
+    function storeFile(path, item) {
+        var name = item.media ? item.media.filename : ""
+        page.storeTo(path, name, item.msgtype === "m.image")
+    }
+
+    function storeTo(path, name, isImage) {
+        if (isImage) {
+            page.showNotice(matrix.saveToPictures(path, name).length > 0
+                            ? qsTr("Saved to gallery") : qsTr("Could not save"))
+        } else {
+            page.showNotice(matrix.saveToDownloads(path, name).length > 0
+                            ? qsTr("Saved to Downloads") : qsTr("Could not save"))
+        }
+    }
+
+    function openImage(itemId, media) {
+        // A separate cache key: the timeline holds the thumbnail under the
+        // plain item id, and both are worth keeping.
+        var key = itemId + "/full"
+        var known = matrix.mediaPath(key)
+        matrix.requestMedia(key, media.source, false, media.size || 0)
+        pageStack.push(Qt.resolvedUrl("ImageViewPage.qml"), {
+                           mediaKey: key,
+                           source: known.length > 0 ? "file://" + known : "",
+                           fileName: media.filename || "",
+                           mimeType: media.mimetype || "image/jpeg"
+                       })
+    }
+
+    function beginEdit(eventId, body) {
+        page.editingEventId = eventId
+        messageComposer.text = body
+        messageComposer.focusField()
+    }
+
+    function cancelEdit() {
+        page.editingEventId = ""
+        messageComposer.clearField()
+        messageComposer.releaseField()
+    }
+
+    // What the notice below is currently saying.
+    property string noticeText: ""
+
+    /// A short word over the conversation, where a tap does nothing on purpose:
+    /// silence reads as a tap that never registered.
+    function showNotice(text) {
+        page.noticeText = text
+        jumpNoticeTimer.restart()
+    }
+
+    // A hands-free take that heard nothing is dropped, and the page says so.
+    Connections {
+        target: matrix.recorder
+        onNothingHeard: page.showNotice(qsTr("Nothing was said, so nothing was sent."))
+    }
+
+    Connections {
+        target: matrix.roomSettings
+        onSaved: {
+            if (roomId === page.roomId && shownName.length > 0) {
+                page.roomName = shownName
+            }
+        }
+    }
+
+    // A refused poll command has no row to mark, so the page says it.
+    Connections {
+        target: matrix.polls
+        onFailed: {
+            if (command === "poll.vote") {
+                page.showNotice(qsTr("Voting failed"))
+            } else if (command === "poll.end") {
+                page.showNotice(qsTr("The poll could not be ended"))
+            } else {
+                page.showNotice(qsTr("The poll could not be sent"))
+            }
+        }
+        onVoteFailed: page.showNotice(qsTr("Your vote was not sent"))
+    }
+
+    Connections {
+        target: matrix.sendQueue
+        // "No longer queued": sent or removed, not a failure.
+        onFailed: page.showNotice(message.indexOf("no longer queued") >= 0
+                                  ? qsTr("It is no longer waiting to be sent.")
+                                  : qsTr("That did not work. Try again in a moment."))
+    }
+
+    // Start failed or unanswered: stopped, and said.
+    Connections {
+        target: matrix.locations
+        onLiveFailed: {
+            if (roomId === page.roomId) {
+                page.showNotice(qsTr("Live location could not be started"))
+            }
+        }
+    }
+
+    // Said out loud when a jump gives up.
+    Rectangle {
+        id: jumpNotice
+
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            bottom: parent.bottom
+            bottomMargin: Theme.itemSizeLarge
+        }
+        width: jumpNoticeLabel.width + 2 * Theme.paddingLarge
+        height: jumpNoticeLabel.height + 2 * Theme.paddingMedium
+        radius: Theme.paddingMedium
+        color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
+        opacity: 0
+
+        Label {
+            id: jumpNoticeLabel
+
+            anchors.centerIn: parent
+            font.pixelSize: Theme.fontSizeSmall
+            color: Theme.highlightColor
+            text: page.noticeText
+        }
+
+        Behavior on opacity { FadeAnimation { } }
+    }
+
+    Timer {
+        id: jumpNoticeTimer
+
+        interval: 2500
+        onTriggered: jumpNotice.opacity = 0
+        onRunningChanged: {
+            if (running) {
+                jumpNotice.opacity = 1
+            }
+        }
+    }
+}

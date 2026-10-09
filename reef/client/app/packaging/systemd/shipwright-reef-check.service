@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Reef's background update check (reef/client/app/src/check.rs). Started by
+# shipwright-reef-check.timer; the "Check in the background" setting decides
+# whether a check is due, so with "Never" this exits at once.
+[Unit]
+Description=Reef background update check
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/shipwright-reef --check-updates
+Nice=10
+IOSchedulingClass=idle

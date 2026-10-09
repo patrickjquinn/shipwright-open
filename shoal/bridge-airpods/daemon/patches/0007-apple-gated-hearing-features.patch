@@ -1,0 +1,2797 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 22:43:21 +0000
+Subject: [PATCH] Expose hearing features that need Apple's Device ID
+
+AirPods offer hearing aid control, transparency mode customisation and
+loud sound reduction only to hosts whose Device ID carries Apple's
+company identifier (0x004C). This adds them as capabilities, in the
+existing SetCapabilities/info style:
+
+- hearingAid: {selected, enrolled}. AAP control commands 0x2C
+  (enrolled, enabled) and 0x33 (hearing assist). Turning it on without
+  an audiogram on the headphones is refused.
+- hearingAidAdjustments: amplification, balance, tone, ambient noise
+  reduction, conversation boost. ATT attribute 0x2A; the audiogram in
+  the same attribute is kept.
+- transparencyCustom: the same adjustments plus on/off for transparency
+  mode. ATT attribute 0x18.
+- loudSoundReduction: {selected}. ATT attribute 0x1B, read back after
+  each write since it does not notify.
+
+Without Apple's Device ID (see HostDeviceId) each capability that the
+model has is listed as {"unavailable": "needs Apple Device ID",
+"readonly": true} while the headphones are connected, and
+SetCapabilities ignores it, so clients can explain why a feature is
+missing.
+
+The ATT attributes are reached through a small ATT client on the
+BR/EDR L2CAP channel PSM 0x1F (AapAttChannel). It runs while the AAP
+link is up and the host presents Apple's Device ID, sends one request
+at a time, answers MTU exchanges and other requests from the headphones,
+and confirms indications. A response is taken only if it answers the
+request in flight (Read Response for a read, Write Response for a write,
+an Error Response naming the request's opcode and handle). Read
+Responses carry no handle, so when a request gets no answer within 3 s
+(checked from its deadline, not when the next request is queued) the
+channel is closed, as ATT requires after a transaction timeout, every
+pending request fails, and the device reconnects it (at most three times
+per AAP connection). Start and Stop are serialised, and the connecting
+thread re-checks that the channel is still wanted before and after
+connecting.
+
+Values are validated per attribute before they are used: transparency
+100 or 104+ bytes with a 0.0/1.0 flag, hearing aid 104+ bytes with
+0x60/0x64 in the header, loud sound reduction exactly one byte 0/1, and
+finite floats. A write starts from the value as last read and rewrites
+only the fields in the request, so the audiogram, ears set differently
+and any bytes a newer firmware adds are kept.
+
+Model support follows LibrePods: hearing aid and loud sound reduction on
+AirPods Pro 2 (Lightning, USB-C) and Pro 3; transparency customisation
+on the models with a transparency mode.
+
+Protocol reference: LibrePods (https://github.com/librepods-org/librepods):
+docs/control_commands.md, android ATTManager.kt, Transparency.kt,
+HearingAid.kt, linux/hearing-aid-adjustments.py. Codec and channel
+tests (with a fake transport) are in TestsAapAppleGated (DEBUG builds).
+---
+ CMakeLists.txt                                |  11 +
+ api-reference.md                              | 119 +++++
+ src/device/AapAttChannel.cpp                  | 309 +++++++++++
+ src/device/AapAttChannel.h                    | 151 ++++++
+ src/device/AapDevice.cpp                      | 106 ++++
+ src/device/AapDevice.h                        |  14 +
+ .../aap/AapAppleGatedCapability.cpp           | 112 ++++
+ .../aap/AapAppleGatedCapability.h             |  57 +++
+ .../capabilities/aap/AapAttCapability.cpp     |  47 ++
+ .../capabilities/aap/AapAttCapability.h       |  35 ++
+ .../AapHearingAidAdjustmentsCapability.cpp    |  47 ++
+ .../aap/AapHearingAidAdjustmentsCapability.h  |  31 ++
+ .../aap/AapHearingAidCapability.cpp           |  65 +++
+ .../aap/AapHearingAidCapability.h             |  30 ++
+ .../aap/AapLoudSoundReductionCapability.cpp   |  59 +++
+ .../aap/AapLoudSoundReductionCapability.h     |  28 +
+ .../aap/AapTransparencyCustomCapability.cpp   |  67 +++
+ .../aap/AapTransparencyCustomCapability.h     |  34 ++
+ src/main.cpp                                  |   2 +
+ src/sdk/aap/AapControlCommand.cpp             |  27 +
+ src/sdk/aap/AapControlCommand.h               |  42 ++
+ src/sdk/aap/att/AapAttHandles.h               |  27 +
+ src/sdk/aap/att/AapHearingSettings.cpp        | 234 +++++++++
+ src/sdk/aap/att/AapHearingSettings.h          | 101 ++++
+ src/sdk/aap/att/AttPdu.cpp                    |  97 ++++
+ src/sdk/aap/att/AttPdu.h                      |  62 +++
+ src/tests/TestsAapAppleGated.cpp              | 478 ++++++++++++++++++
+ src/tests/TestsAapAppleGated.h                |  40 ++
+ 28 files changed, 2432 insertions(+)
+ create mode 100644 src/device/AapAttChannel.cpp
+ create mode 100644 src/device/AapAttChannel.h
+ create mode 100644 src/device/capabilities/aap/AapAppleGatedCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapAppleGatedCapability.h
+ create mode 100644 src/device/capabilities/aap/AapAttCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapAttCapability.h
+ create mode 100644 src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.h
+ create mode 100644 src/device/capabilities/aap/AapHearingAidCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapHearingAidCapability.h
+ create mode 100644 src/device/capabilities/aap/AapLoudSoundReductionCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapLoudSoundReductionCapability.h
+ create mode 100644 src/device/capabilities/aap/AapTransparencyCustomCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapTransparencyCustomCapability.h
+ create mode 100644 src/sdk/aap/AapControlCommand.cpp
+ create mode 100644 src/sdk/aap/AapControlCommand.h
+ create mode 100644 src/sdk/aap/att/AapAttHandles.h
+ create mode 100644 src/sdk/aap/att/AapHearingSettings.cpp
+ create mode 100644 src/sdk/aap/att/AapHearingSettings.h
+ create mode 100644 src/sdk/aap/att/AttPdu.cpp
+ create mode 100644 src/sdk/aap/att/AttPdu.h
+ create mode 100644 src/tests/TestsAapAppleGated.cpp
+ create mode 100644 src/tests/TestsAapAppleGated.h
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 45de241..ccdaa8c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -14,11 +14,15 @@ add_executable(magicpodscore
+     src/tests/TestsSgb.cpp
+     src/tests/TestsAapBle.cpp
+     src/tests/TestsPbp.cpp
++    src/tests/TestsAapAppleGated.cpp
+ 
+     src/client/Client.cpp
+     src/pulseaudio/PulseAudioClient.cpp
+ 
+     src/sdk/aap/AapHelper.cpp
++    src/sdk/aap/AapControlCommand.cpp
++    src/sdk/aap/att/AttPdu.cpp
++    src/sdk/aap/att/AapHearingSettings.cpp
+     src/sdk/aap/setters/AapEnableNotifications.cpp
+     src/sdk/aap/setters/AapInit.cpp
+     src/sdk/aap/setters/AapInitExt.cpp
+@@ -84,6 +88,12 @@ add_executable(magicpodscore
+     src/device/capabilities/aap/AapToneVolumeCapability.cpp
+     src/device/capabilities/aap/AapMuteMicrophoneEndCallCapability.cpp
+     src/device/capabilities/aap/AapAdaptiveAudioNoiseCapability.cpp
++    src/device/capabilities/aap/AapAppleGatedCapability.cpp
++    src/device/capabilities/aap/AapAttCapability.cpp
++    src/device/capabilities/aap/AapHearingAidCapability.cpp
++    src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.cpp
++    src/device/capabilities/aap/AapTransparencyCustomCapability.cpp
++    src/device/capabilities/aap/AapLoudSoundReductionCapability.cpp
+     src/device/capabilities/aap/AppAnimationCapability.cpp
+ 
+     src/device/capabilities/sgb/GalaxyBudsCapability.cpp
+@@ -99,6 +109,7 @@ add_executable(magicpodscore
+ 
+     src/device/capabilities/Capability.cpp
+     src/device/AapDevice.cpp
++    src/device/AapAttChannel.cpp
+     src/device/GalaxyBudsDevice.cpp
+     src/device/PixelBudsDevice.cpp
+     src/device/BhfDevice.cpp
+diff --git a/api-reference.md b/api-reference.md
+index 7475721..a8f8231 100644
+--- a/api-reference.md
++++ b/api-reference.md
+@@ -764,6 +764,125 @@ Specifies how a call is ended. If ending a call is assigned to a single press, m
+ | `3`      | SinglePress |
+ 
+ 
++### Features that need Apple's Device ID
++
++AirPods offer some features only to hosts whose Device ID (the DID profile)
++carries Apple's Bluetooth SIG company identifier, 0x004C. With BlueZ, set
++`DeviceID = bluetooth:004C:0000:0000` in the `[General]` section of
++`/etc/bluetooth/main.conf` and restart `bluetooth`; you may have to pair the
++headphones again, because they cache the host's Device ID. Every Bluetooth
++device near the host then sees it as an Apple device. `GetHostDevice`
++says whether the adapter presents Apple's Device ID.
++
++These capabilities are listed only for models that have the feature, and only
++while the headphones are connected. Without Apple's Device ID they are listed
++as
++
++```json
++{
++  "hearingAid": {
++    "readonly": true,
++    "unavailable": "needs Apple Device ID"
++  }
++}
++```
++
++and `SetCapabilities` ignores them. With it, they are listed once the
++headphones report their state. The hearing features are attributes on an ATT
++channel (L2CAP PSM 0x1F) that the daemon opens next to the AAP channel.
++Protocol details: [LibrePods](https://github.com/librepods-org/librepods)
++(`docs/control_commands.md`, the Android app's `ATTManager.kt`,
++`Transparency.kt` and `HearingAid.kt`, `linux/hearing-aid-adjustments.py`).
++
++##### Hearing aid
++
++AirPods Pro 2 and later. Turns the hearing aid on or off. `enrolled` is `true`
++when the headphones hold an audiogram; turning the hearing aid on without one
++is refused. The audiogram itself cannot be set through this API.
++
++```json
++{
++  "hearingAid": {
++    "readonly": false,
++    "selected": true,
++    "enrolled": true
++  }
++}
++```
++
++##### Hearing aid adjustments
++
++AirPods Pro 2 and later. Fine tuning of the hearing aid. Any subset of the
++fields may be set, and only those are written: the audiogram stored in the
++same attribute, and every field not in the request, are kept exactly as the
++headphones reported them. Settings are refused until the attribute has been
++read.
++
++```json
++{
++  "hearingAidAdjustments": {
++    "readonly": false,
++    "amplification": 0,
++    "balance": 0,
++    "tone": 0,
++    "ambientNoiseReduction": 0,
++    "conversationBoost": false
++  }
++}
++```
++
++| Field                   |                                          |
++| ----------------------- | ---------------------------------------- |
++| `amplification`         | `-100..100`                              |
++| `balance`               | `-100..100`, negative left, positive right |
++| `tone`                  | `-100..100`, negative darker, positive brighter |
++| `ambientNoiseReduction` | `0..100`                                 |
++| `conversationBoost`     | bool                                     |
++
++The two ears get `amplification - balance / 2` and
++`amplification + balance / 2`; setting only one of the two keeps the other
++as the ears have it. `tone`, `ambientNoiseReduction` and `conversationBoost`
++set both ears. The values read are those of the left ear for these three,
++and the mean and difference of the two ears for amplification and balance,
++in whole percent; ears set differently (for example from an iPhone) keep
++their difference until one of these fields is set.
++
++##### Transparency mode customisation
++
++AirPods Pro, AirPods 4 with ANC, AirPods Max. `selected` turns the custom
++transparency settings on; the other fields are those of hearing aid
++adjustments. Not used while the hearing aid is on.
++
++```json
++{
++  "transparencyCustom": {
++    "readonly": false,
++    "selected": true,
++    "amplification": 20,
++    "balance": 0,
++    "tone": 0,
++    "ambientNoiseReduction": 50,
++    "conversationBoost": true
++  }
++}
++```
++
++##### Loud sound reduction
++
++AirPods Pro 2 and later. Reduces loud environmental sound in transparency and
++adaptive modes. The headphones do not notify changes of this attribute, so the
++daemon reads it back after every write.
++
++```json
++{
++  "loudSoundReduction": {
++    "readonly": false,
++    "selected": true
++  }
++}
++```
++
++
+ ## Settings
+ 
+ A general settings storage. Settings are stored in containers in TOML format. Container names must use only Latin characters; the names must not include magicpods or MAC addresses. Allowed separators are _, -, or camelCase. Supported types are bool, string, int, and float.
+diff --git a/src/device/AapAttChannel.cpp b/src/device/AapAttChannel.cpp
+new file mode 100644
+index 0000000..0e83592
+--- /dev/null
++++ b/src/device/AapAttChannel.cpp
+@@ -0,0 +1,309 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapAttChannel.h"
++#include "client/Client.h"
++#include "sdk/aap/att/AttPdu.h"
++#include "Logger.h"
++#include "StringUtils.h"
++
++namespace MagicPodsCore
++{
++    namespace
++    {
++        class ClientAttTransport : public AttTransport
++        {
++        private:
++            std::unique_ptr<Client> _client;
++
++        public:
++            explicit ClientAttTransport(const std::string& address) : _client{Client::CreateL2CAP(address, Att::PSM)} {}
++
++            void Start() override { _client->Start(); }
++            void Stop() override { _client->Stop(); }
++            bool IsStarted() const override { return _client->IsStarted(); }
++            void SendData(const std::vector<unsigned char>& data) override { _client->SendData(data); }
++            Event<std::vector<unsigned char>>& GetOnReceivedDataEvent() override { return _client->GetOnReceivedDataEvent(); }
++            Event<std::string>& GetOnConnectionLostEvent() override { return _client->GetOnConnectionLostEvent(); }
++        };
++
++        // Whether pdu is the answer to a request with this opcode and handle.
++        bool Answers(const Att::Pdu& pdu, unsigned char requestOpcode, uint16_t requestHandle)
++        {
++            switch (pdu.opcode) {
++                case Att::Opcode::ReadResponse:
++                    return requestOpcode == static_cast<unsigned char>(Att::Opcode::ReadRequest);
++                case Att::Opcode::WriteResponse:
++                    return requestOpcode == static_cast<unsigned char>(Att::Opcode::WriteRequest);
++                case Att::Opcode::ErrorResponse:
++                    // request opcode, handle, error code
++                    return !pdu.value.empty() && pdu.value[0] == requestOpcode && pdu.handle == requestHandle;
++                default:
++                    return false;
++            }
++        }
++    }
++
++    AapAttChannel::AapAttChannel(const std::string& address)
++        : AapAttChannel(std::make_unique<ClientAttTransport>(address))
++    {
++    }
++
++    AapAttChannel::AapAttChannel(std::unique_ptr<AttTransport> transport, std::chrono::milliseconds requestTimeout)
++        : _transport{std::move(transport)}, _requestTimeout{requestTimeout}
++    {
++        _receivedEventId = _transport->GetOnReceivedDataEvent().Subscribe([this](size_t id, const std::vector<unsigned char>& data) {
++            OnData(data);
++        });
++        _lostEventId = _transport->GetOnConnectionLostEvent().Subscribe([this](size_t id, const std::string& address) {
++            OnConnectionLost();
++        });
++    }
++
++    AapAttChannel::~AapAttChannel()
++    {
++        Stop();
++        _transport->GetOnReceivedDataEvent().Unsubscribe(_receivedEventId);
++        _transport->GetOnConnectionLostEvent().Unsubscribe(_lostEventId);
++    }
++
++    bool AapAttChannel::Start(const std::function<bool()>& stillWanted)
++    {
++        std::lock_guard lifecycle{_lifecycleMutex};
++        if (stillWanted && !stillWanted())
++            return false;
++        if (_transport->IsStarted())
++            return true;
++
++        // The watchdog of a connection that closed on its own.
++        JoinWatchdog();
++        {
++            std::lock_guard lock{_mutex};
++            DropPendingLocked();
++        }
++
++        _transport->Start();
++        if (!_transport->IsStarted()) {
++            Logger::Info("ATT channel failed to connect");
++            return false;
++        }
++        // Stop() waited while this connected; honour what it wanted.
++        if (stillWanted && !stillWanted()) {
++            Logger::Info("ATT channel connected but no longer wanted");
++            StopLocked();
++            return false;
++        }
++
++        {
++            std::lock_guard lock{_mutex};
++            _watchdogRunning = true;
++        }
++        _watchdog = std::thread([this]() { WatchdogLoop(); });
++
++        Logger::Info("ATT channel connected");
++        _onStarted.FireEvent(true);
++        return true;
++    }
++
++    void AapAttChannel::Stop()
++    {
++        std::lock_guard lifecycle{_lifecycleMutex};
++        StopLocked();
++    }
++
++    void AapAttChannel::StopLocked()
++    {
++        {
++            std::lock_guard lock{_mutex};
++            _watchdogRunning = false;
++            DropPendingLocked();
++        }
++        _wake.notify_all();
++        _transport->Stop();
++        JoinWatchdog();
++    }
++
++    void AapAttChannel::JoinWatchdog()
++    {
++        if (!_watchdog.joinable())
++            return;
++        // Start() or Stop() called from an event fired by the watchdog itself:
++        // it is about to return, so let it go.
++        if (_watchdog.get_id() == std::this_thread::get_id())
++            _watchdog.detach();
++        else
++            _watchdog.join();
++    }
++
++    bool AapAttChannel::IsStarted() const
++    {
++        return _transport->IsStarted();
++    }
++
++    void AapAttChannel::Read(uint16_t handle)
++    {
++        Enqueue({Att::ReadRequest(handle), static_cast<unsigned char>(Att::Opcode::ReadRequest), handle});
++    }
++
++    void AapAttChannel::Write(uint16_t handle, const std::vector<unsigned char>& value)
++    {
++        Enqueue({Att::WriteRequest(handle, value), static_cast<unsigned char>(Att::Opcode::WriteRequest), handle});
++    }
++
++    void AapAttChannel::EnableNotifications(uint16_t handle)
++    {
++        Enqueue({Att::EnableNotifications(handle), static_cast<unsigned char>(Att::Opcode::WriteRequest), static_cast<uint16_t>(handle + 1)});
++    }
++
++    void AapAttChannel::Enqueue(Request request)
++    {
++        if (!_transport->IsStarted()) {
++            Logger::Debug("ATT channel not connected, dropping request for handle 0x%04x", request.handle);
++            return;
++        }
++
++        std::lock_guard lock{_mutex};
++        _queue.push_back(std::move(request));
++        if (!_waiting)
++            SendNextLocked();
++    }
++
++    void AapAttChannel::SendNextLocked()
++    {
++        if (_queue.empty())
++            return;
++        _inFlight = std::move(_queue.front());
++        _queue.pop_front();
++        _waiting = true;
++        _sentAt = std::chrono::steady_clock::now();
++        _transport->SendData(_inFlight.pdu);
++        // The watchdog waits for the new deadline.
++        _wake.notify_all();
++    }
++
++    std::vector<uint16_t> AapAttChannel::DropPendingLocked()
++    {
++        std::vector<uint16_t> handles{};
++        if (_waiting)
++            handles.push_back(_inFlight.handle);
++        for (const auto& request : _queue)
++            handles.push_back(request.handle);
++        _queue.clear();
++        _waiting = false;
++        _inFlight = Request{};
++        return handles;
++    }
++
++    void AapAttChannel::FailRequests(const std::vector<uint16_t>& handles)
++    {
++        for (uint16_t handle : handles)
++            _onError.FireEvent(handle);
++    }
++
++    void AapAttChannel::WatchdogLoop()
++    {
++        std::unique_lock lock{_mutex};
++        while (_watchdogRunning) {
++            if (!_waiting) {
++                _wake.wait(lock);
++                continue;
++            }
++            const auto deadline = _sentAt + _requestTimeout;
++            if (std::chrono::steady_clock::now() < deadline) {
++                _wake.wait_until(lock, deadline);
++                continue;
++            }
++
++            const uint16_t handle = _inFlight.handle;
++            const auto failed = DropPendingLocked();
++            _watchdogRunning = false;
++            lock.unlock();
++
++            Logger::Warn("ATT request for handle 0x%04x got no response; closing the channel", handle);
++            _transport->Stop();
++            FailRequests(failed);
++            _onClosed.FireEvent(true);
++            return;
++        }
++    }
++
++    void AapAttChannel::OnConnectionLost()
++    {
++        std::vector<uint16_t> failed{};
++        {
++            std::lock_guard lock{_mutex};
++            _watchdogRunning = false;
++            failed = DropPendingLocked();
++        }
++        _wake.notify_all();
++        Logger::Info("ATT channel lost");
++        FailRequests(failed);
++        _onClosed.FireEvent(false);
++    }
++
++    void AapAttChannel::OnData(const std::vector<unsigned char>& data)
++    {
++        auto pdu = Att::Parse(data);
++        if (!pdu.has_value())
++            return;
++
++        const unsigned char opcode = static_cast<unsigned char>(pdu->opcode);
++
++        switch (pdu->opcode) {
++            case Att::Opcode::HandleValueNotification:
++                _onValue.FireEvent(AttValue{pdu->handle, pdu->value});
++                return;
++            case Att::Opcode::HandleValueIndication:
++                _transport->SendData(Att::HandleValueConfirmation());
++                _onValue.FireEvent(AttValue{pdu->handle, pdu->value});
++                return;
++            case Att::Opcode::ExchangeMtuRequest:
++                _transport->SendData(Att::ExchangeMtuResponse(LocalMtu));
++                return;
++            default:
++                break;
++        }
++
++        if (Att::IsRequestFromPeer(opcode)) {
++            // We serve no attributes of our own.
++            _transport->SendData(Att::ErrorResponse(opcode, 0x0000, Att::ErrorRequestNotSupported));
++            return;
++        }
++
++        if (pdu->opcode != Att::Opcode::ReadResponse && pdu->opcode != Att::Opcode::WriteResponse &&
++            pdu->opcode != Att::Opcode::ErrorResponse) {
++            Logger::Debug("ATT: ignoring %s", StringUtils::BytesToHexString(data.data(), data.size()).c_str());
++            return;
++        }
++
++        Request answered{};
++        {
++            std::lock_guard lock{_mutex};
++            if (!_waiting) {
++                Logger::Warn("ATT: discarding response 0x%02x, no request is in flight", opcode);
++                return;
++            }
++            if (!Answers(*pdu, _inFlight.opcode, _inFlight.handle)) {
++                Logger::Warn("ATT: discarding response 0x%02x, which does not answer request 0x%02x for handle 0x%04x",
++                             opcode, _inFlight.opcode, _inFlight.handle);
++                return;
++            }
++            answered = std::move(_inFlight);
++            _waiting = false;
++            SendNextLocked();
++        }
++
++        if (pdu->opcode == Att::Opcode::ReadResponse) {
++            _onValue.FireEvent(AttValue{answered.handle, pdu->value});
++        }
++        else if (pdu->opcode == Att::Opcode::WriteResponse) {
++            // The written value: the request PDU after opcode and handle.
++            _onWritten.FireEvent(AttValue{answered.handle, std::vector<unsigned char>(answered.pdu.begin() + 3, answered.pdu.end())});
++        }
++        else {
++            Logger::Warn("ATT error 0x%02x for handle 0x%04x", pdu->value.size() >= 4 ? pdu->value[3] : 0, answered.handle);
++            _onError.FireEvent(answered.handle);
++        }
++    }
++}
+diff --git a/src/device/AapAttChannel.h b/src/device/AapAttChannel.h
+new file mode 100644
+index 0000000..7fcc700
+--- /dev/null
++++ b/src/device/AapAttChannel.h
+@@ -0,0 +1,151 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "Event.h"
++
++#include <chrono>
++#include <condition_variable>
++#include <cstdint>
++#include <deque>
++#include <functional>
++#include <memory>
++#include <mutex>
++#include <string>
++#include <thread>
++#include <vector>
++
++namespace MagicPodsCore
++{
++    struct AttValue
++    {
++        uint16_t handle{};
++        std::vector<unsigned char> value{};
++    };
++
++    // What AapAttChannel needs from the L2CAP connection: Client in the
++    // daemon, a fake in the self-tests.
++    class AttTransport
++    {
++    public:
++        virtual ~AttTransport() = default;
++        // Connects (blocking) unless already connected.
++        virtual void Start() = 0;
++        virtual void Stop() = 0;
++        virtual bool IsStarted() const = 0;
++        virtual void SendData(const std::vector<unsigned char>& data) = 0;
++        virtual Event<std::vector<unsigned char>>& GetOnReceivedDataEvent() = 0;
++        // Fired when the connection dies on its own, never on Stop().
++        virtual Event<std::string>& GetOnConnectionLostEvent() = 0;
++    };
++
++    // A minimal ATT client on the BR/EDR L2CAP channel PSM 0x1F, for the
++    // AirPods attributes in AapAttHandle. ATT allows one outstanding request
++    // at a time, so requests are queued and sent one after another. Requests
++    // from the AirPods are answered (MTU exchange; anything else with
++    // "request not supported"), and indications are confirmed.
++    //
++    // A response is accepted only if it answers the request in flight: a
++    // Read Response for a Read Request, a Write Response for a Write Request,
++    // an Error Response naming the request's opcode and handle. Read
++    // Responses carry no handle, so after a request times out a late
++    // response could not be told apart from the answer to the next request.
++    // As the ATT specification requires after a transaction timeout, the
++    // channel is then closed instead: every pending request fails, and
++    // GetClosedEvent() tells the owner, which may connect again.
++    class AapAttChannel
++    {
++    public:
++        static constexpr std::chrono::milliseconds DefaultRequestTimeout{3000};
++
++    private:
++        static constexpr uint16_t LocalMtu = 672;
++
++        struct Request
++        {
++            std::vector<unsigned char> pdu{};
++            unsigned char opcode{};
++            uint16_t handle{};
++        };
++
++        std::unique_ptr<AttTransport> _transport{};
++        const std::chrono::milliseconds _requestTimeout;
++
++        // Serialises Start() and Stop(); never taken by the watchdog or by
++        // transport callbacks.
++        std::mutex _lifecycleMutex{};
++
++        // Request state, guarded by _mutex.
++        std::mutex _mutex{};
++        std::condition_variable _wake{};
++        std::deque<Request> _queue{};
++        bool _waiting{false};
++        Request _inFlight{};
++        std::chrono::steady_clock::time_point _sentAt{};
++        bool _watchdogRunning{false};
++
++        // Fails the request in flight when it times out, from its deadline
++        // rather than when the next request is queued. Joined only with
++        // _lifecycleMutex held.
++        std::thread _watchdog{};
++
++        size_t _receivedEventId{};
++        size_t _lostEventId{};
++
++        Event<AttValue> _onValue{};
++        Event<AttValue> _onWritten{};
++        Event<uint16_t> _onError{};
++        Event<bool> _onStarted{};
++        Event<bool> _onClosed{};
++
++        void OnData(const std::vector<unsigned char>& data);
++        void OnConnectionLost();
++        void WatchdogLoop();
++        // Expects _lifecycleMutex to be held.
++        void StopLocked();
++        // Expects _lifecycleMutex to be held.
++        void JoinWatchdog();
++        // Expects _mutex to be held.
++        void SendNextLocked();
++        // Expects _mutex to be held. Empties the queue and returns the handles
++        // of every request that will now never be answered.
++        std::vector<uint16_t> DropPendingLocked();
++        void FailRequests(const std::vector<uint16_t>& handles);
++        void Enqueue(Request request);
++
++    public:
++        explicit AapAttChannel(const std::string& address);
++        explicit AapAttChannel(std::unique_ptr<AttTransport> transport,
++                               std::chrono::milliseconds requestTimeout = DefaultRequestTimeout);
++        ~AapAttChannel();
++
++        AapAttChannel(const AapAttChannel&) = delete;
++        AapAttChannel& operator=(const AapAttChannel&) = delete;
++
++        // Connects the channel (blocking) unless it is already up. stillWanted,
++        // if given, is checked before and after connecting while Stop() is
++        // held off; when it returns false the channel ends up stopped.
++        bool Start(const std::function<bool()>& stillWanted = {});
++        void Stop();
++        bool IsStarted() const;
++
++        void Read(uint16_t handle);
++        void Write(uint16_t handle, const std::vector<unsigned char>& value);
++        void EnableNotifications(uint16_t handle);
++
++        // Read responses and notifications/indications, with their handle.
++        Event<AttValue>& GetValueEvent() { return _onValue; }
++        // Write responses, with the handle and the value that was written.
++        Event<AttValue>& GetWrittenEvent() { return _onWritten; }
++        // Error responses, timeouts and requests dropped when the channel
++        // closed on its own, with the handle of the request.
++        Event<uint16_t>& GetErrorEvent() { return _onError; }
++        // Fired after the channel connected; users queue their reads here.
++        Event<bool>& GetStartedEvent() { return _onStarted; }
++        // Fired when the channel closed on its own: true after a request
++        // timed out, false when the connection was lost. Never on Stop().
++        Event<bool>& GetClosedEvent() { return _onClosed; }
++    };
++}
+diff --git a/src/device/AapDevice.cpp b/src/device/AapDevice.cpp
+index 30f136f..cfbdf55 100644
+--- a/src/device/AapDevice.cpp
++++ b/src/device/AapDevice.cpp
+@@ -22,6 +22,13 @@
+ #include "sdk/aap/setters/AapEnableNotifications.h"
+ #include "sdk/aap/setters/AapPrivateKeys.h"
+ #include "capabilities/cmn/CmnBluetoothCodecCapability.h"
++#include "capabilities/aap/AapHearingAidCapability.h"
++#include "capabilities/aap/AapHearingAidAdjustmentsCapability.h"
++#include "capabilities/aap/AapTransparencyCustomCapability.h"
++#include "capabilities/aap/AapLoudSoundReductionCapability.h"
++#include "HostDeviceId.h"
++
++#include <thread>
+ 
+ namespace MagicPodsCore
+ {
+@@ -42,6 +49,14 @@ namespace MagicPodsCore
+     
+     AapDevice::~AapDevice()
+     {
++        HostDeviceId::Instance().GetChangedEvent().Unsubscribe(_attHostDeviceIdEventId);
++        GetClientStateChangedEvent().Unsubscribe(_attClientStateEventId);
++        // Stop the channel (and join its reader) while the capabilities it
++        // feeds still exist; they are destroyed in ~Device.
++        if (_att)
++            _att->Stop();
++        _att.reset();
++
+         if (_bleService && _getOnAdReceivedEventId != 0)
+             _bleService->GetOnAdReceivedEvent().Unsubscribe(_getOnAdReceivedEventId);
+     }
+@@ -51,6 +66,65 @@ namespace MagicPodsCore
+         _client->SendData(setter.Request());
+     }
+ 
++    bool AapDevice::IsAttChannelWanted() const
++    {
++        return GetClientState() == ClientState::Connected && HostDeviceId::Instance().IsApple();
++    }
++
++    // The ATT channel runs while the AAP link is up and the host presents
++    // Apple's Device ID. Connecting blocks, and this is called from the AAP
++    // reader or the DBus dispatcher, so it connects on a thread of its own,
++    // like Device's client restart.
++    void AapDevice::UpdateAttChannel()
++    {
++        if (!_att)
++            return;
++
++        if (!IsAttChannelWanted()) {
++            // Also while a Start() is connecting: Stop() waits for it, and
++            // Start() checks again before and after connecting.
++            if (_att->IsStarted()) {
++                Logger::Info("%s: stopping the ATT channel", GetName().c_str());
++                _att->Stop();
++            }
++            return;
++        }
++
++        if (_att->IsStarted() || _attStartPending.exchange(true))
++            return;
++
++        std::thread([weakDevice = weak_from_this()]() {
++            // The AirPods accept the channel only once the AAP link is set
++            // up. Wait without holding the device, so a device removed in
++            // the meantime is destroyed on its own thread.
++            std::this_thread::sleep_for(std::chrono::seconds(1));
++            auto device = std::static_pointer_cast<AapDevice>(weakDevice.lock());
++            if (!device)
++                return;
++            // Holds the device while connecting, so the channel and the
++            // capabilities it feeds outlive Start(). If the device is
++            // released meanwhile, it is destroyed here when Start() returns,
++            // which is safe: ~AapDevice joins no thread of this one.
++            AapDevice* raw = device.get();
++            raw->_att->Start([raw]() { return raw->IsAttChannelWanted(); });
++            raw->_attStartPending = false;
++        }).detach();
++    }
++
++    void AapDevice::OnAttChannelClosed(bool timedOut)
++    {
++        // Reconnect a channel that closed on its own (a lost connection, or a
++        // request that timed out), a few times per AAP connection, so a peer
++        // that never answers does not keep it cycling.
++        const int restarts = ++_attRestarts;
++        if (restarts > MaxAttRestarts) {
++            Logger::Warn("%s: ATT channel closed %d times; not reconnecting it until the next connection", GetName().c_str(), restarts - 1);
++            return;
++        }
++        Logger::Info("%s: ATT channel closed (%s); reconnecting", GetName().c_str(), timedOut ? "request timed out" : "connection lost");
++        UpdateAttChannel();
++    }
++
+     void AapDevice::FireAnimation(const nlohmann::json &json)
+     {
+         _onAnimationTriggered.FireEvent(json);
+@@ -77,6 +151,38 @@ namespace MagicPodsCore
+         device->capabilities.push_back(std::make_unique<AapAdaptiveAudioNoiseCapability>(*device));
+         device->capabilities.push_back(std::make_unique<AppAnimationCapability>(*device));
+ 
++        // Features AirPods offer only to hosts with Apple's Device ID.
++        const unsigned short productId = deviceInfo->GetProductId();
++        const bool hasHearingAid = AapHearingAidCapability::Supports(productId);
++        const bool hasTransparency = AapTransparencyCustomCapability::Supports(productId);
++        const bool hasLoudSoundReduction = AapLoudSoundReductionCapability::Supports(productId);
++        if (hasHearingAid || hasTransparency || hasLoudSoundReduction)
++            device->_att = std::make_unique<AapAttChannel>(deviceInfo->GetAddress());
++        if (hasHearingAid) {
++            device->capabilities.push_back(std::make_unique<AapHearingAidCapability>(*device));
++            device->capabilities.push_back(std::make_unique<AapHearingAidAdjustmentsCapability>(*device));
++        }
++        if (hasTransparency)
++            device->capabilities.push_back(std::make_unique<AapTransparencyCustomCapability>(*device));
++        if (hasLoudSoundReduction)
++            device->capabilities.push_back(std::make_unique<AapLoudSoundReductionCapability>(*device));
++
++        if (device->_att) {
++            device->_attClientStateEventId = device->GetClientStateChangedEvent().Subscribe([raw = device.get()](size_t id, ClientState state) {
++                if (state == ClientState::Connected)
++                    raw->_attRestarts = 0;
++                raw->UpdateAttChannel();
++            });
++            device->_attHostDeviceIdEventId = HostDeviceId::Instance().GetChangedEvent().Subscribe([raw = device.get()](size_t id, bool isApple) {
++                raw->_attRestarts = 0;
++                raw->UpdateAttChannel();
++            });
++            // Released with the channel in ~AapDevice.
++            device->_att->GetClosedEvent().Subscribe([raw = device.get()](size_t id, bool timedOut) {
++                raw->OnAttChannelClosed(timedOut);
++            });
++        }
++
+         device->_clientStartData.push_back(AapInit{}.Request());
+         device->_clientStartData.push_back(AapEnableNotifications{AapNotificationsMode::Unknown2}.Request());
+         device->_clientStartData.push_back(AapEnableNotifications{AapNotificationsMode::Unknown1}.Request());
+diff --git a/src/device/AapDevice.h b/src/device/AapDevice.h
+index 92c427d..087ae4e 100644
+--- a/src/device/AapDevice.h
++++ b/src/device/AapDevice.h
+@@ -9,6 +9,7 @@
+ #include "sdk/aap/setters/AapRequest.h"
+ #include "ble_ads/DBusBasedBleAdvertisingService.h"
+ #include "settings/SettingsService.h"
++#include "AapAttChannel.h"
+ 
+ namespace MagicPodsCore
+ {
+@@ -22,6 +23,18 @@ namespace MagicPodsCore
+         Event<const nlohmann::json> _onAnimationTriggered{};
+         void OnResponseDataReceived(const std::vector<unsigned char> &data) override;
+ 
++        // The ATT channel for the attributes AirPods offer only to hosts with
++        // Apple's Device ID; null for models that have none of them.
++        std::unique_ptr<AapAttChannel> _att{};
++        size_t _attClientStateEventId{};
++        size_t _attHostDeviceIdEventId{};
++        std::atomic<bool> _attStartPending{false};
++        static constexpr int MaxAttRestarts = 3;
++        std::atomic<int> _attRestarts{0};
++        bool IsAttChannelWanted() const;
++        void UpdateAttChannel();
++        void OnAttChannelClosed(bool timedOut);
++
+     public:
+         explicit AapDevice(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<DBusBasedBleAdvertisingService> bleService);
+         ~AapDevice() override;
+@@ -41,6 +54,7 @@ namespace MagicPodsCore
+         }
+ 
+         void SendData(const AapRequest &setter);
++        AapAttChannel *GetAttChannel() { return _att.get(); }
+         void FireAnimation(const nlohmann::json &json);
+         static std::shared_ptr<AapDevice> Create(std::shared_ptr<DBusDeviceInfo> deviceInfo, std::shared_ptr<PulseAudioClient> audioClient, std::shared_ptr<SettingsService> settingsService, std::shared_ptr<DBusBasedBleAdvertisingService> bleService);
+     };
+diff --git a/src/device/capabilities/aap/AapAppleGatedCapability.cpp b/src/device/capabilities/aap/AapAppleGatedCapability.cpp
+new file mode 100644
+index 0000000..be4aa4a
+--- /dev/null
++++ b/src/device/capabilities/aap/AapAppleGatedCapability.cpp
+@@ -0,0 +1,112 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapAppleGatedCapability.h"
++#include "HostDeviceId.h"
++
++namespace MagicPodsCore
++{
++    AapAppleGatedCapability::AapAppleGatedCapability(const std::string &name, bool isReadOnly, AapDevice &device)
++        : AapCapability(name, isReadOnly, device), _readOnlyWhenAvailable{isReadOnly}
++    {
++        _hostDeviceIdEventId = HostDeviceId::Instance().GetChangedEvent().Subscribe([this](size_t id, bool isApple) {
++            if (!isApple) {
++                hasData = false;
++                ResetData();
++            }
++            Refresh(true);
++        });
++
++        _gatedClientStateEventId = this->device.GetClientStateChangedEvent().Subscribe([this](size_t id, ClientState state) {
++            // Disconnected is handled by AapCapability through Reset().
++            if (state != ClientState::Disconnected)
++                Refresh(true);
++        });
++    }
++
++    AapAppleGatedCapability::~AapAppleGatedCapability()
++    {
++        // HostDeviceId outlives every device. Device events are released in ~Device.
++        HostDeviceId::Instance().GetChangedEvent().Unsubscribe(_hostDeviceIdEventId);
++    }
++
++    bool AapAppleGatedCapability::IsHostApple()
++    {
++        return HostDeviceId::Instance().IsApple();
++    }
++
++    nlohmann::json AapAppleGatedCapability::UnavailableJsonBody()
++    {
++        return nlohmann::json{{"unavailable", UnavailableReason}};
++    }
++
++    nlohmann::json AapAppleGatedCapability::CreateJsonBody()
++    {
++        if (!IsHostApple())
++            return UnavailableJsonBody();
++        return CreateAvailableJsonBody();
++    }
++
++    void AapAppleGatedCapability::Reset()
++    {
++        hasData = false;
++        ResetData();
++        Refresh(false);
++    }
++
++    void AapAppleGatedCapability::Refresh(bool notify)
++    {
++        const auto before = GetAsJson();
++
++        if (device.GetClientState() == ClientState::Disconnected) {
++            isAvailable = false;
++        }
++        else if (!IsHostApple()) {
++            isAvailable = true;
++            isReadOnly = true;
++        }
++        else {
++            isAvailable = HasData();
++            isReadOnly = _readOnlyWhenAvailable;
++        }
++
++        if (notify && GetAsJson() != before)
++            _onChanged.FireEvent(*this);
++    }
++
++    void AapAppleGatedCapability::DataUpdated()
++    {
++        // Subclasses call this only when their state changed. Without Apple's
++        // Device ID the listing does not show that state, so notify only if
++        // the capability appeared.
++        hasData = true;
++        const bool wasAvailable = isAvailable;
++        Refresh(false);
++        if (IsHostApple() ? isAvailable : isAvailable != wasAvailable)
++            _onChanged.FireEvent(*this);
++    }
++
++    void AapAppleGatedCapability::SetFromJson(const nlohmann::json &json)
++    {
++        if (!json.contains(name))
++            return;
++
++        if (!IsHostApple()) {
++            Logger::Info("%s: ignored, the host does not present Apple's Device ID", name.c_str());
++            return;
++        }
++
++        if (!isAvailable || isReadOnly) {
++            Logger::Info("%s: ignored, no state from the headphones yet", name.c_str());
++            return;
++        }
++
++        const auto &body = json.at(name);
++        if (!body.is_object()) {
++            Logger::Error("Error: %s::SetFromJson expects an object", name.c_str());
++            return;
++        }
++        SetAvailableFromJson(body);
++    }
++}
+diff --git a/src/device/capabilities/aap/AapAppleGatedCapability.h b/src/device/capabilities/aap/AapAppleGatedCapability.h
+new file mode 100644
+index 0000000..600f82c
+--- /dev/null
++++ b/src/device/capabilities/aap/AapAppleGatedCapability.h
+@@ -0,0 +1,57 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapCapability.h"
++#include "client/ClientState.h"
++
++namespace MagicPodsCore
++{
++    // A capability AirPods offer only to hosts whose Device ID carries Apple's
++    // company identifier (see HostDeviceId). While the AirPods are connected:
++    //
++    // - host without Apple's Device ID: the capability is listed as
++    //   {"unavailable": "needs Apple Device ID", "readonly": true}, so a client
++    //   can explain why the feature is missing, and SetCapabilities ignores it;
++    // - host with Apple's Device ID: the capability is listed once the AirPods
++    //   reported its state (HasData()), like any other capability.
++    //
++    // Subclasses add the model's product IDs to their Supports() check and are
++    // only created for models that have the feature.
++    class AapAppleGatedCapability : public AapCapability
++    {
++    private:
++        bool _readOnlyWhenAvailable;
++        size_t _hostDeviceIdEventId{};
++        size_t _gatedClientStateEventId{};
++
++    protected:
++        bool hasData = false;
++
++        static bool IsHostApple();
++        nlohmann::json CreateJsonBody() final;
++        void Reset() override;
++        // Recomputes isAvailable and isReadOnly; fires the changed event if
++        // the JSON a client would see changed and notify is set.
++        void Refresh(bool notify);
++        // For subclasses: new state from the AirPods.
++        void DataUpdated();
++
++        virtual nlohmann::json CreateAvailableJsonBody() = 0;
++        virtual void SetAvailableFromJson(const nlohmann::json &body) = 0;
++        virtual bool HasData() const { return hasData; }
++        virtual void ResetData() {}
++
++    public:
++        static constexpr const char *UnavailableReason = "needs Apple Device ID";
++
++        AapAppleGatedCapability(const std::string &name, bool isReadOnly, AapDevice &device);
++        ~AapAppleGatedCapability() override;
++        void SetFromJson(const nlohmann::json &json) final;
++
++        // The JSON body shown when the host lacks Apple's Device ID.
++        static nlohmann::json UnavailableJsonBody();
++    };
++}
+diff --git a/src/device/capabilities/aap/AapAttCapability.cpp b/src/device/capabilities/aap/AapAttCapability.cpp
+new file mode 100644
+index 0000000..a7a7e21
+--- /dev/null
++++ b/src/device/capabilities/aap/AapAttCapability.cpp
+@@ -0,0 +1,47 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapAttCapability.h"
++#include "device/AapAttChannel.h"
++
++namespace MagicPodsCore
++{
++    AapAttCapability::AapAttCapability(const std::string &name, AapDevice &device, AapAttHandle handle, bool notifies)
++        : AapAppleGatedCapability(name, false, device), _handle{handle}, _notifies{notifies}
++    {
++        AapAttChannel *att = device.GetAttChannel();
++        if (att == nullptr)
++            return;
++
++        const auto handleValue = static_cast<uint16_t>(_handle);
++
++        // Channel events are released with the channel in ~AapDevice.
++        att->GetStartedEvent().Subscribe([this, att, handleValue](size_t id, bool started) {
++            att->Read(handleValue);
++            if (_notifies)
++                att->EnableNotifications(handleValue);
++        });
++
++        att->GetValueEvent().Subscribe([this, handleValue](size_t id, const AttValue &value) {
++            if (value.handle != handleValue || !IsHostApple())
++                return;
++            if (value.value == raw && hasData)
++                return;
++            if (OnAttValue(value.value))
++                raw = value.value;
++        });
++
++        att->GetWrittenEvent().Subscribe([this, att, handleValue](size_t id, const AttValue &value) {
++            // Read back what the AirPods kept: not every attribute notifies.
++            if (value.handle == handleValue)
++                att->Read(handleValue);
++        });
++    }
++
++    void AapAttCapability::WriteValue(const std::vector<unsigned char> &value)
++    {
++        if (AapAttChannel *att = device.GetAttChannel())
++            att->Write(static_cast<uint16_t>(_handle), value);
++    }
++}
+diff --git a/src/device/capabilities/aap/AapAttCapability.h b/src/device/capabilities/aap/AapAttCapability.h
+new file mode 100644
+index 0000000..be4aa29
+--- /dev/null
++++ b/src/device/capabilities/aap/AapAttCapability.h
+@@ -0,0 +1,35 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapAppleGatedCapability.h"
++#include "sdk/aap/att/AapAttHandles.h"
++
++namespace MagicPodsCore
++{
++    // An Apple-gated capability backed by one attribute on the ATT channel.
++    // It reads the attribute when the channel comes up, subscribes to its
++    // notifications if it has them, and re-reads it after each write.
++    class AapAttCapability : public AapAppleGatedCapability
++    {
++    private:
++        AapAttHandle _handle;
++        bool _notifies;
++
++    protected:
++        std::vector<unsigned char> raw{};
++
++        void WriteValue(const std::vector<unsigned char> &value);
++        // New value of the attribute (read response or notification). Returns
++        // false to refuse a value that is not valid for this attribute; raw
++        // then keeps the last valid value.
++        virtual bool OnAttValue(const std::vector<unsigned char> &value) = 0;
++        void OnReceivedData(const std::vector<unsigned char> &data) override {}
++        void ResetData() override { raw.clear(); }
++
++    public:
++        AapAttCapability(const std::string &name, AapDevice &device, AapAttHandle handle, bool notifies);
++    };
++}
+diff --git a/src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.cpp b/src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.cpp
+new file mode 100644
+index 0000000..badf8a4
+--- /dev/null
++++ b/src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.cpp
+@@ -0,0 +1,47 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapHearingAidAdjustmentsCapability.h"
++
++namespace MagicPodsCore
++{
++    AapHearingAidAdjustmentsCapability::AapHearingAidAdjustmentsCapability(AapDevice &device)
++        : AapAttCapability("hearingAidAdjustments", device, AapAttHandle::HearingAid, true)
++    {
++    }
++
++    nlohmann::json AapHearingAidAdjustmentsCapability::CreateAvailableJsonBody()
++    {
++        auto body = nlohmann::json::object();
++        AapHearingSettings::AdjustmentsToJson(AapHearingSettings::ToAdjustments(settings.left, settings.right), body);
++        return body;
++    }
++
++    bool AapHearingAidAdjustmentsCapability::OnAttValue(const std::vector<unsigned char> &value)
++    {
++        auto parsed = AapHearingSettings::ParseHearingAid(value);
++        if (!parsed.has_value()) {
++            Logger::Warn("%s: ignoring a value that is not a hearing aid attribute (%zu bytes)", name.c_str(), value.size());
++            return false;
++        }
++        settings = parsed.value();
++        Logger::Info("%s updated", name.c_str());
++        DataUpdated();
++        return true;
++    }
++
++    void AapHearingAidAdjustmentsCapability::SetAvailableFromJson(const nlohmann::json &body)
++    {
++        if (!hasData) {
++            Logger::Error("Error: %s::SetFromJson: the attribute has not been read yet", name.c_str());
++            return;
++        }
++        auto next = raw;
++        if (!AapHearingSettings::ApplyToHearingAid(body, next)) {
++            Logger::Error("Error: %s::SetFromJson got a value of the wrong type or out of range", name.c_str());
++            return;
++        }
++        WriteValue(next);
++    }
++}
+diff --git a/src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.h b/src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.h
+new file mode 100644
+index 0000000..9765dc9
+--- /dev/null
++++ b/src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.h
+@@ -0,0 +1,31 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapAttCapability.h"
++#include "sdk/aap/att/AapHearingSettings.h"
++
++namespace MagicPodsCore
++{
++    // "hearingAidAdjustments": the hearing aid's fine tuning. ATT attribute
++    // 0x2A, which also holds the audiogram; a write changes only the fields
++    // in the request and keeps every other byte as read.
++    //   {"amplification": -100..100, "balance": -100..100, "tone": -100..100,
++    //    "ambientNoiseReduction": 0..100, "conversationBoost": bool}
++    // Needs Apple's Device ID.
++    class AapHearingAidAdjustmentsCapability : public AapAttCapability
++    {
++    private:
++        AapHearingSettings::HearingAid settings{};
++
++    protected:
++        nlohmann::json CreateAvailableJsonBody() override;
++        void SetAvailableFromJson(const nlohmann::json &body) override;
++        bool OnAttValue(const std::vector<unsigned char> &value) override;
++
++    public:
++        explicit AapHearingAidAdjustmentsCapability(AapDevice &device);
++    };
++}
+diff --git a/src/device/capabilities/aap/AapHearingAidCapability.cpp b/src/device/capabilities/aap/AapHearingAidCapability.cpp
+new file mode 100644
+index 0000000..e717a4a
+--- /dev/null
++++ b/src/device/capabilities/aap/AapHearingAidCapability.cpp
+@@ -0,0 +1,65 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapHearingAidCapability.h"
++#include "sdk/aap/AapControlCommand.h"
++#include "sdk/aap/enums/AapModelIds.h"
++
++namespace MagicPodsCore
++{
++    AapHearingAidCapability::AapHearingAidCapability(AapDevice &device)
++        : AapAppleGatedCapability("hearingAid", false, device)
++    {
++    }
++
++    bool AapHearingAidCapability::Supports(unsigned short productId)
++    {
++        // LibrePods lists the hearing aid for AirPods Pro 2 (Lightning and
++        // USB-C) and AirPods Pro 3.
++        switch (static_cast<AapModelIds>(productId)) {
++            case AapModelIds::airpodspro2:
++            case AapModelIds::airpodsprousbc:
++            case AapModelIds::airpodspro3:
++                return true;
++            default:
++                return false;
++        }
++    }
++
++    nlohmann::json AapHearingAidCapability::CreateAvailableJsonBody()
++    {
++        return nlohmann::json{{"selected", enabled}, {"enrolled", enrolled}};
++    }
++
++    void AapHearingAidCapability::OnReceivedData(const std::vector<unsigned char> &data)
++    {
++        auto command = AapControlCommand::Parse(data);
++        if (!command.has_value() || command->identifier != static_cast<unsigned char>(AapControlId::HearingAid))
++            return;
++
++        const bool newEnrolled = command->data1 == 0x01;
++        const bool newEnabled = command->data2 == 0x01;
++        if (hasData && newEnrolled == enrolled && newEnabled == enabled)
++            return;
++        enrolled = newEnrolled;
++        enabled = newEnabled;
++        Logger::Info("%s updated: enrolled %d, enabled %d", name.c_str(), enrolled, enabled);
++        DataUpdated();
++    }
++
++    void AapHearingAidCapability::SetAvailableFromJson(const nlohmann::json &body)
++    {
++        if (!body.contains("selected") || !body["selected"].is_boolean()) {
++            Logger::Error("Error: %s::SetFromJson got no value or value is not an boolean", name.c_str());
++            return;
++        }
++        const bool selected = body["selected"].get<bool>();
++        if (selected && !enrolled) {
++            Logger::Info("%s: refused, the headphones hold no audiogram", name.c_str());
++            return;
++        }
++        SendData(AapSetControl(AapControlId::HearingAid, 0x01, selected ? 0x01 : 0x02));
++        SendData(AapSetControl(AapControlId::HearingAssist, selected ? 0x01 : 0x02));
++    }
++}
+diff --git a/src/device/capabilities/aap/AapHearingAidCapability.h b/src/device/capabilities/aap/AapHearingAidCapability.h
+new file mode 100644
+index 0000000..527a2af
+--- /dev/null
++++ b/src/device/capabilities/aap/AapHearingAidCapability.h
+@@ -0,0 +1,30 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapAppleGatedCapability.h"
++
++namespace MagicPodsCore
++{
++    // "hearingAid": {"selected": bool, "enrolled": bool}. Turns the hearing
++    // aid on or off (control commands 0x2C and 0x33, as LibrePods sends
++    // them). "enrolled" says whether the AirPods hold an audiogram; turning
++    // the hearing aid on without one is refused. Needs Apple's Device ID.
++    class AapHearingAidCapability : public AapAppleGatedCapability
++    {
++    private:
++        bool enrolled{};
++        bool enabled{};
++
++    protected:
++        nlohmann::json CreateAvailableJsonBody() override;
++        void SetAvailableFromJson(const nlohmann::json &body) override;
++        void OnReceivedData(const std::vector<unsigned char> &data) override;
++
++    public:
++        explicit AapHearingAidCapability(AapDevice &device);
++        static bool Supports(unsigned short productId);
++    };
++}
+diff --git a/src/device/capabilities/aap/AapLoudSoundReductionCapability.cpp b/src/device/capabilities/aap/AapLoudSoundReductionCapability.cpp
+new file mode 100644
+index 0000000..f37f397
+--- /dev/null
++++ b/src/device/capabilities/aap/AapLoudSoundReductionCapability.cpp
+@@ -0,0 +1,59 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapLoudSoundReductionCapability.h"
++#include "sdk/aap/enums/AapModelIds.h"
++#include "sdk/aap/att/AapHearingSettings.h"
++
++namespace MagicPodsCore
++{
++    AapLoudSoundReductionCapability::AapLoudSoundReductionCapability(AapDevice &device)
++        : AapAttCapability("loudSoundReduction", device, AapAttHandle::LoudSoundReduction, false)
++    {
++    }
++
++    bool AapLoudSoundReductionCapability::Supports(unsigned short productId)
++    {
++        // LibrePods lists loud sound reduction for AirPods Pro 2 (Lightning
++        // and USB-C) and AirPods Pro 3.
++        switch (static_cast<AapModelIds>(productId)) {
++            case AapModelIds::airpodspro2:
++            case AapModelIds::airpodsprousbc:
++            case AapModelIds::airpodspro3:
++                return true;
++            default:
++                return false;
++        }
++    }
++
++    nlohmann::json AapLoudSoundReductionCapability::CreateAvailableJsonBody()
++    {
++        return nlohmann::json{{"selected", option}};
++    }
++
++    bool AapLoudSoundReductionCapability::OnAttValue(const std::vector<unsigned char> &value)
++    {
++        const auto parsed = AapHearingSettings::ParseLoudSoundReduction(value);
++        if (!parsed.has_value()) {
++            Logger::Warn("%s: ignoring a value that is not a loud sound reduction attribute (%zu bytes)", name.c_str(), value.size());
++            return false;
++        }
++        if (hasData && parsed.value() == option)
++            return true;
++        option = parsed.value();
++        Logger::Info("%s updated: %s", name.c_str(), option ? "on" : "off");
++        DataUpdated();
++        return true;
++    }
++
++    void AapLoudSoundReductionCapability::SetAvailableFromJson(const nlohmann::json &body)
++    {
++        if (!body.contains("selected") || !body["selected"].is_boolean()) {
++            Logger::Error("Error: %s::SetFromJson got no value or value is not an boolean", name.c_str());
++            return;
++        }
++        // The confirmation is the read-back after the write response.
++        WriteValue({static_cast<unsigned char>(body["selected"].get<bool>() ? 0x01 : 0x00)});
++    }
++}
+diff --git a/src/device/capabilities/aap/AapLoudSoundReductionCapability.h b/src/device/capabilities/aap/AapLoudSoundReductionCapability.h
+new file mode 100644
+index 0000000..0851ebd
+--- /dev/null
++++ b/src/device/capabilities/aap/AapLoudSoundReductionCapability.h
+@@ -0,0 +1,28 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapAttCapability.h"
++
++namespace MagicPodsCore
++{
++    // "loudSoundReduction": {"selected": bool}. Hearing protection that caps
++    // loud environmental sound in transparency and adaptive modes. ATT
++    // attribute 0x1B, one byte (1 on, 0 off). Needs Apple's Device ID.
++    class AapLoudSoundReductionCapability : public AapAttCapability
++    {
++    private:
++        bool option{};
++
++    protected:
++        nlohmann::json CreateAvailableJsonBody() override;
++        void SetAvailableFromJson(const nlohmann::json &body) override;
++        bool OnAttValue(const std::vector<unsigned char> &value) override;
++
++    public:
++        explicit AapLoudSoundReductionCapability(AapDevice &device);
++        static bool Supports(unsigned short productId);
++    };
++}
+diff --git a/src/device/capabilities/aap/AapTransparencyCustomCapability.cpp b/src/device/capabilities/aap/AapTransparencyCustomCapability.cpp
+new file mode 100644
+index 0000000..626b920
+--- /dev/null
++++ b/src/device/capabilities/aap/AapTransparencyCustomCapability.cpp
+@@ -0,0 +1,67 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapTransparencyCustomCapability.h"
++#include "sdk/aap/enums/AapModelIds.h"
++
++namespace MagicPodsCore
++{
++    AapTransparencyCustomCapability::AapTransparencyCustomCapability(AapDevice &device)
++        : AapAttCapability("transparencyCustom", device, AapAttHandle::Transparency, true)
++    {
++    }
++
++    bool AapTransparencyCustomCapability::Supports(unsigned short productId)
++    {
++        // Models with a transparency mode.
++        switch (static_cast<AapModelIds>(productId)) {
++            case AapModelIds::airpodspro:
++            case AapModelIds::airpodspro2:
++            case AapModelIds::airpodsprousbc:
++            case AapModelIds::airpodspro3:
++            case AapModelIds::airpods4anc:
++            case AapModelIds::airpodsmax:
++            case AapModelIds::airpodsmax2024:
++            case AapModelIds::airpodsmax2:
++                return true;
++            default:
++                return false;
++        }
++    }
++
++    nlohmann::json AapTransparencyCustomCapability::CreateAvailableJsonBody()
++    {
++        auto body = nlohmann::json::object();
++        body["selected"] = settings.enabled;
++        AapHearingSettings::AdjustmentsToJson(AapHearingSettings::ToAdjustments(settings.left, settings.right), body);
++        return body;
++    }
++
++    bool AapTransparencyCustomCapability::OnAttValue(const std::vector<unsigned char> &value)
++    {
++        auto parsed = AapHearingSettings::ParseTransparency(value);
++        if (!parsed.has_value()) {
++            Logger::Warn("%s: ignoring a value that is not a transparency attribute (%zu bytes)", name.c_str(), value.size());
++            return false;
++        }
++        settings = parsed.value();
++        Logger::Info("%s updated", name.c_str());
++        DataUpdated();
++        return true;
++    }
++
++    void AapTransparencyCustomCapability::SetAvailableFromJson(const nlohmann::json &body)
++    {
++        if (!hasData) {
++            Logger::Error("Error: %s::SetFromJson: the attribute has not been read yet", name.c_str());
++            return;
++        }
++        auto next = raw;
++        if (!AapHearingSettings::ApplyToTransparency(body, next)) {
++            Logger::Error("Error: %s::SetFromJson got a value of the wrong type or out of range", name.c_str());
++            return;
++        }
++        WriteValue(next);
++    }
++}
+diff --git a/src/device/capabilities/aap/AapTransparencyCustomCapability.h b/src/device/capabilities/aap/AapTransparencyCustomCapability.h
+new file mode 100644
+index 0000000..a1bd36e
+--- /dev/null
++++ b/src/device/capabilities/aap/AapTransparencyCustomCapability.h
+@@ -0,0 +1,34 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapAttCapability.h"
++#include "sdk/aap/att/AapHearingSettings.h"
++
++namespace MagicPodsCore
++{
++    // "transparencyCustom": transparency mode customisation (Apple: headphone
++    // accommodations, "Transparency Mode"). ATT attribute 0x18.
++    //   {"selected": bool, "amplification": -100..100, "balance": -100..100,
++    //    "tone": -100..100, "ambientNoiseReduction": 0..100,
++    //    "conversationBoost": bool}
++    // Any subset of the keys may be set; a write changes only those fields
++    // and keeps every other byte (the per-band gains included) as read.
++    // Needs Apple's Device ID.
++    class AapTransparencyCustomCapability : public AapAttCapability
++    {
++    private:
++        AapHearingSettings::Transparency settings{};
++
++    protected:
++        nlohmann::json CreateAvailableJsonBody() override;
++        void SetAvailableFromJson(const nlohmann::json &body) override;
++        bool OnAttValue(const std::vector<unsigned char> &value) override;
++
++    public:
++        explicit AapTransparencyCustomCapability(AapDevice &device);
++        static bool Supports(unsigned short productId);
++    };
++}
+diff --git a/src/main.cpp b/src/main.cpp
+index 55b614e..b2e2ad0 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -20,6 +20,7 @@
+ #include "tests/TestsSgb.h"
+ #include "tests/TestsAapBle.h"
+ #include "tests/TestsPbp.h"
++#include "tests/TestsAapAppleGated.h"
+ #include "Logger.h"
+ #include "Config.h"
+ #include "settings/SettingsService.h"
+@@ -586,6 +587,7 @@ int main(int argc, char** argv) {
+             TestsSgb sgb;
+             TestsPbp pbp;
+             TestsAapBle aapBle;
++            TestsAapAppleGated aapAppleGated;
+             #endif
+ 
+             devicesInfoFetcher = std::make_unique<DevicesInfoFetcher>(settingsService);
+diff --git a/src/sdk/aap/AapControlCommand.cpp b/src/sdk/aap/AapControlCommand.cpp
+new file mode 100644
+index 0000000..7d2e4bc
+--- /dev/null
++++ b/src/sdk/aap/AapControlCommand.cpp
+@@ -0,0 +1,27 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapControlCommand.h"
++#include "sdk/aap/enums/AapCmd.h"
++
++namespace MagicPodsCore
++{
++    std::optional<AapControlCommand> AapControlCommand::Parse(const std::vector<unsigned char> &data)
++    {
++        if (data.size() < 9 || data[4] != static_cast<unsigned char>(AapCmd::Settings))
++            return std::nullopt;
++        return AapControlCommand{data[6], data[7], data[8]};
++    }
++
++    AapSetControl::AapSetControl(AapControlId identifier, unsigned char data1, unsigned char data2)
++        : AapRequest{"AapSetControl"}, _command{static_cast<unsigned char>(identifier), data1, data2}
++    {
++    }
++
++    std::vector<unsigned char> AapSetControl::Request() const
++    {
++        return std::vector<unsigned char>{0x04, 0x00, 0x04, 0x00, static_cast<unsigned char>(AapCmd::Settings), 0x00,
++                                          _command.identifier, _command.data1, _command.data2, 0x00, 0x00};
++    }
++}
+diff --git a/src/sdk/aap/AapControlCommand.h b/src/sdk/aap/AapControlCommand.h
+new file mode 100644
+index 0000000..90a40d9
+--- /dev/null
++++ b/src/sdk/aap/AapControlCommand.h
+@@ -0,0 +1,42 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "sdk/aap/setters/AapRequest.h"
++
++#include <optional>
++#include <vector>
++
++namespace MagicPodsCore
++{
++    // AAP control commands (packet type 0x09) that the named MagicPodsCore
++    // setters do not cover, with identifiers from LibrePods
++    // (https://github.com/librepods-org/librepods, docs/control_commands.md):
++    //   04 00 04 00 09 00 <identifier> <data1> <data2> <data3> <data4>
++    enum class AapControlId : unsigned char
++    {
++        HearingAid = 0x2C,     // data1: enrolled, data2: enabled; 1 yes, 2 no
++        HearingAssist = 0x33,  // data1: 1 on, 2 off
++    };
++
++    struct AapControlCommand
++    {
++        unsigned char identifier{};
++        unsigned char data1{};
++        unsigned char data2{};
++
++        static std::optional<AapControlCommand> Parse(const std::vector<unsigned char> &data);
++    };
++
++    class AapSetControl : public AapRequest
++    {
++    private:
++        AapControlCommand _command{};
++
++    public:
++        AapSetControl(AapControlId identifier, unsigned char data1, unsigned char data2 = 0x00);
++        std::vector<unsigned char> Request() const override;
++    };
++}
+diff --git a/src/sdk/aap/att/AapAttHandles.h b/src/sdk/aap/att/AapAttHandles.h
+new file mode 100644
+index 0000000..d7f7107
+--- /dev/null
++++ b/src/sdk/aap/att/AapAttHandles.h
+@@ -0,0 +1,27 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include <cstdint>
++
++namespace MagicPodsCore
++{
++    // Attribute value handles AirPods expose on the ATT channel (PSM 0x1F).
++    // AirPods answer on them only when the host's Device ID carries Apple's
++    // company identifier (0x004C). Handles and layouts as documented by
++    // LibrePods (https://github.com/librepods-org/librepods, ATTManager.kt,
++    // Transparency.kt, HearingAid.kt, linux/hearing-aid-adjustments.py).
++    enum class AapAttHandle : uint16_t
++    {
++        // Transparency mode customisation (headphone accommodations), 100 or
++        // 104 bytes of little-endian floats. Notifies.
++        Transparency = 0x18,
++        // Loud sound reduction, one byte: 1 on, 0 off. Does not notify.
++        LoudSoundReduction = 0x1B,
++        // Hearing aid adjustments and audiogram, 4-byte header + 100 bytes of
++        // little-endian floats. Notifies.
++        HearingAid = 0x2A,
++    };
++}
+diff --git a/src/sdk/aap/att/AapHearingSettings.cpp b/src/sdk/aap/att/AapHearingSettings.cpp
+new file mode 100644
+index 0000000..e6b4a5b
+--- /dev/null
++++ b/src/sdk/aap/att/AapHearingSettings.cpp
+@@ -0,0 +1,234 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapHearingSettings.h"
++
++#include <algorithm>
++#include <cmath>
++#include <cstring>
++
++namespace MagicPodsCore
++{
++    static float GetFloat(const std::vector<unsigned char>& data, size_t offset)
++    {
++        // The attributes are little-endian IEEE 754, like every host this
++        // builds for; assemble the bytes explicitly anyway.
++        uint32_t bits = static_cast<uint32_t>(data[offset]) |
++                        static_cast<uint32_t>(data[offset + 1]) << 8 |
++                        static_cast<uint32_t>(data[offset + 2]) << 16 |
++                        static_cast<uint32_t>(data[offset + 3]) << 24;
++        float value;
++        std::memcpy(&value, &bits, sizeof(value));
++        return value;
++    }
++
++    static void PutFloatAt(std::vector<unsigned char>& data, size_t offset, float value)
++    {
++        uint32_t bits;
++        std::memcpy(&bits, &value, sizeof(bits));
++        for (size_t i = 0; i < 4; ++i)
++            data[offset + i] = static_cast<unsigned char>((bits >> (8 * i)) & 0xff);
++    }
++
++    // Offsets within an ear block.
++    static constexpr size_t AmplificationOffset = 32;
++    static constexpr size_t ToneOffset = 36;
++    static constexpr size_t ConversationBoostOffset = 40;
++    static constexpr size_t AmbientNoiseReductionOffset = 44;
++
++    static AapEarSettings ParseEar(const std::vector<unsigned char>& data, size_t offset)
++    {
++        AapEarSettings ear{};
++        for (size_t i = 0; i < ear.eq.size(); ++i)
++            ear.eq[i] = GetFloat(data, offset + i * 4);
++        ear.amplification = GetFloat(data, offset + AmplificationOffset);
++        ear.tone = GetFloat(data, offset + ToneOffset);
++        ear.conversationBoost = GetFloat(data, offset + ConversationBoostOffset) > 0.5f;
++        ear.ambientNoiseReduction = GetFloat(data, offset + AmbientNoiseReductionOffset);
++        return ear;
++    }
++
++    // Whether every float in [begin, end) is finite.
++    static bool FloatsFinite(const std::vector<unsigned char>& data, size_t begin, size_t end)
++    {
++        for (size_t offset = begin; offset + 4 <= end; offset += 4) {
++            if (!std::isfinite(GetFloat(data, offset)))
++                return false;
++        }
++        return true;
++    }
++
++    static bool IsTransparencyValue(const std::vector<unsigned char>& data)
++    {
++        if (data.size() != AapHearingSettings::BlocksEnd && data.size() < AapHearingSettings::BlocksEnd + 4)
++            return false;
++        const float enabled = GetFloat(data, 0);
++        return (enabled == 0.0f || enabled == 1.0f) && FloatsFinite(data, 0, AapHearingSettings::BlocksEnd + (data.size() > AapHearingSettings::BlocksEnd ? 4 : 0));
++    }
++
++    static bool IsHearingAidValue(const std::vector<unsigned char>& data)
++    {
++        if (data.size() < AapHearingSettings::BlocksEnd + 4)
++            return false;
++        return (data[2] == 0x60 || data[2] == 0x64) &&
++               FloatsFinite(data, AapHearingSettings::LeftEarOffset, AapHearingSettings::BlocksEnd + 4);
++    }
++
++    std::optional<AapHearingSettings::Transparency> AapHearingSettings::ParseTransparency(const std::vector<unsigned char>& data)
++    {
++        if (!IsTransparencyValue(data))
++            return std::nullopt;
++
++        Transparency value{};
++        value.enabled = GetFloat(data, 0) == 1.0f;
++        value.left = ParseEar(data, LeftEarOffset);
++        value.right = ParseEar(data, RightEarOffset);
++        if (data.size() >= BlocksEnd + 4)
++            value.ownVoiceAmplification = GetFloat(data, BlocksEnd);
++        return value;
++    }
++
++    std::optional<AapHearingSettings::HearingAid> AapHearingSettings::ParseHearingAid(const std::vector<unsigned char>& data)
++    {
++        if (!IsHearingAidValue(data))
++            return std::nullopt;
++
++        HearingAid value{};
++        std::copy_n(data.begin(), 4, value.header.begin());
++        value.left = ParseEar(data, LeftEarOffset);
++        value.right = ParseEar(data, RightEarOffset);
++        value.ownVoiceAmplification = GetFloat(data, BlocksEnd);
++        return value;
++    }
++
++    std::optional<bool> AapHearingSettings::ParseLoudSoundReduction(const std::vector<unsigned char>& data)
++    {
++        if (data.size() != 1 || data[0] > 0x01)
++            return std::nullopt;
++        return data[0] == 0x01;
++    }
++
++    bool AapHearingSettings::ApplyAdjustments(const nlohmann::json& json, std::vector<unsigned char>& value)
++    {
++        AapHearingAdjustments requested = ToAdjustments(ParseEar(value, LeftEarOffset), ParseEar(value, RightEarOffset));
++        if (!AdjustmentsFromJson(json, requested))
++            return false;
++
++        const size_t leftAmplification = LeftEarOffset + AmplificationOffset;
++        const size_t rightAmplification = RightEarOffset + AmplificationOffset;
++        const bool hasAmplification = json.contains("amplification");
++        const bool hasBalance = json.contains("balance");
++        if (hasAmplification || hasBalance) {
++            const float left = GetFloat(value, leftAmplification);
++            const float right = GetFloat(value, rightAmplification);
++            const float amplification = hasAmplification ? requested.amplification / 100.0f : (left + right) / 2.0f;
++            const float balance = hasBalance ? requested.balance / 100.0f : right - left;
++            PutFloatAt(value, leftAmplification, std::clamp(amplification - balance / 2.0f, -1.0f, 1.0f));
++            PutFloatAt(value, rightAmplification, std::clamp(amplification + balance / 2.0f, -1.0f, 1.0f));
++        }
++
++        auto putBoth = [&value](size_t offset, float number) {
++            PutFloatAt(value, LeftEarOffset + offset, number);
++            PutFloatAt(value, RightEarOffset + offset, number);
++        };
++        if (json.contains("tone"))
++            putBoth(ToneOffset, requested.tone / 100.0f);
++        if (json.contains("ambientNoiseReduction"))
++            putBoth(AmbientNoiseReductionOffset, requested.ambientNoiseReduction / 100.0f);
++        if (json.contains("conversationBoost"))
++            putBoth(ConversationBoostOffset, requested.conversationBoost ? 1.0f : 0.0f);
++        return true;
++    }
++
++    bool AapHearingSettings::ApplyToTransparency(const nlohmann::json& json, std::vector<unsigned char>& value)
++    {
++        if (!IsTransparencyValue(value))
++            return false;
++        if (json.contains("selected") && !json.at("selected").is_boolean())
++            return false;
++
++        auto next = value;
++        if (!ApplyAdjustments(json, next))
++            return false;
++        if (json.contains("selected"))
++            PutFloatAt(next, 0, json.at("selected").get<bool>() ? 1.0f : 0.0f);
++        value = std::move(next);
++        return true;
++    }
++
++    bool AapHearingSettings::ApplyToHearingAid(const nlohmann::json& json, std::vector<unsigned char>& value)
++    {
++        if (!IsHearingAidValue(value))
++            return false;
++
++        auto next = value;
++        if (!ApplyAdjustments(json, next))
++            return false;
++        // LibrePods (HearingAid.kt, hearing-aid-adjustments.py) always writes
++        // 0x64 here; the AirPods report 0x60.
++        next[2] = 0x64;
++        value = std::move(next);
++        return true;
++    }
++
++    static int ToPercent(float value, int low, int high)
++    {
++        if (!std::isfinite(value))
++            return 0;
++        return std::clamp(static_cast<int>(std::lround(value * 100.0f)), low, high);
++    }
++
++    AapHearingAdjustments AapHearingSettings::ToAdjustments(const AapEarSettings& left, const AapEarSettings& right)
++    {
++        AapHearingAdjustments adjustments{};
++        adjustments.amplification = ToPercent((left.amplification + right.amplification) / 2.0f, -100, 100);
++        adjustments.balance = ToPercent(right.amplification - left.amplification, -100, 100);
++        adjustments.tone = ToPercent(left.tone, -100, 100);
++        adjustments.ambientNoiseReduction = ToPercent(left.ambientNoiseReduction, 0, 100);
++        adjustments.conversationBoost = left.conversationBoost;
++        return adjustments;
++    }
++
++    void AapHearingSettings::AdjustmentsToJson(const AapHearingAdjustments& adjustments, nlohmann::json& body)
++    {
++        body["amplification"] = adjustments.amplification;
++        body["balance"] = adjustments.balance;
++        body["tone"] = adjustments.tone;
++        body["ambientNoiseReduction"] = adjustments.ambientNoiseReduction;
++        body["conversationBoost"] = adjustments.conversationBoost;
++    }
++
++    bool AapHearingSettings::AdjustmentsFromJson(const nlohmann::json& json, AapHearingAdjustments& adjustments)
++    {
++        AapHearingAdjustments result = adjustments;
++
++        auto readInt = [&json](const char* key, int low, int high, int& target) {
++            if (!json.contains(key))
++                return true;
++            const auto& value = json.at(key);
++            if (!value.is_number_integer())
++                return false;
++            const auto number = value.get<int64_t>();
++            if (number < low || number > high)
++                return false;
++            target = static_cast<int>(number);
++            return true;
++        };
++
++        if (!readInt("amplification", -100, 100, result.amplification) ||
++            !readInt("balance", -100, 100, result.balance) ||
++            !readInt("tone", -100, 100, result.tone) ||
++            !readInt("ambientNoiseReduction", 0, 100, result.ambientNoiseReduction))
++            return false;
++
++        if (json.contains("conversationBoost")) {
++            if (!json.at("conversationBoost").is_boolean())
++                return false;
++            result.conversationBoost = json.at("conversationBoost").get<bool>();
++        }
++
++        adjustments = result;
++        return true;
++    }
++}
+diff --git a/src/sdk/aap/att/AapHearingSettings.h b/src/sdk/aap/att/AapHearingSettings.h
+new file mode 100644
+index 0000000..d31f57a
+--- /dev/null
++++ b/src/sdk/aap/att/AapHearingSettings.h
+@@ -0,0 +1,101 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include <array>
++#include <optional>
++#include <vector>
++#include <nlohmann/json.hpp>
++
++namespace MagicPodsCore
++{
++    // Per-ear block shared by the transparency and hearing aid attributes:
++    // eight gains (the audiogram bands 250 Hz to 8 kHz), then amplification,
++    // tone, conversation boost (1.0 on, 0.0 off) and ambient noise reduction.
++    struct AapEarSettings
++    {
++        std::array<float, 8> eq{};
++        float amplification{};
++        float tone{};
++        bool conversationBoost{};
++        float ambientNoiseReduction{};
++    };
++
++    // The adjustments the API exposes. Both ears get the same tone, boost and
++    // noise reduction; amplification and balance map to the two ears as
++    // left = amplification - balance / 2, right = amplification + balance / 2
++    // (LibrePods reads them back as the mean and the difference).
++    // Integer percentages, like the other MagicPodsCore capabilities.
++    struct AapHearingAdjustments
++    {
++        int amplification{};         // -100..100
++        int balance{};               // -100..100, positive favours the right ear
++        int tone{};                  // -100..100, positive is brighter
++        int ambientNoiseReduction{}; // 0..100
++        bool conversationBoost{};
++    };
++
++    class AapHearingSettings
++    {
++    public:
++        // Both attributes: a 4-byte field, the left ear block, the right ear
++        // block, then (optionally for transparency) own-voice amplification.
++        static constexpr size_t EarBlockSize = 48;
++        static constexpr size_t LeftEarOffset = 4;
++        static constexpr size_t RightEarOffset = LeftEarOffset + EarBlockSize;
++        static constexpr size_t BlocksEnd = RightEarOffset + EarBlockSize; // 100
++
++        // Transparency attribute (0x18): enabled flag (float 0.0 or 1.0),
++        // left block, right block, optional own-voice amplification. 100 or
++        // 104 bytes; longer values are accepted and their extra bytes kept.
++        struct Transparency
++        {
++            bool enabled{};
++            AapEarSettings left{};
++            AapEarSettings right{};
++            std::optional<float> ownVoiceAmplification{};
++        };
++
++        // Hearing aid attribute (0x2A): 4-byte header, left block, right
++        // block, own-voice amplification. 104 bytes or more. The AirPods
++        // report 0x60 in the third header byte; LibrePods writes 0x64.
++        struct HearingAid
++        {
++            std::array<unsigned char, 4> header{};
++            AapEarSettings left{};
++            AapEarSettings right{};
++            float ownVoiceAmplification{};
++        };
++
++        // Each returns nullopt unless data has the attribute's length and
++        // layout, with finite floats: a value of another attribute (as a
++        // response to a different request would be) is refused.
++        static std::optional<Transparency> ParseTransparency(const std::vector<unsigned char>& data);
++        static std::optional<HearingAid> ParseHearingAid(const std::vector<unsigned char>& data);
++        // Loud sound reduction (0x1B): exactly one byte, 0x00 or 0x01.
++        static std::optional<bool> ParseLoudSoundReduction(const std::vector<unsigned char>& data);
++
++        // The value to write for a SetCapabilities body: value as last read,
++        // with only the fields named in json rewritten in place. Every other
++        // byte (the audiogram, the other ear's settings, bytes a newer
++        // firmware adds) stays as it was. Amplification alone keeps the
++        // balance, balance alone keeps the amplification; tone, ambient noise
++        // reduction and conversation boost set both ears. Returns false and
++        // changes nothing if a present key has the wrong type or is out of
++        // range, or if value is not a valid attribute value.
++        static bool ApplyToTransparency(const nlohmann::json& json, std::vector<unsigned char>& value);
++        static bool ApplyToHearingAid(const nlohmann::json& json, std::vector<unsigned char>& value);
++
++        static AapHearingAdjustments ToAdjustments(const AapEarSettings& left, const AapEarSettings& right);
++        static void AdjustmentsToJson(const AapHearingAdjustments& adjustments, nlohmann::json& body);
++        // Reads any of the adjustment keys present in json into adjustments.
++        // Returns false (and changes nothing) if a present key has the wrong
++        // type or is out of range.
++        static bool AdjustmentsFromJson(const nlohmann::json& json, AapHearingAdjustments& adjustments);
++
++    private:
++        static bool ApplyAdjustments(const nlohmann::json& json, std::vector<unsigned char>& value);
++    };
++}
+diff --git a/src/sdk/aap/att/AttPdu.cpp b/src/sdk/aap/att/AttPdu.cpp
+new file mode 100644
+index 0000000..7e0e8f2
+--- /dev/null
++++ b/src/sdk/aap/att/AttPdu.cpp
+@@ -0,0 +1,97 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AttPdu.h"
++
++namespace MagicPodsCore::Att
++{
++    static void PutHandle(std::vector<unsigned char>& out, uint16_t handle)
++    {
++        out.push_back(static_cast<unsigned char>(handle & 0xff));
++        out.push_back(static_cast<unsigned char>(handle >> 8));
++    }
++
++    std::vector<unsigned char> ReadRequest(uint16_t handle)
++    {
++        std::vector<unsigned char> out{static_cast<unsigned char>(Opcode::ReadRequest)};
++        PutHandle(out, handle);
++        return out;
++    }
++
++    std::vector<unsigned char> WriteRequest(uint16_t handle, const std::vector<unsigned char>& value)
++    {
++        std::vector<unsigned char> out{static_cast<unsigned char>(Opcode::WriteRequest)};
++        PutHandle(out, handle);
++        out.insert(out.end(), value.begin(), value.end());
++        return out;
++    }
++
++    std::vector<unsigned char> EnableNotifications(uint16_t valueHandle)
++    {
++        return WriteRequest(static_cast<uint16_t>(valueHandle + 1), {0x01, 0x00});
++    }
++
++    std::vector<unsigned char> ExchangeMtuResponse(uint16_t mtu)
++    {
++        std::vector<unsigned char> out{static_cast<unsigned char>(Opcode::ExchangeMtuResponse)};
++        PutHandle(out, mtu);
++        return out;
++    }
++
++    std::vector<unsigned char> ErrorResponse(unsigned char requestOpcode, uint16_t handle, unsigned char errorCode)
++    {
++        std::vector<unsigned char> out{static_cast<unsigned char>(Opcode::ErrorResponse), requestOpcode};
++        PutHandle(out, handle);
++        out.push_back(errorCode);
++        return out;
++    }
++
++    std::vector<unsigned char> HandleValueConfirmation()
++    {
++        return {static_cast<unsigned char>(Opcode::HandleValueConfirmation)};
++    }
++
++    std::optional<Pdu> Parse(const std::vector<unsigned char>& data)
++    {
++        if (data.empty())
++            return std::nullopt;
++
++        Pdu pdu{};
++        pdu.opcode = static_cast<Opcode>(data[0]);
++        switch (pdu.opcode) {
++            case Opcode::HandleValueNotification:
++            case Opcode::HandleValueIndication:
++                if (data.size() < 3)
++                    return std::nullopt;
++                pdu.handle = static_cast<uint16_t>(data[1] | (data[2] << 8));
++                pdu.value.assign(data.begin() + 3, data.end());
++                return pdu;
++            case Opcode::ErrorResponse:
++                // request opcode, handle, error code
++                if (data.size() < 5)
++                    return std::nullopt;
++                pdu.handle = static_cast<uint16_t>(data[2] | (data[3] << 8));
++                pdu.value.assign(data.begin() + 1, data.end());
++                return pdu;
++            default:
++                pdu.value.assign(data.begin() + 1, data.end());
++                return pdu;
++        }
++    }
++
++    bool IsRequestFromPeer(unsigned char opcode)
++    {
++        // The ATT request opcodes: exchange MTU, find information, find by
++        // type value, read by type, read, read blob, read multiple, read by
++        // group type, write, prepare write, execute write, read multiple
++        // variable. Commands, responses and confirmations need no answer.
++        switch (opcode) {
++            case 0x02: case 0x04: case 0x06: case 0x08: case 0x0A: case 0x0C:
++            case 0x0E: case 0x10: case 0x12: case 0x16: case 0x18: case 0x20:
++                return true;
++            default:
++                return false;
++        }
++    }
++}
+diff --git a/src/sdk/aap/att/AttPdu.h b/src/sdk/aap/att/AttPdu.h
+new file mode 100644
+index 0000000..78242cc
+--- /dev/null
++++ b/src/sdk/aap/att/AttPdu.h
+@@ -0,0 +1,62 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include <cstdint>
++#include <optional>
++#include <vector>
++
++namespace MagicPodsCore
++{
++    // Attribute Protocol (Bluetooth Core, Vol 3, Part F) over the BR/EDR
++    // L2CAP channel with PSM 0x001F. AirPods expose a few settings as plain
++    // attributes on it; see AapAttHandles.
++    namespace Att
++    {
++        constexpr unsigned short PSM = 0x001F;
++
++        enum class Opcode : unsigned char
++        {
++            ErrorResponse = 0x01,
++            ExchangeMtuRequest = 0x02,
++            ExchangeMtuResponse = 0x03,
++            ReadRequest = 0x0A,
++            ReadResponse = 0x0B,
++            WriteRequest = 0x12,
++            WriteResponse = 0x13,
++            HandleValueNotification = 0x1B,
++            HandleValueIndication = 0x1D,
++            HandleValueConfirmation = 0x1E,
++        };
++
++        // Error code "Request Not Supported".
++        constexpr unsigned char ErrorRequestNotSupported = 0x06;
++
++        struct Pdu
++        {
++            Opcode opcode{};
++            // Handle for notifications, indications and error responses; 0 otherwise.
++            uint16_t handle{};
++            // Attribute value (read response, notification, indication), or
++            // the remaining parameters for other PDUs.
++            std::vector<unsigned char> value{};
++        };
++
++        std::vector<unsigned char> ReadRequest(uint16_t handle);
++        std::vector<unsigned char> WriteRequest(uint16_t handle, const std::vector<unsigned char>& value);
++        // Writes 0x0001 to the Client Characteristic Configuration descriptor,
++        // which AirPods place at value handle + 1.
++        std::vector<unsigned char> EnableNotifications(uint16_t valueHandle);
++        std::vector<unsigned char> ExchangeMtuResponse(uint16_t mtu);
++        std::vector<unsigned char> ErrorResponse(unsigned char requestOpcode, uint16_t handle, unsigned char errorCode);
++        std::vector<unsigned char> HandleValueConfirmation();
++
++        std::optional<Pdu> Parse(const std::vector<unsigned char>& data);
++
++        // True for a request opcode. A request from the peer must be answered,
++        // or ATT stops the channel after its 30 s transaction timeout.
++        bool IsRequestFromPeer(unsigned char opcode);
++    }
++}
+diff --git a/src/tests/TestsAapAppleGated.cpp b/src/tests/TestsAapAppleGated.cpp
+new file mode 100644
+index 0000000..30a49f0
+--- /dev/null
++++ b/src/tests/TestsAapAppleGated.cpp
+@@ -0,0 +1,478 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "TestsAapAppleGated.h"
++#include "HostDeviceId.h"
++#include "sdk/aap/AapControlCommand.h"
++#include "sdk/aap/att/AttPdu.h"
++#include "sdk/aap/att/AapHearingSettings.h"
++#include "device/capabilities/aap/AapAppleGatedCapability.h"
++#include "device/AapAttChannel.h"
++#include "Logger.h"
++
++#include <atomic>
++#include <chrono>
++#include <cmath>
++#include <cstring>
++#include <mutex>
++#include <string>
++#include <thread>
++
++using namespace MagicPodsCore;
++
++static bool Near(float a, float b)
++{
++    return std::fabs(a - b) < 1e-5f;
++}
++
++static AapEarSettings SampleEar(float base)
++{
++    AapEarSettings ear{};
++    for (size_t i = 0; i < ear.eq.size(); ++i)
++        ear.eq[i] = base + i;
++    ear.amplification = 0.25f;
++    ear.tone = -0.5f;
++    ear.conversationBoost = true;
++    ear.ambientNoiseReduction = 0.75f;
++    return ear;
++}
++
++static void PutFloat(std::vector<unsigned char> &out, float value)
++{
++    uint32_t bits;
++    std::memcpy(&bits, &value, sizeof(bits));
++    for (int i = 0; i < 4; ++i)
++        out.push_back(static_cast<unsigned char>((bits >> (8 * i)) & 0xff));
++}
++
++static void PutEar(std::vector<unsigned char> &out, const AapEarSettings &ear)
++{
++    for (float gain : ear.eq)
++        PutFloat(out, gain);
++    PutFloat(out, ear.amplification);
++    PutFloat(out, ear.tone);
++    PutFloat(out, ear.conversationBoost ? 1.0f : 0.0f);
++    PutFloat(out, ear.ambientNoiseReduction);
++}
++
++// Attribute values as the AirPods send them.
++static std::vector<unsigned char> TransparencyBytes(bool enabled, const AapEarSettings &left, const AapEarSettings &right,
++                                                    std::optional<float> ownVoice = std::nullopt)
++{
++    std::vector<unsigned char> out{};
++    PutFloat(out, enabled ? 1.0f : 0.0f);
++    PutEar(out, left);
++    PutEar(out, right);
++    if (ownVoice.has_value())
++        PutFloat(out, ownVoice.value());
++    return out;
++}
++
++static std::vector<unsigned char> HearingAidBytes(const AapEarSettings &left, const AapEarSettings &right, float ownVoice)
++{
++    std::vector<unsigned char> out{0x02, 0x02, 0x60, 0x00};
++    PutEar(out, left);
++    PutEar(out, right);
++    PutFloat(out, ownVoice);
++    return out;
++}
++
++static float FloatAt(const std::vector<unsigned char> &data, size_t offset)
++{
++    uint32_t bits = static_cast<uint32_t>(data[offset]) | static_cast<uint32_t>(data[offset + 1]) << 8 |
++                    static_cast<uint32_t>(data[offset + 2]) << 16 | static_cast<uint32_t>(data[offset + 3]) << 24;
++    float value;
++    std::memcpy(&value, &bits, sizeof(value));
++    return value;
++}
++
++// Whether a and b differ only in the 4-byte fields starting at the given offsets.
++static bool DiffersOnlyAt(const std::vector<unsigned char> &a, const std::vector<unsigned char> &b, std::vector<size_t> offsets)
++{
++    if (a.size() != b.size())
++        return false;
++    for (size_t i = 0; i < a.size(); ++i) {
++        bool inField = false;
++        for (size_t offset : offsets)
++            inField = inField || (i >= offset && i < offset + 4);
++        if (!inField && a[i] != b[i])
++            return false;
++    }
++    return true;
++}
++
++// A connection that records what is sent; the test delivers the answers.
++class FakeAttTransport : public AttTransport
++{
++private:
++    mutable std::mutex _mutex{};
++    std::vector<std::vector<unsigned char>> _sent{};
++    std::atomic<bool> _started{false};
++    Event<std::vector<unsigned char>> _received{};
++    Event<std::string> _lost{};
++
++public:
++    std::atomic<int> stops{0};
++
++    void Start() override { _started = true; }
++    void Stop() override
++    {
++        if (_started.exchange(false))
++            ++stops;
++    }
++    bool IsStarted() const override { return _started; }
++    void SendData(const std::vector<unsigned char> &data) override
++    {
++        std::lock_guard lock{_mutex};
++        _sent.push_back(data);
++    }
++    Event<std::vector<unsigned char>> &GetOnReceivedDataEvent() override { return _received; }
++    Event<std::string> &GetOnConnectionLostEvent() override { return _lost; }
++
++    std::vector<std::vector<unsigned char>> Sent() const
++    {
++        std::lock_guard lock{_mutex};
++        return _sent;
++    }
++    void Deliver(const std::vector<unsigned char> &data) { _received.FireEvent(data); }
++};
++
++template <typename Condition>
++static bool WaitFor(Condition condition)
++{
++    for (int i = 0; i < 200 && !condition(); ++i)
++        std::this_thread::sleep_for(std::chrono::milliseconds(5));
++    return condition();
++}
++
++struct ChannelProbe
++{
++    std::vector<AttValue> values{};
++    std::vector<uint16_t> errors{};
++    std::atomic<int> closedAfterTimeout{0};
++    std::mutex mutex{};
++
++    explicit ChannelProbe(AapAttChannel &channel)
++    {
++        channel.GetValueEvent().Subscribe([this](size_t, const AttValue &value) {
++            std::lock_guard lock{mutex};
++            values.push_back(value);
++        });
++        channel.GetErrorEvent().Subscribe([this](size_t, uint16_t handle) {
++            std::lock_guard lock{mutex};
++            errors.push_back(handle);
++        });
++        channel.GetClosedEvent().Subscribe([this](size_t, bool timedOut) {
++            if (timedOut)
++                ++closedAfterTimeout;
++        });
++    }
++};
++
++bool TestsAapAppleGated::TestModaliasApple()
++{
++    return HostDeviceId::IsAppleModalias("bluetooth:v004Cp0000d0000") &&
++           HostDeviceId::IsAppleModalias("BLUETOOTH:v004cp0000d0000");
++}
++
++bool TestsAapAppleGated::TestModaliasOther()
++{
++    // BlueZ's default Device ID is usb:v1D6Bp0246 (Linux Foundation).
++    return !HostDeviceId::IsAppleModalias("usb:v1D6Bp0246d0548") &&
++           !HostDeviceId::IsAppleModalias("usb:v004Cp0000d0000") &&
++           !HostDeviceId::IsAppleModalias("bluetooth:v004") &&
++           !HostDeviceId::IsAppleModalias("bluetooth:vXYZWp0000d0000") &&
++           !HostDeviceId::IsAppleModalias("");
++}
++
++bool TestsAapAppleGated::TestAttReadRequest()
++{
++    return Att::ReadRequest(0x2A) == std::vector<unsigned char>{0x0A, 0x2A, 0x00};
++}
++
++bool TestsAapAppleGated::TestAttWriteRequest()
++{
++    return Att::WriteRequest(0x1B, {0x01}) == std::vector<unsigned char>{0x12, 0x1B, 0x00, 0x01};
++}
++
++bool TestsAapAppleGated::TestAttEnableNotifications()
++{
++    return Att::EnableNotifications(0x18) == std::vector<unsigned char>{0x12, 0x19, 0x00, 0x01, 0x00};
++}
++
++bool TestsAapAppleGated::TestAttParseNotification()
++{
++    auto pdu = Att::Parse({0x1B, 0x2A, 0x00, 0x02, 0x02, 0x60, 0x00});
++    return pdu.has_value() && pdu->opcode == Att::Opcode::HandleValueNotification && pdu->handle == 0x2A &&
++           pdu->value == std::vector<unsigned char>{0x02, 0x02, 0x60, 0x00};
++}
++
++bool TestsAapAppleGated::TestAttParseErrorResponse()
++{
++    auto pdu = Att::Parse({0x01, 0x0A, 0x1B, 0x00, 0x02});
++    return pdu.has_value() && pdu->opcode == Att::Opcode::ErrorResponse && pdu->handle == 0x1B &&
++           !Att::Parse({0x01, 0x0A}).has_value() && !Att::Parse({}).has_value();
++}
++
++bool TestsAapAppleGated::TestAttRequestsFromPeer()
++{
++    return Att::IsRequestFromPeer(0x02) && Att::IsRequestFromPeer(0x0A) && Att::IsRequestFromPeer(0x12) &&
++           !Att::IsRequestFromPeer(0x52) && !Att::IsRequestFromPeer(0x1B) && !Att::IsRequestFromPeer(0x0B) &&
++           Att::ErrorResponse(0x08, 0x0001, Att::ErrorRequestNotSupported) == std::vector<unsigned char>{0x01, 0x08, 0x01, 0x00, 0x06} &&
++           Att::ExchangeMtuResponse(672) == std::vector<unsigned char>{0x03, 0xA0, 0x02};
++}
++
++bool TestsAapAppleGated::TestTransparencyParse()
++{
++    auto bytes = TransparencyBytes(true, SampleEar(1.0f), SampleEar(10.0f));
++    // enabled is the float 1.0: 00 00 80 3F
++    if (bytes.size() != 100 || !(bytes[0] == 0x00 && bytes[1] == 0x00 && bytes[2] == 0x80 && bytes[3] == 0x3F))
++        return false;
++    auto parsed = AapHearingSettings::ParseTransparency(bytes);
++    if (!parsed.has_value() || !parsed->enabled || parsed->ownVoiceAmplification.has_value())
++        return false;
++    auto withOwnVoice = AapHearingSettings::ParseTransparency(TransparencyBytes(false, SampleEar(1.0f), SampleEar(10.0f), 0.5f));
++    return Near(parsed->left.eq[7], 8.0f) && Near(parsed->right.eq[0], 10.0f) &&
++           Near(parsed->right.ambientNoiseReduction, 0.75f) && parsed->right.conversationBoost &&
++           withOwnVoice.has_value() && !withOwnVoice->enabled && Near(withOwnVoice->ownVoiceAmplification.value_or(0), 0.5f);
++}
++
++bool TestsAapAppleGated::TestHearingAidParse()
++{
++    auto parsed = AapHearingSettings::ParseHearingAid(HearingAidBytes(SampleEar(20.0f), SampleEar(30.0f), 0.5f));
++    return parsed.has_value() && parsed->header[2] == 0x60 && Near(parsed->left.eq[0], 20.0f) &&
++           Near(parsed->right.eq[7], 37.0f) && Near(parsed->ownVoiceAmplification, 0.5f);
++}
++
++bool TestsAapAppleGated::TestAttValueValidation()
++{
++    const auto transparency = TransparencyBytes(true, SampleEar(1.0f), SampleEar(2.0f), 0.5f);
++    const auto hearingAid = HearingAidBytes(SampleEar(1.0f), SampleEar(2.0f), 0.5f);
++    auto notFinite = hearingAid;
++    notFinite[40] = 0x00, notFinite[41] = 0x00, notFinite[42] = 0xC0, notFinite[43] = 0x7F; // NaN
++    return !AapHearingSettings::ParseTransparency(std::vector<unsigned char>(99)).has_value() &&
++           !AapHearingSettings::ParseTransparency(std::vector<unsigned char>(102)).has_value() &&
++           !AapHearingSettings::ParseHearingAid(std::vector<unsigned char>(103)).has_value() &&
++           // Both are 104 bytes; each is refused as the other attribute.
++           transparency.size() == 104 && hearingAid.size() == 104 &&
++           !AapHearingSettings::ParseHearingAid(transparency).has_value() &&
++           !AapHearingSettings::ParseTransparency(hearingAid).has_value() &&
++           !AapHearingSettings::ParseHearingAid(notFinite).has_value() &&
++           AapHearingSettings::ParseLoudSoundReduction({0x01}).value_or(false) &&
++           !AapHearingSettings::ParseLoudSoundReduction({0x00}).value_or(true) &&
++           !AapHearingSettings::ParseLoudSoundReduction({0x02}).has_value() &&
++           !AapHearingSettings::ParseLoudSoundReduction(transparency).has_value();
++}
++
++bool TestsAapAppleGated::TestAdjustmentsMapping()
++{
++    AapEarSettings left{}, right{};
++    left.amplification = 0.1f;
++    right.amplification = 0.5f;
++    left.tone = -0.2f;
++    left.ambientNoiseReduction = 0.3f;
++    left.conversationBoost = true;
++    auto adjustments = AapHearingSettings::ToAdjustments(left, right);
++    nlohmann::json body = nlohmann::json::object();
++    AapHearingSettings::AdjustmentsToJson(adjustments, body);
++    return adjustments.amplification == 30 && adjustments.balance == 40 && adjustments.tone == -20 &&
++           adjustments.ambientNoiseReduction == 30 && adjustments.conversationBoost &&
++           body["amplification"] == 30 && body["balance"] == 40 && body["conversationBoost"] == true;
++}
++
++// Ears set differently (as an iPhone may leave them), with values that do
++// not round to whole percent: one changed field leaves every other byte alone.
++bool TestsAapAppleGated::TestApplyChangesOnlyRequestedFields()
++{
++    AapEarSettings left = SampleEar(1.0f), right = SampleEar(2.0f);
++    left.amplification = 0.123f;
++    right.amplification = 0.377f;
++    left.tone = -0.31f;
++    right.tone = 0.42f;
++    left.conversationBoost = true;
++    right.conversationBoost = false;
++    left.ambientNoiseReduction = 0.15f;
++    right.ambientNoiseReduction = 0.65f;
++    auto original = HearingAidBytes(left, right, 0.25f);
++    // Bytes a newer firmware might add after the known layout.
++    original.push_back(0xAB);
++    original.push_back(0xCD);
++
++    auto tone = original;
++    if (!AapHearingSettings::ApplyToHearingAid(nlohmann::json{{"tone", 10}}, tone))
++        return false;
++    // Only the two tone floats and the header byte LibrePods sets.
++    const bool toneOnly = DiffersOnlyAt(original, tone, {0, 4 + 36, 52 + 36}) && tone[2] == 0x64 && tone[0] == 0x02 &&
++                          Near(FloatAt(tone, 4 + 36), 0.1f) && Near(FloatAt(tone, 52 + 36), 0.1f) &&
++                          tone.size() == 106 && tone[104] == 0xAB && tone[105] == 0xCD;
++
++    auto amplification = original;
++    if (!AapHearingSettings::ApplyToHearingAid(nlohmann::json{{"amplification", 50}}, amplification))
++        return false;
++    // The balance (right - left = 0.254) is kept, not rounded to 25 %.
++    const bool keepsBalance = DiffersOnlyAt(original, amplification, {0, 4 + 32, 52 + 32}) &&
++                              Near(FloatAt(amplification, 4 + 32), 0.5f - 0.127f) &&
++                              Near(FloatAt(amplification, 52 + 32), 0.5f + 0.127f);
++
++    auto transparency = TransparencyBytes(false, left, right, 0.25f);
++    auto selected = transparency;
++    if (!AapHearingSettings::ApplyToTransparency(nlohmann::json{{"selected", true}}, selected))
++        return false;
++    const bool selectedOnly = DiffersOnlyAt(transparency, selected, {0}) && Near(FloatAt(selected, 0), 1.0f);
++
++    return toneOnly && keepsBalance && selectedOnly;
++}
++
++bool TestsAapAppleGated::TestApplyRejects()
++{
++    const auto original = HearingAidBytes(SampleEar(1.0f), SampleEar(2.0f), 0.25f);
++    auto value = original;
++    const bool badType = !AapHearingSettings::ApplyToHearingAid(nlohmann::json{{"tone", 1}, {"conversationBoost", 1}}, value);
++    const bool outOfRange = !AapHearingSettings::ApplyToHearingAid(nlohmann::json{{"balance", 101}}, value);
++    auto transparency = TransparencyBytes(true, SampleEar(1.0f), SampleEar(2.0f));
++    const bool badSelected = !AapHearingSettings::ApplyToTransparency(nlohmann::json{{"selected", 1}}, transparency);
++    // Never writes a value it could not parse.
++    auto wrongAttribute = TransparencyBytes(true, SampleEar(1.0f), SampleEar(2.0f), 0.5f);
++    const bool refusesOther = !AapHearingSettings::ApplyToHearingAid(nlohmann::json{{"tone", 1}}, wrongAttribute);
++    return badType && outOfRange && badSelected && refusesOther && value == original;
++}
++
++bool TestsAapAppleGated::TestAdjustmentsFromJsonRejects()
++{
++    AapHearingAdjustments adjustments{};
++    adjustments.tone = 7;
++    bool ok = AapHearingSettings::AdjustmentsFromJson(nlohmann::json{{"amplification", 20}}, adjustments) &&
++              adjustments.amplification == 20 && adjustments.tone == 7;
++    bool outOfRange = !AapHearingSettings::AdjustmentsFromJson(nlohmann::json{{"ambientNoiseReduction", -1}, {"tone", 1}}, adjustments);
++    bool wrongType = !AapHearingSettings::AdjustmentsFromJson(nlohmann::json{{"conversationBoost", 1}}, adjustments);
++    bool notFloat = !AapHearingSettings::AdjustmentsFromJson(nlohmann::json{{"balance", 0.5}}, adjustments);
++    // A rejected request changes nothing.
++    return ok && outOfRange && wrongType && notFloat && adjustments.tone == 7 && adjustments.amplification == 20;
++}
++
++bool TestsAapAppleGated::TestSetHearingAid()
++{
++    return AapSetControl(AapControlId::HearingAid, 0x01, 0x01).Request() ==
++               std::vector<unsigned char>{0x04, 0x00, 0x04, 0x00, 0x09, 0x00, 0x2C, 0x01, 0x01, 0x00, 0x00} &&
++           AapSetControl(AapControlId::HearingAssist, 0x02).Request() ==
++               std::vector<unsigned char>{0x04, 0x00, 0x04, 0x00, 0x09, 0x00, 0x33, 0x02, 0x00, 0x00, 0x00};
++}
++
++bool TestsAapAppleGated::TestParseHearingAidCommand()
++{
++    auto command = AapControlCommand::Parse({0x04, 0x00, 0x04, 0x00, 0x09, 0x00, 0x2C, 0x01, 0x02, 0x00, 0x00});
++    return command.has_value() && command->identifier == 0x2C && command->data1 == 0x01 && command->data2 == 0x02 &&
++           !AapControlCommand::Parse({0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x2C, 0x01, 0x02}).has_value();
++}
++
++bool TestsAapAppleGated::TestChannelMatchesResponses()
++{
++    auto owned = std::make_unique<FakeAttTransport>();
++    FakeAttTransport *transport = owned.get();
++    AapAttChannel channel{std::move(owned)};
++    ChannelProbe probe{channel};
++    if (!channel.Start())
++        return false;
++
++    channel.Read(0x2A);
++    channel.Read(0x18);
++    // Only the first request is sent until it is answered.
++    const bool oneAtATime = transport->Sent().size() == 1;
++    // A Write Response and an Error Response for another request do not
++    // answer the read in flight.
++    transport->Deliver({0x13});
++    transport->Deliver({0x01, 0x0A, 0x18, 0x00, 0x0A});
++    const bool ignored = probe.values.empty() && probe.errors.empty() && transport->Sent().size() == 1;
++    transport->Deliver({0x0B, 0x02, 0x02, 0x60, 0x00});
++    const bool answered = probe.values.size() == 1 && probe.values[0].handle == 0x2A && transport->Sent().size() == 2 &&
++                          transport->Sent()[1] == Att::ReadRequest(0x18);
++    // A matching Error Response answers the second read.
++    transport->Deliver({0x01, 0x0A, 0x18, 0x00, 0x0A});
++    const bool error = probe.errors == std::vector<uint16_t>{0x18};
++    channel.Stop();
++    return oneAtATime && ignored && answered && error;
++}
++
++bool TestsAapAppleGated::TestChannelTimeoutClosesChannel()
++{
++    auto owned = std::make_unique<FakeAttTransport>();
++    FakeAttTransport *transport = owned.get();
++    AapAttChannel channel{std::move(owned), std::chrono::milliseconds{50}};
++    ChannelProbe probe{channel};
++    if (!channel.Start())
++        return false;
++
++    channel.Read(0x18);
++    channel.Read(0x2A);
++    // Nothing else is queued: the deadline alone must fail the request,
++    // close the channel and fail the queued one.
++    const bool closed = WaitFor([&]() { return probe.closedAfterTimeout.load() == 1; });
++    const bool stopped = !channel.IsStarted() && transport->stops.load() == 1;
++    {
++        std::lock_guard lock{probe.mutex};
++        if (probe.errors != std::vector<uint16_t>{0x18, 0x2A})
++            return false;
++    }
++    // The late answer to the timed-out read is not taken for anything.
++    transport->Deliver({0x0B, 0x00, 0x00, 0x80, 0x3F});
++    const bool lateIgnored = probe.values.empty();
++
++    // Connecting again starts afresh.
++    const bool restarted = channel.Start() && channel.IsStarted();
++    channel.Read(0x1B);
++    transport->Deliver({0x0B, 0x01});
++    const bool works = probe.values.size() == 1 && probe.values[0].handle == 0x1B;
++    channel.Stop();
++    return closed && stopped && lateIgnored && restarted && works;
++}
++
++bool TestsAapAppleGated::TestChannelStartChecksWanted()
++{
++    auto owned = std::make_unique<FakeAttTransport>();
++    FakeAttTransport *transport = owned.get();
++    AapAttChannel channel{std::move(owned)};
++    int calls = 0;
++    // Wanted before connecting, no longer wanted once connected.
++    const bool refused = !channel.Start([&calls]() { return ++calls == 1; });
++    const bool stopped = !channel.IsStarted() && transport->stops.load() == 1 && calls == 2;
++    const bool notWanted = !channel.Start([]() { return false; }) && transport->stops.load() == 1;
++    return refused && stopped && notWanted;
++}
++
++bool TestsAapAppleGated::TestUnavailableBody()
++{
++    return AapAppleGatedCapability::UnavailableJsonBody() == nlohmann::json{{"unavailable", "needs Apple Device ID"}};
++}
++
++void TestsAapAppleGated::Test(const char *name, bool b)
++{
++    int spaceCount = 50 - static_cast<int>(std::strlen(name));
++    std::string space(spaceCount > 0 ? spaceCount : 1, ' ');
++    Logger::Debug("%s%s: %s", name, space.c_str(), b ? "PASS" : "FAIL");
++}
++
++TestsAapAppleGated::TestsAapAppleGated()
++{
++    Test("TestModaliasApple", TestModaliasApple());
++    Test("TestModaliasOther", TestModaliasOther());
++    Test("TestAttReadRequest", TestAttReadRequest());
++    Test("TestAttWriteRequest", TestAttWriteRequest());
++    Test("TestAttEnableNotifications", TestAttEnableNotifications());
++    Test("TestAttParseNotification", TestAttParseNotification());
++    Test("TestAttParseErrorResponse", TestAttParseErrorResponse());
++    Test("TestAttRequestsFromPeer", TestAttRequestsFromPeer());
++    Test("TestTransparencyParse", TestTransparencyParse());
++    Test("TestHearingAidParse", TestHearingAidParse());
++    Test("TestAttValueValidation", TestAttValueValidation());
++    Test("TestAdjustmentsMapping", TestAdjustmentsMapping());
++    Test("TestApplyChangesOnlyRequestedFields", TestApplyChangesOnlyRequestedFields());
++    Test("TestApplyRejects", TestApplyRejects());
++    Test("TestAdjustmentsFromJsonRejects", TestAdjustmentsFromJsonRejects());
++    Test("TestSetHearingAid", TestSetHearingAid());
++    Test("TestParseHearingAidCommand", TestParseHearingAidCommand());
++    Test("TestChannelMatchesResponses", TestChannelMatchesResponses());
++    Test("TestChannelTimeoutClosesChannel", TestChannelTimeoutClosesChannel());
++    Test("TestChannelStartChecksWanted", TestChannelStartChecksWanted());
++    Test("TestUnavailableBody", TestUnavailableBody());
++}
+diff --git a/src/tests/TestsAapAppleGated.h b/src/tests/TestsAapAppleGated.h
+new file mode 100644
+index 0000000..e97bba4
+--- /dev/null
++++ b/src/tests/TestsAapAppleGated.h
+@@ -0,0 +1,40 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++namespace MagicPodsCore
++{
++    // Packets, JSON and the ATT channel of the features that need Apple's
++    // Device ID.
++    class TestsAapAppleGated
++    {
++    private:
++        bool TestModaliasApple();
++        bool TestModaliasOther();
++        bool TestAttReadRequest();
++        bool TestAttWriteRequest();
++        bool TestAttEnableNotifications();
++        bool TestAttParseNotification();
++        bool TestAttParseErrorResponse();
++        bool TestAttRequestsFromPeer();
++        bool TestTransparencyParse();
++        bool TestHearingAidParse();
++        bool TestAttValueValidation();
++        bool TestAdjustmentsMapping();
++        bool TestApplyChangesOnlyRequestedFields();
++        bool TestApplyRejects();
++        bool TestAdjustmentsFromJsonRejects();
++        bool TestSetHearingAid();
++        bool TestParseHearingAidCommand();
++        bool TestChannelMatchesResponses();
++        bool TestChannelTimeoutClosesChannel();
++        bool TestChannelStartChecksWanted();
++        bool TestUnavailableBody();
++        void Test(const char *name, bool b);
++
++    public:
++        TestsAapAppleGated();
++    };
++}

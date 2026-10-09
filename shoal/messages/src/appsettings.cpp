@@ -1,0 +1,745 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; contact matching, bridge bots and the bridges first-run entry; see CHANGES-FROM-UPSTREAM.md.
+#include "appsettings.h"
+#include "shoalconfig.h"
+
+#include <QDir>
+#include <QFileInfo>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QUrl>
+
+namespace {
+
+/// The settings file, with its directory created. QSettings cannot be handed
+/// back from a function - it is a QObject - so this returns the path.
+QString writablePath()
+{
+    const QString path = appSettingsPath();
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    return path;
+}
+
+/// Writes and says so in the journal if the sandbox refused - a setting that
+/// silently never persists is the failure this app already had once.
+void store(QSettings &settings, const QString &key, const QVariant &value, const char *what)
+{
+    settings.setValue(key, value);
+    settings.sync();
+    if (settings.status() != QSettings::NoError) {
+        qWarning("shoal-messages: could not save %s (status %d)", what,
+                 static_cast<int>(settings.status()));
+    }
+}
+
+/// A directory server as it is stored: host name only, no scheme, no path.
+QString normalizedServerName(const QString &server)
+{
+    QString name = server.trimmed();
+    if (name.isEmpty()) {
+        return name;
+    }
+    if (name.contains(QStringLiteral("://"))) {
+        const QUrl url(name);
+        name = url.host();
+    }
+    while (name.endsWith(QLatin1Char('/'))) {
+        name.chop(1);
+    }
+    return name;
+}
+
+} // namespace
+
+QString appSettingsPath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+           + QStringLiteral("/settings.conf");
+}
+
+AppSettings::AppSettings(QObject *parent)
+    : QObject(parent)
+{
+}
+
+QString AppSettings::startPage() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    const QString page = settings.value(QStringLiteral("ui/startPage"),
+                                        QStringLiteral("rooms")).toString();
+    return page == QLatin1String("spaces") ? page : QStringLiteral("rooms");
+}
+
+void AppSettings::setStartPage(const QString &page)
+{
+    const QString wanted = page == QLatin1String("spaces") ? QStringLiteral("spaces")
+                                                           : QStringLiteral("rooms");
+    if (wanted == startPage()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/startPage"), wanted, "the start page");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: start page set to %s", qPrintable(wanted));
+    }
+    emit startPageChanged();
+}
+
+bool AppSettings::notificationPreview() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/notificationPreview"), false).toBool();
+}
+
+void AppSettings::setNotificationPreview(bool enabled)
+{
+    if (enabled == notificationPreview()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/notificationPreview"), enabled,
+          "the notification preview setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: notification preview %s", enabled ? "on" : "off");
+    }
+    emit notificationPreviewChanged();
+}
+
+bool AppSettings::showReadStatus() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/showReadStatus"), false).toBool();
+}
+
+void AppSettings::setShowReadStatus(bool enabled)
+{
+    if (enabled == showReadStatus()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/showReadStatus"), enabled, "the read status setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: read status %s", enabled ? "on" : "off");
+    }
+    // The open timeline still runs with the old setting; rebuilding it is the
+    // bridge's job, which listens for this.
+    emit showReadStatusChanged();
+}
+
+bool AppSettings::jumpToReadMarker() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/jumpToReadMarker"), true).toBool();
+}
+
+void AppSettings::setJumpToReadMarker(bool enabled)
+{
+    if (enabled == jumpToReadMarker()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/jumpToReadMarker"), enabled,
+          "the read-marker jump setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: jump to read marker %s", enabled ? "on" : "off");
+    }
+    emit jumpToReadMarkerChanged();
+}
+
+bool AppSettings::clickableLinks() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/clickableLinks"), false).toBool();
+}
+
+void AppSettings::setClickableLinks(bool enabled)
+{
+    if (enabled == clickableLinks()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/clickableLinks"), enabled,
+          "the clickable links setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: clickable links %s", enabled ? "on" : "off");
+    }
+    emit clickableLinksChanged();
+}
+
+bool AppSettings::spaceInitials() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    // Off by default: a letter over every picture was asked for by one user and
+    // not wanted by others, and it says nothing to whoever keeps no spaces.
+    return settings.value(QStringLiteral("ui/spaceInitials"), false).toBool();
+}
+
+void AppSettings::setSpaceInitials(bool enabled)
+{
+    if (enabled == spaceInitials()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/spaceInitials"), enabled,
+          "the space initial setting");
+    emit spaceInitialsChanged();
+}
+
+bool AppSettings::pushEnabled() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("push/enabled"), false).toBool();
+}
+
+void AppSettings::setPushEnabled(bool enabled)
+{
+    if (enabled == pushEnabled()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("push/enabled"), enabled,
+          "the push notification setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: push notifications %s", enabled ? "on" : "off");
+    }
+    emit pushChanged();
+}
+
+QString AppSettings::pushGateway() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    const QString stored = settings.value(QStringLiteral("push/gateway"), QString()).toString();
+    // Unset or cleared: the Shipwright gateway, from the one config location.
+    return stored.trimmed().isEmpty() ? defaultPushGateway() : stored;
+}
+
+QString AppSettings::defaultPushGateway() const
+{
+    return QStringLiteral(SHOAL_DEFAULT_PUSH_GATEWAY);
+}
+
+QString AppSettings::pushDistributor() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("push/distributor"), QString()).toString();
+}
+
+void AppSettings::setPushDistributor(const QString &distributor)
+{
+    const QString trimmed = distributor.trimmed();
+    if (trimmed == pushDistributor()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("push/distributor"), trimmed, "the push distributor");
+    emit pushChanged();
+}
+
+void AppSettings::setPushGateway(const QString &gateway)
+{
+    // The default is stored as "unset", so a later change of the built-in
+    // gateway reaches everyone who never picked their own.
+    QString trimmed = gateway.trimmed();
+    if (trimmed == defaultPushGateway()) {
+        trimmed.clear();
+    }
+    {
+        QSettings current(appSettingsPath(), QSettings::IniFormat);
+        if (current.value(QStringLiteral("push/gateway")).toString().trimmed() == trimmed) {
+            return;
+        }
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    // The address itself stays out of the journal: it names whoever the user
+    // trusts to forward their notifications, which is nobody else's business.
+    store(settings, QStringLiteral("push/gateway"), trimmed, "the push gateway");
+    emit pushChanged();
+}
+
+bool AppSettings::voiceMessages() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/voiceMessages"), true).toBool();
+}
+
+void AppSettings::setVoiceMessages(bool enabled)
+{
+    if (enabled == voiceMessages()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/voiceMessages"), enabled, "the voice message setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: voice messages %s", enabled ? "on" : "off");
+    }
+    emit voiceMessagesChanged();
+}
+
+bool AppSettings::voiceTranscripts() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/voiceTranscripts"), false).toBool();
+}
+
+void AppSettings::setVoiceTranscripts(bool enabled)
+{
+    if (enabled == voiceTranscripts()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/voiceTranscripts"), enabled, "the voice transcript setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: voice transcripts %s", enabled ? "on" : "off");
+    }
+    emit voiceTranscriptsChanged();
+}
+
+bool AppSettings::hideKeyboardOnSend() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/hideKeyboardOnSend"), true).toBool();
+}
+
+void AppSettings::setHideKeyboardOnSend(bool enabled)
+{
+    if (enabled == hideKeyboardOnSend()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/hideKeyboardOnSend"), enabled,
+          "the keyboard setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: keyboard after sending %s", enabled ? "hidden" : "kept");
+    }
+    emit hideKeyboardOnSendChanged();
+}
+
+bool AppSettings::sendByEnter() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/sendByEnter"), false).toBool();
+}
+
+void AppSettings::setSendByEnter(bool enabled)
+{
+    if (enabled == sendByEnter()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/sendByEnter"), enabled,
+          "the return key setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: return key %s", enabled ? "sends" : "breaks the line");
+    }
+    emit sendByEnterChanged();
+}
+
+bool AppSettings::emojiImages() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/emojiImages"), false).toBool();
+}
+
+void AppSettings::setEmojiImages(bool enabled)
+{
+    if (enabled == emojiImages()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/emojiImages"), enabled, "the emoji image setting");
+    if (settings.status() == QSettings::NoError) {
+        qInfo("shoal-messages: emoji images %s", enabled ? "on" : "off");
+    }
+    emit emojiImagesChanged();
+}
+
+QString AppSettings::directoryServer() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("directory/server")).toString();
+}
+
+void AppSettings::setDirectoryServer(const QString &server)
+{
+    const QString wanted = normalizedServerName(server);
+    if (wanted == directoryServer()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("directory/server"), wanted, "the directory server");
+    emit directoryServerChanged();
+}
+
+QStringList AppSettings::emojiFavourites() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("ui/emojiFavourites")).toStringList();
+}
+
+bool AppSettings::hasEmojiFavourites() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.contains(QStringLiteral("ui/emojiFavourites"));
+}
+
+void AppSettings::setEmojiFavourites(const QStringList &keys)
+{
+    if (hasEmojiFavourites() && keys == emojiFavourites()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("ui/emojiFavourites"), keys, "the emoji favourites");
+    emit emojiFavouritesChanged();
+}
+
+QStringList AppSettings::directoryServers() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("directory/servers")).toStringList();
+}
+
+void AppSettings::addDirectoryServer(const QString &server)
+{
+    const QString name = normalizedServerName(server);
+    if (name.isEmpty()) {
+        return;
+    }
+    QStringList servers = directoryServers();
+    if (servers.contains(name)) {
+        return;
+    }
+    servers.append(name);
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("directory/servers"), servers, "the directory servers");
+    emit directoryServersChanged();
+}
+
+void AppSettings::removeDirectoryServer(const QString &server)
+{
+    const QString name = normalizedServerName(server);
+    QStringList servers = directoryServers();
+    if (servers.removeAll(name) == 0) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("directory/servers"), servers, "the directory servers");
+    emit directoryServersChanged();
+}
+
+QString AppSettings::linkPreviews() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    const QString value = settings.value(QStringLiteral("privacy/linkPreviews"),
+                                         QStringLiteral("never")).toString();
+    if (value == QLatin1String("unencrypted") || value == QLatin1String("always")) {
+        return value;
+    }
+    return QStringLiteral("never");
+}
+
+void AppSettings::setLinkPreviews(const QString &policy)
+{
+    if (policy == linkPreviews()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/linkPreviews"), policy, "the link preview setting");
+    emit linkPreviewsChanged();
+}
+
+bool AppSettings::locationSharing() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/locationSharing"), false).toBool();
+}
+
+void AppSettings::setLocationSharing(bool enabled)
+{
+    if (enabled == locationSharing()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/locationSharing"), enabled, "the location setting");
+    emit locationSharingChanged();
+}
+
+bool AppSettings::cameraLivePreview() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/cameraLivePreview"), false).toBool();
+}
+
+void AppSettings::setCameraLivePreview(bool enabled)
+{
+    if (enabled == cameraLivePreview()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/cameraLivePreview"), enabled,
+          "the camera preview setting");
+    emit cameraChanged();
+}
+
+QString AppSettings::cameraFlash() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    const QString value = settings.value(QStringLiteral("camera/flash"),
+                                         QStringLiteral("auto")).toString();
+    if (value == QLatin1String("on") || value == QLatin1String("off")) {
+        return value;
+    }
+    return QStringLiteral("auto");
+}
+
+void AppSettings::setCameraFlash(const QString &mode)
+{
+    if (mode == cameraFlash()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("camera/flash"), mode, "the flash setting");
+    emit cameraChanged();
+}
+
+bool AppSettings::cameraGrid() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("camera/grid"), false).toBool();
+}
+
+void AppSettings::setCameraGrid(bool enabled)
+{
+    if (enabled == cameraGrid()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("camera/grid"), enabled, "the grid setting");
+    emit cameraChanged();
+}
+
+QString AppSettings::locationMaps() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    const QString value = settings.value(QStringLiteral("privacy/locationMaps"),
+                                         QStringLiteral("never")).toString();
+    if (value == QLatin1String("unencrypted") || value == QLatin1String("always")) {
+        return value;
+    }
+    return QStringLiteral("never");
+}
+
+void AppSettings::setLocationMaps(const QString &policy)
+{
+    if (policy == locationMaps()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/locationMaps"), policy, "the map setting");
+    emit locationMapsChanged();
+}
+
+QString AppSettings::callPolicy() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    const QString value = settings.value(QStringLiteral("privacy/callPolicy"),
+                                         QStringLiteral("direct")).toString();
+    if (value == QLatin1String("all") || value == QLatin1String("list")) {
+        return value;
+    }
+    return QStringLiteral("direct");
+}
+
+void AppSettings::setCallPolicy(const QString &policy)
+{
+    if (policy == callPolicy()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/callPolicy"), policy, "the call policy");
+    emit callPolicyChanged();
+}
+
+bool AppSettings::groupCalls() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/groupCalls"), false).toBool();
+}
+
+void AppSettings::setGroupCalls(bool enabled)
+{
+    if (enabled == groupCalls()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/groupCalls"), enabled, "the group-call setting");
+    emit callPolicyChanged();
+}
+
+bool AppSettings::videoCalls() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/videoCalls"), false).toBool();
+}
+
+void AppSettings::setVideoCalls(bool enabled)
+{
+    if (enabled == videoCalls()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/videoCalls"), enabled, "the video-call setting");
+    emit callPolicyChanged();
+}
+
+bool AppSettings::callFlood() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/callFlood"), false).toBool();
+}
+
+void AppSettings::setCallFlood(bool enabled)
+{
+    if (enabled == callFlood()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/callFlood"), enabled, "the call flood setting");
+    emit callPolicyChanged();
+}
+
+QStringList AppSettings::legacyAllowedCallers() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/allowedCallers")).toStringList();
+}
+
+QStringList AppSettings::legacyTrustedRecipients() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("security/trustedRecipients")).toStringList();
+}
+
+void AppSettings::dropLegacyLists()
+{
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    settings.remove(QStringLiteral("privacy/allowedCallers"));
+    settings.remove(QStringLiteral("security/trustedRecipients"));
+    settings.sync();
+}
+
+void AppSettings::dropRetiredKeys()
+{
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    // 0.26.0-0.28.0 remembered "continue without encryption" here. The way past
+    // the gate is gone; a value nothing reads is one a downgrade would read.
+    const QString retired = QStringLiteral("security/unencryptedStorageAccepted");
+    if (!settings.contains(retired)) {
+        return;
+    }
+    settings.remove(retired);
+    settings.sync();
+}
+
+bool AppSettings::autoLoadMedia() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/autoLoadMedia"), true).toBool();
+}
+
+void AppSettings::setAutoLoadMedia(bool enabled)
+{
+    if (enabled == autoLoadMedia()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/autoLoadMedia"), enabled,
+          "the automatic media setting");
+    emit autoLoadMediaChanged();
+}
+
+bool AppSettings::sendReadReceipts() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("privacy/sendReadReceipts"), true).toBool();
+}
+
+void AppSettings::setSendReadReceipts(bool enabled)
+{
+    if (enabled == sendReadReceipts()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/sendReadReceipts"), enabled,
+          "the read-receipt setting");
+    emit sendReadReceiptsChanged();
+}
+
+bool AppSettings::contactsMatching() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    // Off unless asked for: the address book is the user's, not the app's.
+    return settings.value(QStringLiteral("privacy/contactsMatching"), false).toBool();
+}
+
+void AppSettings::setContactsMatching(bool enabled)
+{
+    if (enabled == contactsMatching()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/contactsMatching"), enabled,
+          "the contact matching setting");
+    emit contactsMatchingChanged();
+}
+
+bool AppSettings::bridgesIntroDone() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("bridges/introDone"), false).toBool();
+}
+
+void AppSettings::setBridgesIntroDone(bool done)
+{
+    if (done == bridgesIntroDone()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("bridges/introDone"), done, "the bridges first-run entry");
+    emit bridgesIntroDoneChanged();
+}
+
+QString AppSettings::bridgeBot(const QString &bridge) const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    return settings.value(QStringLiteral("bridges/") + bridge + QStringLiteral("Bot")).toString();
+}
+
+void AppSettings::setBridgeBot(const QString &bridge, const QString &bot)
+{
+    if (bot.trimmed() == bridgeBot(bridge)) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("bridges/") + bridge + QStringLiteral("Bot"), bot.trimmed(),
+          "a bridge bot");
+}
+
+QString AppSettings::mediaWipe() const
+{
+    QSettings settings(appSettingsPath(), QSettings::IniFormat);
+    const QString value = settings.value(QStringLiteral("privacy/mediaWipe")).toString();
+    if (value == QLatin1String("never") || value == QLatin1String("exit")
+        || value == QLatin1String("background")) {
+        return value;
+    }
+    return QStringLiteral("logout");
+}
+
+void AppSettings::setMediaWipe(const QString &when)
+{
+    if (when == mediaWipe()) {
+        return;
+    }
+    QSettings settings(writablePath(), QSettings::IniFormat);
+    store(settings, QStringLiteral("privacy/mediaWipe"), when, "the media wipe setting");
+    emit mediaWipeChanged();
+}

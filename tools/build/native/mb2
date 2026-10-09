@@ -1,0 +1,50 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT
+#
+# Stand-in for the Sailfish SDK's mb2 inside a native Sailfish OS root
+# (tools/build/native), covering what build-rpms.sh asks of it:
+#
+#   mb2 [-t <target>] [--snapshot=<name>] -s <spec> build [-- <rpmbuild args>...]
+#
+# Like `mb2 build`, from the project directory: installs the spec's
+# BuildRequires with zypper, then builds in place (no source tarball:
+# %setup does nothing) and leaves the RPMs in ./RPMS. -t and --snapshot are
+# accepted and ignored: the root is the target, and every run builds a
+# fresh copy of the tree.
+set -euo pipefail
+
+spec=""
+while [ $# -gt 0 ]; do
+    case $1 in
+        -t) shift 2 ;;
+        --snapshot=*) shift ;;
+        --snapshot) shift 2 ;;
+        -s) spec=$2; shift 2 ;;
+        build) shift; break ;;
+        *) echo "mb2 (native): unsupported argument $1" >&2; exit 2 ;;
+    esac
+done
+[ -n "$spec" ] || { echo "mb2 (native): -s <spec> is required" >&2; exit 2; }
+[ "${1:-}" = -- ] && shift
+
+# BuildRequires, evaluated with the same --with/--define arguments the build
+# gets; those rpm cannot show as provided go to zypper, which leaves already
+# satisfied ones alone (rpm -q --whatprovides takes no version constraint, so
+# "cmake >= 3.19" always goes).
+missing=()
+while IFS= read -r req; do
+    [ -n "$req" ] || continue
+    rpm -q --whatprovides "$req" >/dev/null 2>&1 || missing+=("$req")
+done < <(rpmspec -q --buildrequires "$@" "$spec" 2>/dev/null)
+if [ ${#missing[@]} -gt 0 ]; then
+    echo "== mb2 (native): ensuring ${missing[*]}"
+    zypper --non-interactive in --no-recommends "${missing[@]}"
+fi
+
+rpmbuild -bb --build-in-place \
+    --define "_rpmdir $PWD/RPMS" \
+    --define "_sourcedir $(cd "$(dirname "$spec")" && pwd)" \
+    --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
+    --define "shipwright_src $PWD" \
+    "$@" "$spec"

@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 20:59:18 +0000
+Subject: [PATCH] Make OpenSSL optional
+
+OpenSSL is used only by src/sdk/aap/Aes.cpp, to decrypt BLE
+advertisements for the case-open animation. Add
+MAGICPODS_WITH_OPENSSL (default ON). With it OFF, OpenSSL is not
+searched for or linked, and AesStub.cpp provides the same functions
+returning "no match" and empty payloads, so encrypted advertisements are
+ignored and every other feature keeps working.
+
+This helps where OpenSSL headers are not available to the build, which
+the SailfishOS-MagicPods port ran into on-device.
+---
+ CMakeLists.txt          | 16 +++++++++++++---
+ src/sdk/aap/AesStub.cpp | 27 +++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+), 3 deletions(-)
+ create mode 100644 src/sdk/aap/AesStub.cpp
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4bfddd4..3fa7e6a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -18,7 +18,6 @@ add_executable(magicpodscore
+     src/client/Client.cpp
+     src/pulseaudio/PulseAudioClient.cpp
+ 
+-    src/sdk/aap/Aes.cpp
+     src/sdk/aap/AapHelper.cpp
+     src/sdk/aap/setters/AapEnableNotifications.cpp
+     src/sdk/aap/setters/AapInit.cpp
+@@ -121,7 +120,6 @@ add_executable(magicpodscore
+ add_subdirectory(dependencies)
+ find_package(PkgConfig REQUIRED)
+ pkg_check_modules(PULSEAUDIO REQUIRED libpulse)
+-find_package(OpenSSL REQUIRED)
+ target_include_directories(magicpodscore PRIVATE
+     src
+     dependencies/json
+@@ -134,6 +132,18 @@ target_link_libraries(magicpodscore PRIVATE
+     nlohmann_json::nlohmann_json
+     tomlplusplus::tomlplusplus
+     bluetooth
+-    OpenSSL::Crypto
+     ${PULSEAUDIO_LIBRARIES}
+ )
++
++# OpenSSL is only used to decrypt BLE advertisements for the case-open
++# animation. Without it that animation is unavailable and everything else
++# works, which helps on systems where the OpenSSL headers are not at hand.
++option(MAGICPODS_WITH_OPENSSL "Use OpenSSL to decrypt BLE advertisements (case-open animation)" ON)
++if(MAGICPODS_WITH_OPENSSL)
++    find_package(OpenSSL REQUIRED)
++    target_sources(magicpodscore PRIVATE src/sdk/aap/Aes.cpp)
++    target_link_libraries(magicpodscore PRIVATE OpenSSL::Crypto)
++else()
++    message(STATUS "Building without OpenSSL: the case-open animation is disabled")
++    target_sources(magicpodscore PRIVATE src/sdk/aap/AesStub.cpp)
++endif()
+diff --git a/src/sdk/aap/AesStub.cpp b/src/sdk/aap/AesStub.cpp
+new file mode 100644
+index 0000000..1d3feb8
+--- /dev/null
++++ b/src/sdk/aap/AesStub.cpp
+@@ -0,0 +1,27 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++// Used instead of Aes.cpp when building with MAGICPODS_WITH_OPENSSL=OFF.
++// Every check fails and every decryption returns nothing, so encrypted BLE
++// advertisements are ignored and the case-open animation never triggers.
++
++#include "Aes.h"
++
++namespace MagicPodsCore {
++
++    bool Aes::VerifyRPA(const std::string&, const std::string&)
++    {
++        return false;
++    }
++
++    std::vector<unsigned char> Aes::DecryptPayload(const std::string&, const std::string&)
++    {
++        return {};
++    }
++
++    std::vector<unsigned char> Aes::DecryptPayload(const std::vector<unsigned char>&, const std::vector<unsigned char>&)
++    {
++        return {};
++    }
++}

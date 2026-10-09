@@ -1,0 +1,382 @@
+// SPDX-FileCopyrightText: 2026 Patrick Quinn
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Headless smoke test harness, loaded by ../smoke-test.sh as the main QML
+// file (`shipwright-shoal-keys --qml`). @NAME@ placeholders are filled in by
+// the script. It instantiates the real UI (shoal/keys/ui) and drives the
+// real `Keys` object through the flows the UI uses, checking results and
+// that every page and the cover instantiate. Prints "SMOKE ok: ..." per
+// check and "SMOKE PASS" at the end; exits 1 on the first failure.
+
+import QtQuick
+import Shipwright.Keys 1.0
+
+QtObject {
+    id: h
+
+    readonly property string uiDir: "@UI_DIR@"
+    readonly property string mode: "@MODE@"          // "first" or "reopen"
+    readonly property string downloads: "@DOWNLOADS@"
+    property var win: null
+    property var cover: null
+    property bool failed: false
+    property int step: 0
+    property int waited: 0
+    property var last: null      // last finished(op, ok, message)
+    property string entryId: ""
+    property var cands: null     // last importCandidates(json), parsed
+
+    function fail(msg) {
+        if (failed)
+            return
+        failed = true
+        timer.running = false
+        console.log("SMOKE FAIL: " + msg)
+        h.quit(1)
+    }
+    // Destroys the window and cover this harness created (they are owned
+    // by JavaScript, not by a parent) before quitting, so the engine is not
+    // left to collect them while the app deletes it after exec().
+    function quit(code) {
+        if (cover) {
+            cover.destroy()
+            cover = null
+        }
+        if (win) {
+            win.destroy()
+            win = null
+        }
+        Qt.callLater(function() { Qt.exit(code) })
+    }
+    function check(cond, msg) {
+        if (failed)
+            return false
+        if (!cond) {
+            fail(msg)
+            return false
+        }
+        console.log("SMOKE ok: " + msg)
+        return true
+    }
+    function eq(actual, expected, what) {
+        return check(actual === expected, what + " = " + JSON.stringify(actual)
+                     + (actual === expected ? "" : " (expected " + JSON.stringify(expected) + ")"))
+    }
+    function page() {
+        return win && win.pageStack.currentPage ? win.pageStack.currentPage.objectName : ""
+    }
+    function settled() {
+        return win && !win.pageStack.busy && !ShoalKeys.busy
+    }
+    // Waits for finished(op); returns null while waiting.
+    function finishedOp(op) {
+        if (last && last.op === op) {
+            var r = last
+            last = null
+            return r
+        }
+        return null
+    }
+    function pushCheck(url, props, name) {
+        var p = win.pageStack.push(Qt.resolvedUrl(uiDir + "/pages/" + url), props || {}, 1 /* Immediate */)
+        if (check(p !== null && p !== undefined, name + " instantiates")) {
+            eq(page(), name, "current page")
+            win.pageStack.pop(undefined, 1)
+        }
+    }
+
+    property Connections keysSignals: Connections {
+        target: ShoalKeys
+        function onFinished(op, ok, message) {
+            console.log("SMOKE finished op=" + op + " ok=" + ok + " message=" + JSON.stringify(message))
+            h.last = { op: op, ok: ok, message: message }
+        }
+        function onImportCandidates(json) {
+            h.cands = JSON.parse(json)
+        }
+    }
+
+    property Timer timer: Timer {
+        interval: 50
+        repeat: true
+        running: true
+        onTriggered: {
+            if (++h.waited > 1200)          // 60 s per step
+                h.fail("timed out in step " + h.step)
+            else if (h.steps[h.step]())
+            {
+                h.step++
+                h.waited = 0
+                if (h.step >= h.steps.length) {
+                    running = false
+                    console.log("SMOKE PASS")
+                    h.quit(0)
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        var c = Qt.createComponent(uiDir + "/shipwright-shoal-keys.qml")
+        if (c.status !== Component.Ready) {
+            fail("UI did not compile: " + c.errorString())
+            return
+        }
+        win = c.createObject(null)
+        if (!win)
+            fail("UI did not instantiate")
+        var cc = Qt.createComponent(uiDir + "/cover/CoverPage.qml")
+        if (cc.status !== Component.Ready) {
+            fail("cover did not compile: " + cc.errorString())
+            return
+        }
+        cover = cc.createObject(null)
+        if (!cover)
+            fail("cover did not instantiate")
+    }
+
+    // An object by objectName below `item` (children, then non-visual data).
+    function findObj(item, name) {
+        if (!item)
+            return null
+        if (item.objectName === name)
+            return item
+        var lists = [item.children || [], item.data || []]
+        for (var l = 0; l < lists.length; ++l)
+            for (var i = 0; i < lists[l].length; ++i) {
+                var r = lists[l][i] === item ? null : findObj(lists[l][i], name)
+                if (r)
+                    return r
+            }
+        return null
+    }
+    function coverActions() {
+        return findObj(cover, "coverActions")
+    }
+
+    function coverText() {
+        for (var i = 0; i < cover.children.length; ++i) {
+            var col = cover.children[i]
+            for (var j = 0; col.children && j < col.children.length; ++j)
+                if (col.children[j].objectName === "coverState")
+                    return col.children[j].text
+        }
+        return "?"
+    }
+
+    readonly property var firstSteps: [
+        function() {
+            if (!settled() || page() === "") return false
+            eq(ShoalKeys.vaultExists, false, "vaultExists before create")
+            eq(ShoalKeys.locked, true, "locked before create")
+            eq(page(), "unlockPage", "start page")
+            eq(coverText(), "No vault", "cover text")
+            check(ShoalKeys.keystoreName.indexOf("plain file") === 0, "development key store in use: " + ShoalKeys.keystoreName)
+            ShoalKeys.create("Smoke vault", "master pw")
+            return true
+        },
+        function() {
+            var r = finishedOp("create")
+            if (!r) return false
+            check(r.ok, "create succeeded")
+            eq(ShoalKeys.locked, false, "unlocked after create")
+            eq(ShoalKeys.vaultName, "Smoke vault", "vaultName")
+            return true
+        },
+        function() {
+            if (!settled() || page() !== "mainPage") return false
+            eq(page(), "mainPage", "main page after create")
+            eq(coverText(), "Unlocked", "cover text unlocked")
+            var actions = coverActions()
+            check(actions !== null, "cover has a CoverActionList")
+            eq(actions.enabled, true, "cover actions enabled while unlocked")
+            eq(findObj(cover, "coverDetail").text, "0 entries", "cover shows the entry count")
+            var r = JSON.parse(ShoalKeys.saveEntry(JSON.stringify({
+                title: "GitHub", username: "octo", password: "first-pw",
+                urls: ["https://github.com/login"], otp: "JBSWY3DPEHPK3PXP",
+                notes: "n", tags: ["dev"], group: "Internet",
+                fields: [{ name: "PIN", value: "1234", "protected": true }]
+            })))
+            check(r.id !== undefined && r.id.length > 0, "saveEntry returned an id")
+            entryId = r.id || ""
+            return true
+        },
+        function() {
+            var r = finishedOp("save")
+            if (!r) return false
+            check(r.ok, "save succeeded")
+            var e = JSON.parse(ShoalKeys.entry(entryId))
+            e.password = "second-pw"
+            var r2 = JSON.parse(ShoalKeys.saveEntry(JSON.stringify(e)))
+            eq(r2.id, entryId, "update keeps the id")
+            return true
+        },
+        function() {
+            var r = finishedOp("save")
+            if (!r) return false
+            var rows = JSON.parse(ShoalKeys.search("git"))
+            eq(rows.length, 1, "search git")
+            eq(rows[0].host, "github.com", "row host")
+            eq(rows[0].password, undefined, "rows carry no password")
+            eq(JSON.parse(ShoalKeys.search("second")).length, 0, "search never matches passwords")
+            var e = JSON.parse(ShoalKeys.entry(entryId))
+            eq(e.password, "second-pw", "entry password")
+            eq(e.historyCount, 1, "history count")
+            eq(JSON.parse(ShoalKeys.history(entryId))[0].password, "first-pw", "history password")
+            var t = JSON.parse(ShoalKeys.totp(entryId))
+            check(/^\d{6}$/.test(t.code) && t.remaining >= 1 && t.remaining <= 30, "totp " + t.code + " " + t.remaining + "s")
+            check(ShoalKeys.checkOtp("not base32!").length > 0, "checkOtp rejects a bad secret")
+            eq(ShoalKeys.checkOtp("JBSWY3DPEHPK3PXP"), "", "checkOtp accepts base32")
+            var g = JSON.parse(ShoalKeys.generatePassword(24, true, true, true, true, false))
+            eq(g.value.length, 24, "generated password length")
+            check(g.bits > 150, "generated password entropy " + g.bits)
+            var p = JSON.parse(ShoalKeys.generatePassphrase(6, "-", false, false))
+            eq(p.value.split("-").length, 6, "passphrase words")
+            check(p.bits > 77 && p.bits < 78, "passphrase entropy " + p.bits)
+            eq(JSON.parse(ShoalKeys.strength("password1")).label, "Very weak", "strength of password1")
+            h.cands = null
+            ShoalKeys.scanImports()
+            return true
+        },
+        function() {
+            if (h.cands === null) return false
+            eq(h.cands.map(function(c) { return c.format }).sort().join(","),
+               "1Password (CSV),Bitwarden (JSON),Chrome (CSV),Firefox (CSV)", "import candidates (scanned on a worker)")
+            ShoalKeys.importFile(downloads + "/chrome.csv", "")
+            return true
+        },
+        function() {
+            var r = finishedOp("import")
+            if (!r) return false
+            check(r.ok && r.message.indexOf("Chrome (CSV): 2 added") === 0, "chrome import: " + r.message)
+            ShoalKeys.importFile(downloads + "/bitwarden.json", "")
+            return true
+        },
+        function() {
+            var r = finishedOp("import")
+            if (!r) return false
+            check(r.ok && r.message.indexOf("Bitwarden (JSON): 1 added") === 0, "bitwarden import: " + r.message)
+            eq(ShoalKeys.entryCount, 4, "entry count after imports")
+            ShoalKeys.exportKdbx(downloads + "/export.kdbx", "share pw")
+            return true
+        },
+        function() {
+            var r = finishedOp("export")
+            if (!r) return false
+            check(r.ok, "export: " + r.message)
+            h.cands = null
+            ShoalKeys.scanImports()
+            return true
+        },
+        function() {
+            if (h.cands === null) return false
+            check(h.cands.some(function(c) { return c.name === "export.kdbx" && c.needsPassword }),
+                  "exported file is detected as KDBX")
+            eq(ShoalKeys.writeRecoveryKey(downloads + "/recovery.keyx"), "", "recovery key written")
+            ShoalKeys.copy("clipboard-secret")
+            var cleared = ShoalKeys.clearClipboard()
+            console.log("SMOKE info: clipboard cleared = " + cleared + " (offscreen clipboard support varies)")
+            eq(ShoalKeys.clearClipboard(), false, "second clear is a no-op")
+            eq(ShoalKeys.setSettings(10, 60, 30, false), "", "setSettings")
+            eq(ShoalKeys.clipboardClearSecs, 10, "clipboardClearSecs")
+            eq(ShoalKeys.idleLockSecs, 60, "idleLockSecs")
+            eq(ShoalKeys.lockOnScreenLock, false, "lockOnScreenLock")
+            check(JSON.parse(ShoalKeys.healthReport()).error !== undefined, "health report needs a licence")
+            check(ShoalKeys.installLicence("v1.garbage").length > 0, "garbage licence refused")
+            eq(ShoalKeys.licensed, false, "not licensed")
+            eq(ShoalKeys.checkAutoLock(), false, "no auto-lock yet")
+            // Every page instantiates against the real object.
+            var e = JSON.parse(ShoalKeys.entry(entryId))
+            pushCheck("EntryPage.qml", { entryId: entryId }, "entryPage")
+            pushCheck("EditDialog.qml", { entry: e }, "editDialog")
+            pushCheck("EditDialog.qml", {}, "editDialog")
+            pushCheck("GeneratorPage.qml", {}, "generatorPage")
+            pushCheck("GeneratorDialog.qml", {}, "generatorDialog")
+            pushCheck("ExportDialog.qml", {}, "exportDialog")
+            pushCheck("ChangePasswordDialog.qml", {}, "changePasswordDialog")
+            pushCheck("LicenceDialog.qml", {}, "licenceDialog")
+            pushCheck("HistoryPage.qml", { entryId: entryId }, "historyPage")
+            pushCheck("ImportExportPage.qml", {}, "importExportPage")
+            pushCheck("SettingsPage.qml", {}, "settingsPage")
+            pushCheck("HealthPage.qml", {}, "healthPage")
+            // Empty state of a licensed feature without a licence: says why
+            // and how to get it, with a pull-down to add one.
+            var hp = win.pageStack.push(Qt.resolvedUrl(uiDir + "/pages/HealthPage.qml"), {}, 1)
+            var ph = findObj(hp, "healthPlaceholder")
+            check(ph !== null && ph.enabled, "health page shows its placeholder")
+            eq(ph.text, "Password health needs a licence", "unlicensed health placeholder")
+            check(findObj(hp, "addLicenceItem") !== null, "health page offers to add a licence")
+            win.pageStack.pop(undefined, 1)
+            // Cover action "Search": back to the entry list from a deeper page.
+            win.pageStack.push(Qt.resolvedUrl(uiDir + "/pages/EntryPage.qml"), { entryId: entryId }, 1)
+            eq(page(), "entryPage", "entry page before cover search")
+            win.showSearch()
+            eq(page(), "mainPage", "cover search returns to the entry list")
+            check(win.pageStack.currentPage.searchField !== null, "entry list has its search field")
+            eq(ShoalKeys.idleLockSecs, 60, "opening Settings changed nothing")
+            ShoalKeys.lock()
+            return true
+        },
+        function() {
+            if (!settled()) return false
+            eq(ShoalKeys.locked, true, "locked")
+            eq(page(), "unlockPage", "unlock page after lock")
+            eq(coverText(), "Locked", "cover text locked")
+            eq(coverActions().enabled, false, "no cover actions while locked")
+            eq(ShoalKeys.search(""), "[]", "nothing readable while locked")
+            pushCheck("RecoverDialog.qml", {}, "recoverDialog")
+            ShoalKeys.unlock("wrong")
+            return true
+        },
+        function() {
+            var r = finishedOp("unlock")
+            if (!r) return false
+            eq(r.ok, false, "wrong password refused")
+            check(r.message.indexOf("Wrong password") === 0, "error message (a capitalised sentence): " + r.message)
+            eq(ShoalKeys.locked, true, "still locked")
+            return true
+        },
+    ]
+
+    readonly property var reopenSteps: [
+        function() {
+            if (!settled() || page() === "") return false
+            eq(ShoalKeys.vaultExists, true, "vault persisted")
+            eq(ShoalKeys.locked, true, "starts locked")
+            eq(ShoalKeys.clipboardClearSecs, 10, "settings persisted")
+            ShoalKeys.unlock("master pw")
+            return true
+        },
+        function() {
+            var r = finishedOp("unlock")
+            if (!r) return false
+            check(r.ok, "unlock after restart")
+            eq(ShoalKeys.entryCount, 4, "entries persisted")
+            // Numerus strings read as English without a catalog (Keel's
+            // fallback in libkeel-sailfishapp), as the main page's count.
+            eq(qsTr("%n (entry|entries)", "", 1), "1 entry", "English singular")
+            eq(qsTr("%n (entry|entries)", "", ShoalKeys.entryCount), "4 entries", "English plural")
+            var e = JSON.parse(ShoalKeys.search("github"))[0]
+            eq(JSON.parse(ShoalKeys.history(e.id)).length, 1, "history persisted")
+            ShoalKeys.changePassword("master pw", "new master")
+            return true
+        },
+        function() {
+            var r = finishedOp("changePassword")
+            if (!r) return false
+            check(r.ok, "change password")
+            ShoalKeys.lock()
+            ShoalKeys.unlock("new master")
+            return true
+        },
+        function() {
+            var r = finishedOp("unlock")
+            if (!r) return false
+            check(r.ok, "unlock with new password")
+            if (!settled() || page() !== "mainPage") return false
+            return true
+        },
+    ]
+
+    readonly property var steps: mode === "first" ? firstSteps : reopenSteps
+}

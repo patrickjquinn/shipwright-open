@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Shoal Keys on Keel, launched in its own booster in its sandbox
+# (`invoker --type=keel -A`: booster-keel@shipwright-shoal-keys, which the
+# package starts with the session; direct mode, ADR-0016; keel-shell is the
+# opt-in fallback, keel/shell/README.md), sandboxed by Sailjail. Permissions, each
+# needed by a feature and nothing else:
+#   Secrets    the device key's wrapping key in Sailfish Secrets: D-Bus
+#              discovery of sailfishsecretsd and its peer socket under
+#              $XDG_RUNTIME_DIR/sailfishsecretsd (sailjail-permissions,
+#              Secrets.permission)
+#   ShipwrightLicences  asking Reef for the licence token at start-up
+#              (org.shipwright.Reef.Licences, installed by the Reef client
+#              package); without it the token is pasted in Settings
+#   Downloads  reading exports to import, writing KDBX exports and the
+#              recovery key file (~/Downloads)
+# The app owns org.shipwright.shoal-keys.Autofill on the session bus
+# (autofill for Pacific, app/src/autofill.rs); callers need the
+# ShoalKeysAutofill permission, which this package installs.
+# No Internet: the app never uses the network. The vault, settings and
+# licence live in the private directories Sailjail derives from
+# OrganizationName/ApplicationName: ~/.local/share/org.shipwright/shoal-keys
+# and ~/.config/org.shipwright/shoal-keys.
+[Desktop Entry]
+Type=Application
+Name=Shoal Keys
+Comment=Passwords and one-time codes
+Icon=shipwright-shoal-keys
+Exec=/usr/bin/invoker --type=keel -A -- /usr/bin/shipwright-shoal-keys
+X-Nemo-Single-Instance=yes
+Categories=Utility;Security;
+
+[X-Sailjail]
+OrganizationName=org.shipwright
+ApplicationName=shoal-keys
+Permissions=Secrets;Downloads;ShipwrightLicences
+ExecDBus=/usr/bin/shipwright-shoal-keys --keel-actions

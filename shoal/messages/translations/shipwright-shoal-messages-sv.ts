@@ -1,0 +1,3972 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modified by Shipwright, 2026: rebranded as Shoal Messages; see CHANGES-FROM-UPSTREAM.md. -->
+<!DOCTYPE TS>
+<TS version="2.1" language="sv">
+<context>
+    <name>AboutPage</name>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Om Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Version %1</translation>
+    </message>
+    <message>
+        <source>A native Matrix client for Sailfish OS: encrypted rooms, spaces, voice and video calls.</source>
+        <translation>En nativ Matrix-klient för Sailfish OS: krypterade rum, spaces, röst- och videosamtal.</translation>
+    </message>
+    <message>
+        <source>License: Apache 2.0</source>
+        <translation>Licens: Apache 2.0</translation>
+    </message>
+    <message>
+        <source>Source code</source>
+        <translation>Källkod</translation>
+    </message>
+</context>
+<context>
+    <name>AccountPage</name>
+    <message>
+        <source>Signed in</source>
+        <translation>Inloggad</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Konto</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Enhet</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Kärna</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Display name</source>
+        <translation>Visningsnamn</translation>
+    </message>
+    <message>
+        <source>Save name</source>
+        <translation>Spara namn</translation>
+    </message>
+    <message>
+        <source>Change avatar</source>
+        <translation>Byt avatar</translation>
+    </message>
+    <message>
+        <source>Set avatar</source>
+        <translation>Ange avatar</translation>
+    </message>
+    <message>
+        <source>An avatar is set. Other people see it next to your name.</source>
+        <translation>En avatar är angiven. Andra ser den bredvid ditt namn.</translation>
+    </message>
+    <message>
+        <source>This app</source>
+        <translation>Den här appen</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Utseende</translation>
+    </message>
+    <message>
+        <source>Ignored users</source>
+        <translation>Ignorerade användare</translation>
+    </message>
+    <message>
+        <source>Reset send warnings</source>
+        <translation>Nollställ sändningsvarningar</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n recipient(s) will warn again</source>
+        <translation>
+            <numerusform>%n mottagare varnar igen</numerusform>
+            <numerusform>%n mottagare varnar igen</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No suppressed warnings</source>
+        <translation>Inga undertryckta varningar</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Logga ut</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Kryptering</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Språk</translation>
+    </message>
+    <message>
+        <source>Privacy</source>
+        <translation>Integritet</translation>
+    </message>
+    <message>
+        <source>Session and message database lie on this device unencrypted. Tap to encrypt them.</source>
+        <translation>Sessionen och meddelandedatabasen ligger okrypterade på den här enheten. Tryck för att kryptera dem.</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Fellogg</translation>
+    </message>
+    <message>
+        <source>Push notifications</source>
+        <translation>Push-aviseringar</translation>
+    </message>
+</context>
+<context>
+    <name>AddDirectoryServerDialog</name>
+    <message>
+        <source>Add</source>
+        <translation>Lägg till</translation>
+    </message>
+    <message>
+        <source>Directory server</source>
+        <translation>Katalogserver</translation>
+    </message>
+    <message>
+        <source>For example matrix.org</source>
+        <translation>Till exempel matrix.org</translation>
+    </message>
+</context>
+<context>
+    <name>AddToSpacePage</name>
+    <message>
+        <source>Add rooms</source>
+        <translation>Lägg till rum</translation>
+    </message>
+    <message>
+        <source>Press and hold a room to add it to the space.</source>
+        <translation>Håll ett rum intryckt för att lägga till det i din space.</translation>
+    </message>
+    <message>
+        <source>Add to space</source>
+        <translation>Lägg till i space</translation>
+    </message>
+    <message>
+        <source>Adding to space</source>
+        <translation>Lägger till i space</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Inga rum</translation>
+    </message>
+    <message>
+        <source>Join or start a chat first, then add it to a space.</source>
+        <translation>Gå med i eller starta en chatt först, lägg sedan till den i en space.</translation>
+    </message>
+</context>
+<context>
+    <name>AppearancePage</name>
+    <message>
+        <source>Reset to defaults</source>
+        <translation>Återställ standardvärden</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Utseende</translation>
+    </message>
+    <message>
+        <source>Somebody</source>
+        <comment>sample sender on the appearance page</comment>
+        <translation>Någon</translation>
+    </message>
+    <message>
+        <source>A received message looks like this.</source>
+        <translation>Ett mottaget meddelande ser ut så här.</translation>
+    </message>
+    <message>
+        <source>And one of my own like this.</source>
+        <translation>Och ett eget så här.</translation>
+    </message>
+    <message>
+        <source>Colouring</source>
+        <translation>Färger</translation>
+    </message>
+    <message>
+        <source>Their bubble</source>
+        <translation>Deras bubbla</translation>
+    </message>
+    <message>
+        <source>My bubble</source>
+        <translation>Min bubbla</translation>
+    </message>
+    <message>
+        <source>Sender name</source>
+        <translation>Avsändarens namn</translation>
+    </message>
+    <message>
+        <source>Their text</source>
+        <translation>Deras text</translation>
+    </message>
+    <message>
+        <source>My text</source>
+        <translation>Min text</translation>
+    </message>
+    <message>
+        <source>Follow the ambience</source>
+        <translation>Följ ambiensen</translation>
+    </message>
+    <message>
+        <source>Off, the colour below applies</source>
+        <translation>Av gäller färgen nedan</translation>
+    </message>
+    <message>
+        <source>Bubble opacity</source>
+        <translation>Bubblornas opacitet</translation>
+    </message>
+    <message>
+        <source>Off, a reaction is drawn as the character it is - always right and free. On, Shoal Messages looks for a picture of your own for it in %1, named after its code points (1f44d.svg). Nothing is shipped and nothing is downloaded. Weigh it up: a picture file is opened by an image decoder, which is where an app of this kind is most exposed.</source>
+        <translation>Av ritas en reaktion som det tecken den är — alltid rätt och gratis. På letar Shoal Messages efter en egen bild för den i %1, namngiven efter dess kodpunkter (1f44d.svg). Inget levereras med och inget hämtas. Väg det: en bildfil öppnas av en bildavkodare, och där är en app av det här slaget mest utsatt.</translation>
+    </message>
+    <message>
+        <source>Reading the pictures…</source>
+        <translation>Läser bilderna…</translation>
+    </message>
+    <message>
+        <source>%1 taken over, %2 refused</source>
+        <translation>%1 övertagna, %2 avvisade</translation>
+    </message>
+    <message>
+        <source>The pictures have changed since they were read in and are not shown.</source>
+        <translation>Bilderna har ändrats sedan de lästes in och visas inte.</translation>
+    </message>
+    <message>
+        <source>Reset colours to defaults</source>
+        <translation>Återställ färgerna</translation>
+    </message>
+    <message>
+        <source>Hide the keyboard after sending</source>
+        <translation>Dölj tangentbordet efter sändning</translation>
+    </message>
+    <message>
+        <source>On, the keyboard closes once a message is out and the conversation is back in full. Off, it stays up for the next one.</source>
+        <translation>På stängs tangentbordet så snart meddelandet är skickat och samtalet syns helt igen. Av stannar det kvar till nästa meddelande.</translation>
+    </message>
+    <message>
+        <source>Open a room where you stopped reading</source>
+        <translation>Öppna rummet där du slutade läsa</translation>
+    </message>
+    <message>
+        <source>Read in an emoji pack</source>
+        <translation>Läs in ett emojipaket</translation>
+    </message>
+    <message>
+        <source>Remove the emoji pack</source>
+        <translation>Ta bort emojipaketet</translation>
+    </message>
+    <message>
+        <source>No pictures read in yet - emoji stay the characters they are, in black and white.</source>
+        <translation>Inga bilder inlästa ännu - emojier förblir tecknen de är, i svartvitt.</translation>
+    </message>
+    <message>
+        <source>Pictures ready: %1</source>
+        <translation>Bilder klara: %1</translation>
+    </message>
+    <message>
+        <source>Unpack the pack anywhere in your own folders - Downloads or Public, say. This opens at your home folder; tap through to the pack, and the folder holding the pictures is read in as soon as you tap it. They have to lie directly in it, not in subfolders. Reading runs in the background and copies them into Shoal Messages' own storage, so your folder is not needed afterwards.</source>
+        <translation>Packa upp paketet var som helst bland dina egna mappar - Downloads eller Public till exempel. Det här öppnar i din hemmapp; tryck dig fram till paketet, så läses mappen med bilderna in så snart du trycker på den. Bilderna måste ligga direkt i den, inte i undermappar. Inläsningen sker i bakgrunden och kopierar dem till Shoal Messages' eget lager, så din mapp behövs inte efteråt.</translation>
+    </message>
+    <message>
+        <source>Reactions as pictures (emoji)</source>
+        <translation>Reaktioner som bilder (emojier)</translation>
+    </message>
+    <message>
+        <source>Send with the return key</source>
+        <translation>Skicka med retur-tangenten</translation>
+    </message>
+    <message>
+        <source>On, the return key sends the message; the arrow beside the field keeps working. A line break then comes from holding that arrow, or from shift and the return key on a hardware keyboard. Off, the return key makes a line break and only the arrow sends.</source>
+        <translation>På skickar retur-tangenten meddelandet; pilen bredvid fältet fungerar fortfarande. Radbrytning får du då genom att hålla in pilen, eller med skift och retur på ett fysiskt tangentbord. Av gör retur-tangenten en radbrytning och bara pilen skickar.</translation>
+    </message>
+    <message>
+        <source>Mark the space on the picture</source>
+        <translation>Märk space på bilden</translation>
+    </message>
+    <message>
+        <source>On, the chat list draws the initial of a room&apos;s space over its picture, in that space&apos;s colour. The colour is set in the space list, by holding the space.</source>
+        <translation>På ritar chattlistan begynnelsebokstaven för rummets space över dess bild, i det spacets färg. Färgen ställs in i space-listan genom att hålla in spacet.</translation>
+    </message>
+    <message>
+        <source>On, entering a room takes you to your last read message, with the new ones below it — and back to the place you were at if you left the room in the middle of its history. That place is kept until the app is closed. Off, the room opens at its newest message and the line marking where you stopped is found by scrolling up.</source>
+        <translation>På: när du går in i ett rum hamnar du vid ditt senast lästa meddelande med de nya under — och tillbaka på platsen du var på om du lämnade rummet mitt i historiken. Platsen sparas tills appen stängs. Av: rummet öppnas vid det senaste meddelandet och linjen som visar var du slutade hittar du genom att rulla uppåt.</translation>
+    </message>
+</context>
+<context>
+    <name>AttachmentPickerPage</name>
+    <message>
+        <source>All</source>
+        <translation>Alla</translation>
+    </message>
+    <message>
+        <source>Pictures</source>
+        <translation>Bilder</translation>
+    </message>
+    <message>
+        <source>Downloads</source>
+        <translation>Hämtningar</translation>
+    </message>
+    <message>
+        <source>%1 selected</source>
+        <translation>%1 valda</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Bilaga</translation>
+    </message>
+    <message>
+        <source>Gallery</source>
+        <translation>Galleri</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>Filer</translation>
+    </message>
+    <message>
+        <source>Home folder</source>
+        <translation>Hemmapp</translation>
+    </message>
+    <message>
+        <source>Other files</source>
+        <translation>Andra filer</translation>
+    </message>
+    <message>
+        <source>No pictures here</source>
+        <translation>Inga bilder här</translation>
+    </message>
+    <message>
+        <source>Nothing here</source>
+        <translation>Ingenting här</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Videor</translation>
+    </message>
+    <message>
+        <source>Send text as a file</source>
+        <translation>Skicka texten som en fil</translation>
+    </message>
+</context>
+<context>
+    <name>CallEngine</name>
+    <message>
+        <source>the camera did not start — continuing without video</source>
+        <translation>kameran startade inte — fortsätter utan video</translation>
+    </message>
+    <message>
+        <source>GStreamer could not be started: %1</source>
+        <translation>GStreamer kunde inte startas: %1</translation>
+    </message>
+    <message>
+        <source>This device has no WebRTC support.</source>
+        <translation>Den här enheten saknar stöd för WebRTC.</translation>
+    </message>
+    <message>
+        <source>ready</source>
+        <translation>klar</translation>
+    </message>
+    <message>
+        <source>pipeline failed: %1</source>
+        <translation>pipeline misslyckades: %1</translation>
+    </message>
+    <message>
+        <source>webrtcbin is missing</source>
+        <translation>webrtcbin saknas</translation>
+    </message>
+    <message>
+        <source>no camera — placing a voice call</source>
+        <translation>ingen kamera — ringer ett röstsamtal</translation>
+    </message>
+    <message>
+        <source>the microphone could not be opened</source>
+        <translation>mikrofonen kunde inte öppnas</translation>
+    </message>
+    <message>
+        <source>the session description could not be read</source>
+        <translation>sessionsbeskrivningen kunde inte läsas</translation>
+    </message>
+    <message>
+        <source>the other side sent an unreadable session description</source>
+        <translation>motparten skickade en oläslig sessionsbeskrivning</translation>
+    </message>
+    <message>
+        <source>the other side hung up</source>
+        <translation>motparten lade på</translation>
+    </message>
+    <message>
+        <source>the connection was lost</source>
+        <translation>anslutningen bröts</translation>
+    </message>
+    <message>
+        <source>connected</source>
+        <translation>ansluten</translation>
+    </message>
+    <message>
+        <source>the call could not be carried on</source>
+        <translation>samtalet kunde inte fortsätta</translation>
+    </message>
+    <message>
+        <source>answered on another device</source>
+        <translation>besvarat på en annan enhet</translation>
+    </message>
+</context>
+<context>
+    <name>CallPage</name>
+    <message>
+        <source>Call</source>
+        <translation>Samtal</translation>
+    </message>
+    <message>
+        <source>Ringing…</source>
+        <translation>Ringer…</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Inkommande samtal</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Ansluter…</translation>
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation>Ansluten</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Svara</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Avvisa</translation>
+    </message>
+    <message>
+        <source>Hang up</source>
+        <translation>Lägg på</translation>
+    </message>
+    <message>
+        <source>Accept without camera</source>
+        <translation>Svara utan kamera</translation>
+    </message>
+    <message>
+        <source>Accept with camera</source>
+        <translation>Svara med kamera</translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Inkommande videosamtal</translation>
+    </message>
+    <message>
+        <source>Video calls are switched off in Privacy; this one is answered as a voice call.</source>
+        <translation>Videosamtal är avstängda under Integritet; det här besvaras som ett röstsamtal.</translation>
+    </message>
+</context>
+<context>
+    <name>CameraCapturePage</name>
+    <message>
+        <source>The photo could not be saved.</source>
+        <translation>Fotot kunde inte sparas.</translation>
+    </message>
+    <message>
+        <source>The photo could not be taken.</source>
+        <translation>Fotot kunde inte tas.</translation>
+    </message>
+    <message>
+        <source>The camera is not available.</source>
+        <translation>Kameran är inte tillgänglig.</translation>
+    </message>
+    <message>
+        <source>The camera is in use by the call.</source>
+        <translation>Kameran används av samtalet.</translation>
+    </message>
+    <message>
+        <source>Keep in the gallery</source>
+        <translation>Behåll i galleriet</translation>
+    </message>
+    <message>
+        <source>Otherwise the photo is deleted once it is sent.</source>
+        <translation>Annars raderas fotot när det har skickats.</translation>
+    </message>
+    <message>
+        <source>Retake</source>
+        <translation>Ta om</translation>
+    </message>
+    <message>
+        <source>Use</source>
+        <translation>Använd</translation>
+    </message>
+</context>
+<context>
+    <name>ColorField</name>
+    <message>
+        <source>Hex code</source>
+        <translation>Hexkod</translation>
+    </message>
+</context>
+<context>
+    <name>ConfirmDialog</name>
+    <message>
+        <source>Keep</source>
+        <translation>Behåll</translation>
+    </message>
+</context>
+<context>
+    <name>CoverPage</name>
+    <message>
+        <source>signing in…</source>
+        <translation>loggar in…</translation>
+    </message>
+    <message>
+        <source>not signed in</source>
+        <translation>inte inloggad</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — väntar på nätverket</translation>
+    </message>
+    <message>
+        <source>no connection</source>
+        <translation>ingen anslutning</translation>
+    </message>
+</context>
+<context>
+    <name>CreatePollDialog</name>
+    <message>
+        <source>Create poll</source>
+        <translation>Skapa omröstning</translation>
+    </message>
+    <message>
+        <source>Question</source>
+        <translation>Fråga</translation>
+    </message>
+    <message>
+        <source>What are you asking?</source>
+        <translation>Vad vill du fråga?</translation>
+    </message>
+    <message>
+        <source>Answer %1</source>
+        <translation>Svar %1</translation>
+    </message>
+    <message>
+        <source>Add answer</source>
+        <translation>Lägg till svar</translation>
+    </message>
+    <message>
+        <source>Allow several answers</source>
+        <translation>Tillåt flera svar</translation>
+    </message>
+    <message>
+        <source>Everyone can then pick more than one answer.</source>
+        <translation>Då kan alla välja mer än ett svar.</translation>
+    </message>
+    <message>
+        <source>Hide results until the poll ends</source>
+        <translation>Dölj resultatet tills omröstningen är slut</translation>
+    </message>
+    <message>
+        <source>A poll is not a secret ballot: who voted for what stays readable in the room.</source>
+        <translation>En omröstning är inte hemlig: vem som röstade på vad går att läsa i rummet.</translation>
+    </message>
+    <message>
+        <source>Clients keep the counts hidden until the poll ends, yours included. A convention every common client follows, not a lock.</source>
+        <translation>Klienterna håller siffrorna dolda tills omröstningen är slut, din också. En konvention som de vanliga klienterna följer, inte ett lås.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateRoomDialog</name>
+    <message>
+        <source>Create room</source>
+        <translation>Skapa rum</translation>
+    </message>
+    <message>
+        <source>Room name</source>
+        <translation>Rumsnamn</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Ämne</translation>
+    </message>
+    <message>
+        <source>What the room is about</source>
+        <translation>Vad rummet handlar om</translation>
+    </message>
+    <message>
+        <source>Public room</source>
+        <translation>Öppet rum</translation>
+    </message>
+    <message>
+        <source>Listed in your homeserver&apos;s room directory, and anyone who finds it can join. Off means invitation only.</source>
+        <translation>Syns i din hemservers rumskatalog, och den som hittar det kan gå med. Av betyder endast inbjudan.</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adress</translation>
+    </message>
+    <message>
+        <source>Reachable as %1</source>
+        <translation>Nåbart som %1</translation>
+    </message>
+    <message>
+        <source>The name people can use to find the room, without # and without the server part. Optional.</source>
+        <translation>Namnet som gör rummet sökbart, utan # och utan serverdelen. Valfritt.</translation>
+    </message>
+    <message>
+        <source>Readable history</source>
+        <translation>Läsbar historik</translation>
+    </message>
+    <message>
+        <source>Everyone, without joining</source>
+        <translation>Alla, utan att gå med</translation>
+    </message>
+    <message>
+        <source>Members, including earlier messages</source>
+        <translation>Medlemmar, inklusive tidigare meddelanden</translation>
+    </message>
+    <message>
+        <source>Members, from their invitation</source>
+        <translation>Medlemmar, från sin inbjudan</translation>
+    </message>
+    <message>
+        <source>Members, from their join</source>
+        <translation>Medlemmar, från sin anslutning</translation>
+    </message>
+    <message>
+        <source>End-to-end encryption</source>
+        <translation>Totalsträckskryptering</translation>
+    </message>
+    <message>
+        <source>Unusual for a public room: everyone joining later reads along from their join onwards, and nothing before it.</source>
+        <translation>Ovanligt för ett öppet rum: den som går med senare läser från sin anslutning och ingenting dessförinnan.</translation>
+    </message>
+    <message>
+        <source>Can only be decided now — encryption cannot be turned off again later.</source>
+        <translation>Kan bara bestämmas nu — krypteringen går inte att stänga av senare.</translation>
+    </message>
+    <message>
+        <source>Only moderators may write</source>
+        <translation>Endast moderatorer får skriva</translation>
+    </message>
+    <message>
+        <source>For an announcement room. Everyone else can read, but not write and not react.</source>
+        <translation>För ett anslagsrum. Övriga kan läsa, men inte skriva och inte reagera.</translation>
+    </message>
+    <message>
+        <source>Invited people get my rights</source>
+        <translation>Inbjudna får mina rättigheter</translation>
+    </message>
+    <message>
+        <source>Everyone invited below starts as an administrator. Later members do not.</source>
+        <translation>Alla som bjuds in nedan börjar som administratör. Senare medlemmar gör det inte.</translation>
+    </message>
+    <message>
+        <source>Keep on this server</source>
+        <translation>Behåll på den här servern</translation>
+    </message>
+    <message>
+        <source>People on other servers cannot join, not even by invitation. Cannot be changed later.</source>
+        <translation>Personer på andra servrar kan inte gå med, inte ens med inbjudan. Går inte att ändra senare.</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Bjud in</translation>
+    </message>
+    <message>
+        <source>Matrix addresses, separated by commas</source>
+        <translation>Matrix-adresser, åtskilda med komma</translation>
+    </message>
+    <message>
+        <source>Invited as the room is created. You can invite more people later from the room&apos;s pulldown menu.</source>
+        <translation>Bjuds in när rummet skapas. Du kan bjuda in fler senare via rummets rullgardinsmeny.</translation>
+    </message>
+    <message>
+        <source>The room opens right away.</source>
+        <translation>Rummet öppnas genast.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateSpaceDialog</name>
+    <message>
+        <source>Create space</source>
+        <translation>Skapa space</translation>
+    </message>
+    <message>
+        <source>Space name</source>
+        <translation>Namn på din space</translation>
+    </message>
+    <message>
+        <source>The space appears in the overview right away. It is private and holds no messages — it is a folder for rooms.</source>
+        <translation>Din space syns genast i översikten. Den är privat och innehåller inga meddelanden — den är en mapp för rum.</translation>
+    </message>
+</context>
+<context>
+    <name>DirectoryPage</name>
+    <message>
+        <source>Remove this server</source>
+        <translation>Ta bort den här servern</translation>
+    </message>
+    <message>
+        <source>Add directory server</source>
+        <translation>Lägg till katalogserver</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Upptäck rum</translation>
+    </message>
+    <message>
+        <source>Directory</source>
+        <translation>Katalog</translation>
+    </message>
+    <message>
+        <source>Search the room directory</source>
+        <translation>Sök i rumskatalogen</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n medlem</numerusform>
+            <numerusform>%n medlemmar</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Gå med</translation>
+    </message>
+    <message>
+        <source>Join (invitation required)</source>
+        <translation>Gå med (kräver inbjudan)</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Går med</translation>
+    </message>
+    <message>
+        <source>No rooms found</source>
+        <translation>Inga rum hittades</translation>
+    </message>
+    <message>
+        <source>Public rooms of the chosen directory show up here.</source>
+        <translation>Öppna rum i den valda katalogen visas här.</translation>
+    </message>
+</context>
+<context>
+    <name>EmojiFolderPage</name>
+    <message>
+        <source>Where is the pack?</source>
+        <translation>Var ligger paketet?</translation>
+    </message>
+    <message>
+        <source>Take this folder</source>
+        <translation>Ta den här mappen</translation>
+    </message>
+    <message>
+        <source>One level up</source>
+        <translation>En nivå upp</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Inga mappar här</translation>
+    </message>
+    <message>
+        <source>The pull-down takes the folder you are in.</source>
+        <translation>Pull-down-menyn tar mappen du är i.</translation>
+    </message>
+    <message>
+        <source>Pictures in here - tap to read them in</source>
+        <translation>Bilder här - tryck för att läsa in</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptStorageDialog</name>
+    <message>
+        <source>Sign out and encrypt</source>
+        <translation>Logga ut och kryptera</translation>
+    </message>
+    <message>
+        <source>Leave as it is</source>
+        <translation>Låt det vara</translation>
+    </message>
+    <message>
+        <source>An existing database cannot be encrypted in place. It has to be created anew: signing out deletes it, and the next sign-in creates it encrypted.</source>
+        <translation>En befintlig databas kan inte krypteras på plats. Den måste skapas på nytt: utloggningen raderar den, och nästa inloggning skapar den krypterad.</translation>
+    </message>
+    <message>
+        <source>You will need your recovery key afterwards to unlock the backup, and this device has to be verified again. Have the recovery key at hand before you continue.</source>
+        <translation>Du behöver din återställningsnyckel efteråt för att låsa upp säkerhetskopian, och den här enheten måste verifieras igen. Ha nyckeln till hands innan du fortsätter.</translation>
+    </message>
+    <message>
+        <source>Not possible yet: there is no key backup on the server. Signing out now would make every encrypted message on this device unreadable for good. Set up the backup first, then come back here.</source>
+        <translation>Inte möjligt ännu: det finns ingen nyckelsäkerhetskopia på servern. Att logga ut nu skulle göra varje krypterat meddelande på enheten oläsligt för gott. Sätt upp säkerhetskopian först och kom sedan tillbaka hit.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>I den här Sailfish-versionen kan webbläsaren inte slutföra inloggningen. Kom tillbaka med ”Logga in på en annan enhet” — den vägen fungerar här.</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptionPage</name>
+    <message>
+        <source>Encryption</source>
+        <translation>Kryptering</translation>
+    </message>
+    <message>
+        <source>Encrypt local storage</source>
+        <translation>Kryptera den lokala lagringen</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Verifiera</translation>
+    </message>
+    <message>
+        <source>Unlock backup</source>
+        <translation>Lås upp säkerhetskopian</translation>
+    </message>
+    <message>
+        <source>Enter the recovery key from your other client. This device then fetches the room keys it is missing, and older messages become readable.</source>
+        <translation>Ange återställningsnyckeln från din andra klient. Enheten hämtar då de rumsnycklar den saknar, och äldre meddelanden blir läsbara.</translation>
+    </message>
+    <message>
+        <source>Recovery key</source>
+        <translation>Återställningsnyckel</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Lås upp</translation>
+    </message>
+    <message>
+        <source>Set up backup</source>
+        <translation>Sätt upp säkerhetskopia</translation>
+    </message>
+    <message>
+        <source>Creates a backup of your room keys on the server, encrypted with a recovery key that only you hold. Without it, reinstalling loses every encrypted message.</source>
+        <translation>Skapar en säkerhetskopia av dina rumsnycklar på servern, krypterad med en återställningsnyckel som bara du har. Utan den förlorar en ominstallation alla krypterade meddelanden.</translation>
+    </message>
+    <message>
+        <source>Your recovery key</source>
+        <translation>Din återställningsnyckel</translation>
+    </message>
+    <message>
+        <source>Write this down now. It is shown only once and is not stored on this device.</source>
+        <translation>Skriv ner den nu. Den visas bara en gång och sparas inte på enheten.</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiera</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Verifiera den här enheten</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Jämför sju emojier med din andra enhet. Du behöver den enheten framför dig; när båda har bekräftat kan den här läsa de delade rumsnycklarna.</translation>
+    </message>
+    <message>
+        <source>Trouble with the key storage?</source>
+        <translation>Problem med nyckellagringen?</translation>
+    </message>
+</context>
+<context>
+    <name>ErrorLogPage</name>
+    <message>
+        <source>Clear</source>
+        <translation>Töm</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>Kopiera allt</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Fellogg</translation>
+    </message>
+    <message>
+        <source>Nothing has failed in this run.</source>
+        <translation>Inget har misslyckats i den här körningen.</translation>
+    </message>
+    <message>
+        <source>Newest first, and only this run — nothing is kept on disk. Identifiers are already removed, so this can be passed on as it stands.</source>
+        <translation>Nyaste först, och bara den här körningen — inget sparas på disken. Identifierare är redan borttagna, så det här kan lämnas vidare som det är.</translation>
+    </message>
+</context>
+<context>
+    <name>ForwardPage</name>
+    <message>
+        <source>Forward to</source>
+        <translation>Vidarebefordra till</translation>
+    </message>
+</context>
+<context>
+    <name>IgnoredUsersPage</name>
+    <message>
+        <source>Ignored users</source>
+        <translation>Ignorerade användare</translation>
+    </message>
+    <message>
+        <source>The list belongs to your account: the server stops delivering these people&apos;s messages, in every client. Tap somebody to stop ignoring them.</source>
+        <translation>Listan hör till ditt konto: servern slutar leverera dessa personers meddelanden, i varje klient. Tryck på någon för att sluta ignorera personen.</translation>
+    </message>
+    <message>
+        <source>No longer ignoring</source>
+        <translation>Ignoreras inte längre</translation>
+    </message>
+    <message>
+        <source>Nobody is ignored</source>
+        <translation>Ingen ignoreras</translation>
+    </message>
+    <message>
+        <source>You can ignore somebody from their profile.</source>
+        <translation>Du kan ignorera någon från personens profil.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageViewPage</name>
+    <message>
+        <source>Forward</source>
+        <translation>Vidarebefordra</translation>
+    </message>
+    <message>
+        <source>Share</source>
+        <translation>Dela</translation>
+    </message>
+    <message>
+        <source>Save to gallery</source>
+        <translation>Spara i galleriet</translation>
+    </message>
+    <message>
+        <source>Share picture</source>
+        <translation>Dela bild</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Sparad i galleriet</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Den här bilagan kunde inte läsas in</translation>
+    </message>
+</context>
+<context>
+    <name>InviteToRoomDialog</name>
+    <message>
+        <source>Invite</source>
+        <translation>Bjud in</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Användar-ID</translation>
+    </message>
+    <message>
+        <source>They appear in the member list as invited until they accept.</source>
+        <translation>De står som inbjudna i medlemslistan tills de accepterar.</translation>
+    </message>
+</context>
+<context>
+    <name>JoinRoomDialog</name>
+    <message>
+        <source>Join</source>
+        <translation>Gå med</translation>
+    </message>
+    <message>
+        <source>Room address</source>
+        <translation>Rumsadress</translation>
+    </message>
+    <message>
+        <source>The room appears in the list once the server has answered. Joining a large public room can take a moment.</source>
+        <translation>Rummet syns i listan så snart servern har svarat. Att gå med i ett stort öppet rum kan ta en stund.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguagePage</name>
+    <message>
+        <source>Language</source>
+        <translation>Språk</translation>
+    </message>
+    <message>
+        <source>Takes effect the next time the app starts. Only the German translation has been checked by a native speaker; the others are machine translations, and English is always available here.</source>
+        <translation>Träder i kraft nästa gång appen startar. Bara den tyska översättningen har granskats av en modersmålstalare; de övriga är maskinöversatta, och engelska finns alltid här.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguageSettings</name>
+    <message>
+        <source>Follow the device</source>
+        <translation>Följ enheten</translation>
+    </message>
+</context>
+<context>
+    <name>LocationActions</name>
+    <message>
+        <source>Location is switched off or not allowed.</source>
+        <translation>Plats är avstängd eller inte tillåten.</translation>
+    </message>
+    <message>
+        <source>The position could not be determined.</source>
+        <translation>Positionen kunde inte bestämmas.</translation>
+    </message>
+    <message>
+        <source>No position yet. Outdoors it usually comes faster.</source>
+        <translation>Ingen position än. Utomhus går det oftast snabbare.</translation>
+    </message>
+    <message>
+        <source>This device offers no positioning.</source>
+        <translation>Den här enheten erbjuder ingen positionering.</translation>
+    </message>
+</context>
+<context>
+    <name>LocationBlock</name>
+    <message>
+        <source>Location</source>
+        <translation>Plats</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Liveplats</translation>
+    </message>
+    <message>
+        <source>Live location ended</source>
+        <translation>Liveplats avslutad</translation>
+    </message>
+    <message>
+        <source>Waiting for the first position</source>
+        <translation>Väntar på första positionen</translation>
+    </message>
+    <message>
+        <source>Updated %1, until %2</source>
+        <translation>Uppdaterad %1, till %2</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Sluta dela</translation>
+    </message>
+</context>
+<context>
+    <name>LoginPage</name>
+    <message>
+        <source>Sign in</source>
+        <translation>Logga in</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix för Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Homeserver</source>
+        <translation>Hemserver</translation>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Användarnamn</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Lösenord</translation>
+    </message>
+    <message>
+        <source>Create account</source>
+        <translation>Skapa konto</translation>
+    </message>
+    <message>
+        <source>Sign in on another device</source>
+        <translation>Logga in på en annan enhet</translation>
+    </message>
+    <message>
+        <source>Finish signing in in the browser, then come back.</source>
+        <translation>Slutför inloggningen i webbläsaren och kom sedan tillbaka.</translation>
+    </message>
+    <message>
+        <source>Open this address on any other device and sign in there:</source>
+        <translation>Öppna den här adressen på valfri annan enhet och logga in där:</translation>
+    </message>
+    <message>
+        <source>This page signs in by itself as soon as the login is approved there.</source>
+        <translation>Sidan loggar in av sig själv så snart inloggningen godkänts där.</translation>
+    </message>
+    <message>
+        <source>Your password is entered on the homeserver&apos;s own page and never reaches this app.</source>
+        <translation>Ditt lösenord skrivs in på hemserverns egen sida och når aldrig appen.</translation>
+    </message>
+    <message>
+        <source>This server uses the classic password sign-in. The password is sent only to this server and is never saved on the device.</source>
+        <translation>Servern använder klassisk lösenordsinloggning. Lösenordet skickas bara till den här servern och sparas aldrig på enheten.</translation>
+    </message>
+    <message>
+        <source>Sign-in did not work</source>
+        <translation>Inloggningen fungerade inte</translation>
+    </message>
+    <message>
+        <source>This is the server&apos;s own web sign-in. Your password is not wrong — the app cannot use this method yet.</source>
+        <translation>Detta är serverns egen webbinloggning. Ditt lösenord är inte fel — appen kan inte använda den metoden ännu.</translation>
+    </message>
+    <message>
+        <source>Check the server address and your connection.</source>
+        <translation>Kontrollera serveradressen och din anslutning.</translation>
+    </message>
+    <message>
+        <source>The server expects a sign-in this app does not implement.</source>
+        <translation>Servern förväntar sig en inloggning som appen inte hanterar.</translation>
+    </message>
+    <message>
+        <source>Cancel sign-in</source>
+        <translation>Avbryt inloggningen</translation>
+    </message>
+    <message>
+        <source>This Sailfish version&apos;s browser cannot complete the sign-in of modern homeservers — it returns to the form. Use “Sign in on another device”: Shoal Messages shows an address and a code, you sign in with them on any other device, and this one signs in by itself.</source>
+        <translation>Webbläsaren i den här Sailfish-versionen kan inte slutföra inloggningen hos moderna hemservrar — den återvänder till formuläret. Använd ”Logga in på en annan enhet”: Shoal Messages visar en adress och en kod, du loggar in med dem på valfri annan enhet, och den här loggar in av sig själv.</translation>
+    </message>
+    <message>
+        <source>Sign in via browser</source>
+        <translation>Logga in via webbläsare</translation>
+    </message>
+</context>
+<context>
+    <name>LogoutDialog</name>
+    <message>
+        <source>Sign out</source>
+        <translation>Logga ut</translation>
+    </message>
+    <message>
+        <source>Stay signed in</source>
+        <translation>Förbli inloggad</translation>
+    </message>
+    <message>
+        <source>Really sign out?</source>
+        <translation>Verkligen logga ut?</translation>
+    </message>
+    <message>
+        <source>This device&apos;s keys are deleted along with the session. Encrypted messages stay readable only if they are in a key backup, and this device has to be verified again after signing in.</source>
+        <translation>Enhetens nycklar raderas tillsammans med sessionen. Krypterade meddelanden förblir läsbara bara om de finns i en nyckelsäkerhetskopia, och enheten måste verifieras igen efter inloggningen.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>I den här Sailfish-versionen kan webbläsaren inte slutföra inloggningen. Kom tillbaka med ”Logga in på en annan enhet” — den vägen fungerar här.</translation>
+    </message>
+</context>
+<context>
+    <name>MatrixBridge</name>
+    <message>
+        <source>The protocol core could not be started.</source>
+        <translation>Protokollkärnan kunde inte startas.</translation>
+    </message>
+    <message>
+        <source>The protocol core is not available.</source>
+        <translation>Protokollkärnan är inte tillgänglig.</translation>
+    </message>
+    <message>
+        <source>Enter a homeserver first.</source>
+        <translation>Ange en hemserver först.</translation>
+    </message>
+    <message>
+        <source>Enter username and password first.</source>
+        <translation>Ange användarnamn och lösenord först.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key first.</source>
+        <translation>Ange din återställningsnyckel först.</translation>
+    </message>
+    <message>
+        <source>The file could not be saved.</source>
+        <translation>Filen kunde inte sparas.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a login page.</source>
+        <translation>Hemservern returnerade ingen inloggningssida.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a sign-in code.</source>
+        <translation>Hemservern returnerade ingen inloggningskod.</translation>
+    </message>
+    <message>
+        <source>The stored lists cannot be read right now.</source>
+        <translation>De sparade listorna går inte att läsa just nu.</translation>
+    </message>
+    <message>
+        <source>Your session has ended. Please sign in again.</source>
+        <translation>Din session har avslutats. Logga in igen.</translation>
+    </message>
+    <message>
+        <source>Enter a push gateway first.</source>
+        <translation>Ange först en push-gateway.</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Nytt meddelande</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Röstmeddelande</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Fil</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Plats</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Krypterat meddelande</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Inbjudan</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Omröstning</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Omröstning: %1</translation>
+    </message>
+</context>
+<context>
+    <name>MemberListPage</name>
+    <message>
+        <source>Members</source>
+        <translation>Medlemmar</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>inbjuden</translation>
+    </message>
+    <message>
+        <source>Admin</source>
+        <translation>Administratör</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderator</translation>
+    </message>
+    <message>
+        <source>No members yet</source>
+        <translation>Inga medlemmar ännu</translation>
+    </message>
+    <message>
+        <source>The people in this room show up here.</source>
+        <translation>Personerna i rummet visas här.</translation>
+    </message>
+</context>
+<context>
+    <name>MemberProfilePage</name>
+    <message>
+        <source>Admin</source>
+        <translation>Administratör</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderator</translation>
+    </message>
+    <message>
+        <source>Member</source>
+        <translation>Medlem</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>inbjuden</translation>
+    </message>
+    <message>
+        <source>banned</source>
+        <translation>bannlyst</translation>
+    </message>
+    <message>
+        <source>left the room</source>
+        <translation>lämnade rummet</translation>
+    </message>
+    <message>
+        <source>Reload</source>
+        <translation>Ladda om</translation>
+    </message>
+    <message>
+        <source>Make moderator</source>
+        <translation>Gör till moderator</translation>
+    </message>
+    <message>
+        <source>Make admin</source>
+        <translation>Gör till administratör</translation>
+    </message>
+    <message>
+        <source>Really make this member an admin?</source>
+        <translation>Verkligen göra den här medlemmen till administratör?</translation>
+    </message>
+    <message>
+        <source>This cannot be taken back: only they themselves can step down afterwards.</source>
+        <translation>Det går inte att ta tillbaka: bara personen själv kan avsäga sig rollen efteråt.</translation>
+    </message>
+    <message>
+        <source>Demote to member</source>
+        <translation>Sänk till medlem</translation>
+    </message>
+    <message>
+        <source>Revoke invitation</source>
+        <translation>Återkalla inbjudan</translation>
+    </message>
+    <message>
+        <source>Remove from room</source>
+        <translation>Ta bort ur rummet</translation>
+    </message>
+    <message>
+        <source>Removing</source>
+        <translation>Tar bort</translation>
+    </message>
+    <message>
+        <source>Ban from room</source>
+        <translation>Bannlys från rummet</translation>
+    </message>
+    <message>
+        <source>Really ban this member?</source>
+        <translation>Verkligen bannlysa den här medlemmen?</translation>
+    </message>
+    <message>
+        <source>%1 is removed from the room and cannot come back until the ban is lifted.</source>
+        <translation>%1 tas bort ur rummet och kan inte komma tillbaka förrän bannlysningen hävs.</translation>
+    </message>
+    <message>
+        <source>Ban</source>
+        <translation>Bannlys</translation>
+    </message>
+    <message>
+        <source>Banning</source>
+        <translation>Bannlyser</translation>
+    </message>
+    <message>
+        <source>Lift ban</source>
+        <translation>Häv bannlysningen</translation>
+    </message>
+    <message>
+        <source>Address copied</source>
+        <translation>Adressen kopierad</translation>
+    </message>
+    <message>
+        <source>Role</source>
+        <translation>Roll</translation>
+    </message>
+    <message>
+        <source>Member since</source>
+        <translation>Medlem sedan</translation>
+    </message>
+    <message>
+        <source>Invited by</source>
+        <translation>Inbjuden av</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>Enheter</translation>
+    </message>
+    <message>
+        <source>Send direct message</source>
+        <translation>Skicka direktmeddelande</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Verifiera</translation>
+    </message>
+    <message>
+        <source>Withdraw verification</source>
+        <translation>Dra tillbaka verifieringen</translation>
+    </message>
+    <message>
+        <source>Stop ignoring</source>
+        <translation>Sluta ignorera</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation>Ignorera</translation>
+    </message>
+    <message>
+        <source>Ignoring</source>
+        <translation>Ignorerar</translation>
+    </message>
+    <message>
+        <source>Shared rooms</source>
+        <translation>Gemensamma rum</translation>
+    </message>
+    <message>
+        <source>Forbid calls</source>
+        <translation>Förbjud samtal</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Tillåt samtal</translation>
+    </message>
+    <message>
+        <source>Identity</source>
+        <translation>Identitet</translation>
+    </message>
+    <message>
+        <source>verified</source>
+        <translation>verifierad</translation>
+    </message>
+    <message>
+        <source>changed since it was verified — verify again or withdraw</source>
+        <translation>har ändrats sedan den verifierades — verifiera igen eller dra tillbaka</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>inte verifierad</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>inga</translation>
+    </message>
+    <message>
+        <source>Mention</source>
+        <translation>Nämn</translation>
+    </message>
+</context>
+<context>
+    <name>MessageActionsPage</name>
+    <message>
+        <source>Message</source>
+        <translation>Meddelande</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiera</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Svara</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Spara</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Vidarebefordra</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Redigera</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fäst</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Radera</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Kasta</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Skicka igen</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reagera</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Svara i tråden</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Omvandla till text</translation>
+    </message>
+</context>
+<context>
+    <name>MoveToSpacePage</name>
+    <message>
+        <source>Move to space</source>
+        <translation>Flytta till en space</translation>
+    </message>
+    <message>
+        <source>No other space</source>
+        <translation>Ingen annan space</translation>
+    </message>
+    <message>
+        <source>Create another space first to move rooms between them.</source>
+        <translation>Skapa en space till först för att kunna flytta rum mellan dem.</translation>
+    </message>
+</context>
+<context>
+    <name>NewChatDialog</name>
+    <message>
+        <source>Start chat</source>
+        <translation>Starta chatt</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Användar-ID</translation>
+    </message>
+    <message>
+        <source>The other side receives an invitation and the chat appears in your list right away. Messages are encrypted from the start.</source>
+        <translation>Motparten får en inbjudan och chatten syns genast i din lista. Meddelanden är krypterade från början.</translation>
+    </message>
+</context>
+<context>
+    <name>PinnedMessagesPage</name>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Fästa meddelanden</translation>
+    </message>
+    <message>
+        <source>Show in conversation</source>
+        <translation>Visa i konversationen</translation>
+    </message>
+    <message>
+        <source>Unpin</source>
+        <translation>Lossa</translation>
+    </message>
+    <message>
+        <source>Pinned messages unavailable</source>
+        <translation>Fästa meddelanden är otillgängliga</translation>
+    </message>
+    <message>
+        <source>No pinned messages</source>
+        <translation>Inga fästa meddelanden</translation>
+    </message>
+    <message>
+        <source>The server does not hand out these messages. They are older than this server&apos;s copy of the room.</source>
+        <translation>Servern lämnar inte ut dessa meddelanden. De är äldre än serverns kopia av rummet.</translation>
+    </message>
+    <message>
+        <source>Long-press a message in the conversation to pin it.</source>
+        <translation>Håll ett meddelande i konversationen intryckt för att fästa det.</translation>
+    </message>
+</context>
+<context>
+    <name>PollBlock</name>
+    <message>
+        <source>The poll has ended.</source>
+        <translation>Omröstningen är avslutad.</translation>
+    </message>
+    <message>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>Results are shown once the poll ends</source>
+        <translation>Resultatet visas när omröstningen är slut</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n vote(s)</source>
+        <translation>
+            <numerusform>%n röst</numerusform>
+            <numerusform>%n röster</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Ended</source>
+        <translation>Avslutad</translation>
+    </message>
+    <message>
+        <source>Several answers</source>
+        <translation>Flera svar</translation>
+    </message>
+    <message>
+        <source>End poll</source>
+        <translation>Avsluta omröstning</translation>
+    </message>
+</context>
+<context>
+    <name>Preview</name>
+    <message>
+        <source>Picture</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Röstmeddelande</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Fil</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Plats</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Omröstning: %1</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Omröstning</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Krypterat meddelande</translation>
+    </message>
+</context>
+<context>
+    <name>PrivacyPage</name>
+    <message>
+        <source>Privacy</source>
+        <translation>Integritet</translation>
+    </message>
+    <message>
+        <source>Who may call you</source>
+        <translation>Vem som får ringa dig</translation>
+    </message>
+    <message>
+        <source>Everyone</source>
+        <translation>Alla</translation>
+    </message>
+    <message>
+        <source>People you have a direct chat with</source>
+        <translation>Personer du har ett direktchatt med</translation>
+    </message>
+    <message>
+        <source>Only my list</source>
+        <translation>Bara min lista</translation>
+    </message>
+    <message>
+        <source>Calls from group rooms</source>
+        <translation>Samtal från grupprum</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Videosamtal</translation>
+    </message>
+    <message>
+        <source>Send read receipts</source>
+        <translation>Skicka läskvitton</translation>
+    </message>
+    <message>
+        <source>Allowed callers</source>
+        <translation>Tillåtna uppringare</translation>
+    </message>
+    <message>
+        <source>Matrix address</source>
+        <translation>Matrix-adress</translation>
+    </message>
+    <message>
+        <source>@name:server</source>
+        <translation>@name:server</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Tillåt samtal</translation>
+    </message>
+    <message>
+        <source>Nobody yet.</source>
+        <translation>Ingen än.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Ta bort</translation>
+    </message>
+    <message>
+        <source>A call rings past a muted room. Refused calls never ring, and the caller learns nothing.</source>
+        <translation>Ett samtal ringer även i ett tystat rum. Avvisade ringer inte, och den som ringer får inte veta något.</translation>
+    </message>
+    <message>
+        <source>In a group room everybody sees the call. The list does not override this.</source>
+        <translation>I ett grupprum ser alla samtalet. Listan går inte före det.</translation>
+    </message>
+    <message>
+        <source>They may always call. The list stays on this device.</source>
+        <translation>De får alltid ringa. Listan stannar på den här enheten.</translation>
+    </message>
+    <message>
+        <source>On this device</source>
+        <translation>På den här enheten</translation>
+    </message>
+    <message>
+        <source>What others learn</source>
+        <translation>Vad andra får veta</translation>
+    </message>
+    <message>
+        <source>Message text in notifications</source>
+        <translation>Meddelandetext i aviseringar</translation>
+    </message>
+    <message>
+        <source>Off, a notification says only how many messages arrived. On, it shows the latest message — also on the lock screen.</source>
+        <translation>Av visar aviseringen bara hur många meddelanden som kommit. På visar den det senaste meddelandet — även på låsskärmen.</translation>
+    </message>
+    <message>
+        <source>Show others&apos; read status</source>
+        <translation>Visa andras lässtatus</translation>
+    </message>
+    <message>
+        <source>Voice messages</source>
+        <translation>Röstmeddelanden</translation>
+    </message>
+    <message>
+        <source>Tappable web links</source>
+        <translation>Tryckbara webblänkar</translation>
+    </message>
+    <message>
+        <source>On, a link in a message opens the browser when tapped. Off, links stay plain text.</source>
+        <translation>På öppnar en länk i ett meddelande webbläsaren när du trycker på den. Av förblir länkar vanlig text.</translation>
+    </message>
+    <message>
+        <source>Delete media now</source>
+        <translation>Radera media nu</translation>
+    </message>
+    <message>
+        <source>Delete downloaded media</source>
+        <translation>Radera hämtade media</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Aldrig</translation>
+    </message>
+    <message>
+        <source>When the app is closed</source>
+        <translation>När appen stängs</translation>
+    </message>
+    <message>
+        <source>As soon as the app is not in front</source>
+        <translation>Så snart appen inte är främst</translation>
+    </message>
+    <message>
+        <source>By default they are deleted when you sign out, so save what you want to keep.</source>
+        <translation>Som standard raderas de vid utloggning, så spara det du vill behålla.</translation>
+    </message>
+    <message>
+        <source>&quot;Never&quot; keeps them for good - convenient, and not recommended.</source>
+        <translation>”Aldrig” behåller dem för gott — bekvämt och inte rekommenderat.</translation>
+    </message>
+    <message>
+        <source>Anything deleted is fetched again when you open it.</source>
+        <translation>Det som raderas hämtas igen när du öppnar det.</translation>
+    </message>
+    <message>
+        <source>When you sign out</source>
+        <translation>Vid utloggning</translation>
+    </message>
+    <message>
+        <source>Limit repeated calls</source>
+        <translation>Begränsa upprepade samtal</translation>
+    </message>
+    <message>
+        <source>On, the same person can only ring again after a short pause. It also delays a second, genuine attempt.</source>
+        <translation>På: samma person kan ringa igen först efter en kort paus. Det fördröjer också ett andra, äkta försök.</translation>
+    </message>
+    <message>
+        <source>Messages and keys are stored encrypted.</source>
+        <translation>Meddelanden och nycklar lagras krypterade.</translation>
+    </message>
+    <message>
+        <source>Messages and keys lie on this device unencrypted - the encryption page says why and what can be done about it.</source>
+        <translation>Meddelanden och nycklar ligger okrypterade på den här enheten — krypteringssidan säger varför och vad som går att göra.</translation>
+    </message>
+    <message>
+        <source>Pictures, videos and documents you opened are not - they lie on the device like the ones in the gallery, readable to anybody who has it.</source>
+        <translation>Bilder, videor och dokument du öppnat gör det inte — de ligger på enheten som de i galleriet, läsbara för vem som helst som har den.</translation>
+    </message>
+    <message>
+        <source>Off, an offer with video is answered as a voice call: your camera stays shut and no picture is shown. The other side may still send one, which this phone discards.</source>
+        <translation>Av: ett erbjudande med video besvaras som ett röstsamtal — din kamera förblir stängd och ingen bild visas. Motparten kan ändå skicka en, som den här telefonen kastar.</translation>
+    </message>
+    <message>
+        <source>Off, nobody is told how far you have read. What others read is the setting below.</source>
+        <translation>Av: ingen får veta hur långt du har läst. Vad andra har läst styrs av inställningen nedan.</translation>
+    </message>
+    <message>
+        <source>The list is encrypted and its key is not available. It can be read again after the device has been unlocked and the app restarted.</source>
+        <translation>Listan är krypterad och nyckeln är inte tillgänglig. Den går att läsa igen när enheten har låsts upp och appen startats om.</translation>
+    </message>
+    <message>
+        <source>Load pictures automatically</source>
+        <translation>Läs in bilder automatiskt</translation>
+    </message>
+    <message>
+        <source>On, a picture or video loads as soon as its message appears. Off, it loads when you tap it — scrolling past one is a request to the sender&apos;s server.</source>
+        <translation>På: en bild eller video läses in så snart meddelandet visas. Av: den läses in när du trycker — att bläddra förbi är en förfrågan till avsändarens server.</translation>
+    </message>
+    <message>
+        <source>Link previews</source>
+        <translation>Förhandsvisning av länkar</translation>
+    </message>
+    <message>
+        <source>Your homeserver fetches the page and shows its title. It learns every link it is asked about; in an encrypted room that is content it otherwise never sees.</source>
+        <translation>Din hemserver hämtar sidan och visar dess titel. Den får därmed veta varje länk den tillfrågas om; i ett krypterat rum är det innehåll som den annars aldrig ser.</translation>
+    </message>
+    <message>
+        <source>Only in unencrypted rooms</source>
+        <translation>Bara i okrypterade rum</translation>
+    </message>
+    <message>
+        <source>Always</source>
+        <translation>Alltid</translation>
+    </message>
+    <message>
+        <source>Voice messages as text</source>
+        <translation>Röstmeddelanden som text</translation>
+    </message>
+    <message>
+        <source>Convert voice messages to text</source>
+        <translation>Omvandla röstmeddelanden till text</translation>
+    </message>
+    <message>
+        <source>On, a long press on a voice message offers to convert it. Nothing is converted unless you ask, and the recording never leaves this phone.</source>
+        <translation>På erbjuder ett långt tryck på ett röstmeddelande att omvandla det. Inget omvandlas utan att du ber om det, och inspelningen lämnar aldrig den här telefonen.</translation>
+    </message>
+    <message>
+        <source>This needs a program this app does not bring, from OpenRepos, installed by you: &quot;Speech Note&quot; (about 40 MB to download, 104 MB installed), and in it the model &quot;Auto (WhisperCpp Small)&quot; (190 MB), which recognises the language of each message by itself. Only on 64-bit phones.</source>
+        <translation>Det kräver ett program som den här appen inte har med sig, från OpenRepos, som du installerar själv: ”Speech Note” (cirka 40 MB att ladda ner, 104 MB installerat) och i det modellen ”Auto (WhisperCpp Small)” (190 MB), som själv känner igen språket i varje meddelande. Bara på 64-bitarstelefoner.</translation>
+    </message>
+    <message>
+        <source>Check</source>
+        <translation>Kontrollera</translation>
+    </message>
+    <message>
+        <source>Checking. The first time can take half a minute.</source>
+        <translation>Kontrollerar. Första gången kan det ta en halv minut.</translation>
+    </message>
+    <message>
+        <source>On, a microphone sits next to the message field: hold it to record, let go to send - or tap it to record hands-free, and a second tap or seven seconds of silence sends. Off, it is not there.</source>
+        <translation>På sitter en mikrofon bredvid meddelandefältet: håll in för att spela in, släpp för att skicka – eller tryck för att spela in handsfree, så skickar ett andra tryck eller sju sekunders tystnad. Av finns den inte.</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Plats</translation>
+    </message>
+    <message>
+        <source>Share your location</source>
+        <translation>Dela din plats</translation>
+    </message>
+    <message>
+        <source>On, a room&apos;s pull-down menu offers to send your position, once or live for a while. Nothing is sent unless you choose it there.</source>
+        <translation>På erbjuder ett rums rullgardinsmeny att skicka din position, en gång eller live en stund. Inget skickas om du inte väljer det där.</translation>
+    </message>
+    <message>
+        <source>Maps for locations</source>
+        <translation>Kartor för platser</translation>
+    </message>
+    <message>
+        <source>Map pieces come from OpenStreetMap. Its server learns your IP address and roughly where the location lies; in an encrypted room that is content it otherwise never sees. Without a map the coordinates are shown.</source>
+        <translation>Kartbitarna kommer från OpenStreetMap. Dess server får veta din IP-adress och ungefär var platsen ligger; i ett krypterat rum är det innehåll den annars aldrig ser. Utan karta visas koordinaterna.</translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation>Kamera</translation>
+    </message>
+    <message>
+        <source>Live picture in the attachment picker</source>
+        <translation>Livebild i bilageväljaren</translation>
+    </message>
+    <message>
+        <source>On, the camera cell shows what the camera sees while the picker is open. Off, the camera only runs once you tap the cell.</source>
+        <translation>På: kamerarutan visar vad kameran ser medan väljaren är öppen. Av: kameran startar först när du trycker på rutan.</translation>
+    </message>
+    <message>
+        <source>Off, who read what is neither tracked nor shown, which also keeps the conversation smoother. On, your own messages say how many people have read them.</source>
+        <translation>Av varken följs eller visas vem som läst vad, vilket också håller konversationen mjukare. På visar dina egna meddelanden hur många som läst dem.</translation>
+    </message>
+</context>
+<context>
+    <name>PushPage</name>
+    <message>
+        <source>Push notifications</source>
+        <translation>Push-aviseringar</translation>
+    </message>
+    <message>
+        <source>Shoal Messages has no background service, so messages arrive only while it runs. A push distributor is a separate app that holds one connection for every app on the device and wakes them when something comes in.</source>
+        <translation>Shoal Messages har ingen bakgrundstjänst, så meddelanden kommer bara in medan det körs. En push-distributör är en egen app som håller en anslutning åt alla appar på enheten och väcker dem när något kommer in.</translation>
+    </message>
+    <message>
+        <source>Receive push notifications</source>
+        <translation>Ta emot push-aviseringar</translation>
+    </message>
+    <message>
+        <source>Distributor</source>
+        <translation>Distributör</translation>
+    </message>
+    <message>
+        <source>No push distributor is installed. Without one there is nothing to hold the connection, and this stays off.</source>
+        <translation>Ingen push-distributör är installerad. Utan en finns det inget som håller anslutningen, och det här förblir avstängt.</translation>
+    </message>
+    <message>
+        <source>Registration</source>
+        <translation>Registrering</translation>
+    </message>
+    <message>
+        <source>This device has an address to be reached at.</source>
+        <translation>Den här enheten har en adress där den kan nås.</translation>
+    </message>
+    <message>
+        <source>Waiting for the distributor.</source>
+        <translation>Väntar på distributören.</translation>
+    </message>
+    <message>
+        <source>Not registered.</source>
+        <translation>Inte registrerad.</translation>
+    </message>
+    <message>
+        <source>Gateway</source>
+        <translation>Gateway</translation>
+    </message>
+    <message>
+        <source>A Matrix homeserver cannot talk to a push distributor directly, so it posts to a gateway that forwards. There is no default: it is the one thing nobody can guess for you.</source>
+        <translation>En Matrix-hemserver kan inte tala direkt med en push-distributör, så den skickar till en gateway som vidarebefordrar. Det finns inget standardvärde: det är det enda som ingen kan gissa åt dig.</translation>
+    </message>
+    <message>
+        <source>Push gateway</source>
+        <translation>Push-gateway</translation>
+    </message>
+    <message>
+        <source>What leaves this device</source>
+        <translation>Vad som lämnar den här enheten</translation>
+    </message>
+    <message>
+        <source>Your homeserver is told an address at the push service, and posts a room and message identifier to the gateway for every notification. No message text: the push carries identifiers only and this device fetches and decrypts the message itself. That address is a secret — whoever holds it can send this phone a notification.</source>
+        <translation>Din hemserver får en adress hos push-tjänsten och skickar för varje avisering ett rums- och meddelande-id till gatewayen. Ingen meddelandetext: pushen bär bara identifierare och den här enheten hämtar och dekrypterar meddelandet själv. Den adressen är en hemlighet — den som har den kan skicka en avisering till den här telefonen.</translation>
+    </message>
+</context>
+<context>
+    <name>PushWake</name>
+    <message>
+        <source>New message</source>
+        <translation>Nytt meddelande</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <source>no session description</source>
+        <translation>ingen sessionsbeskrivning</translation>
+    </message>
+</context>
+<context>
+    <name>ReactionDialog</name>
+    <message>
+        <source>React</source>
+        <translation>Reagera</translation>
+    </message>
+    <message>
+        <source>Nothing kept here</source>
+        <translation>Inget sparat här</translation>
+    </message>
+    <message>
+        <source>Press and hold an emoji in another tab to keep it here</source>
+        <translation>Håll in en emoji i en annan flik för att spara den här</translation>
+    </message>
+    <message>
+        <source>Your own text</source>
+        <translation>Din egen text</translation>
+    </message>
+    <message>
+        <source>Your text as reaction</source>
+        <translation>Din text som reaktion</translation>
+    </message>
+</context>
+<context>
+    <name>RoomActionsPage</name>
+    <message>
+        <source>Rooms</source>
+        <translation>Rum</translation>
+    </message>
+    <message>
+        <source>New chat</source>
+        <translation>Ny chatt</translation>
+    </message>
+    <message>
+        <source>New room</source>
+        <translation>Nytt rum</translation>
+    </message>
+    <message>
+        <source>Join room</source>
+        <translation>Gå med i rum</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Upptäck rum</translation>
+    </message>
+</context>
+<context>
+    <name>RoomDelegate</name>
+    <message>
+        <source>Invitation</source>
+        <translation>Inbjudan</translation>
+    </message>
+    <message>
+        <source>Replaced by a new room</source>
+        <translation>Ersatt av ett nytt rum</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Space</translation>
+    </message>
+</context>
+<context>
+    <name>RoomInfoPage</name>
+    <message>
+        <source>this room</source>
+        <translation>det här rummet</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Verkligen lämna det här rummet?</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Rummet lämnas och glöms bort. Det försvinner ur chattlistan, och att komma tillbaka kräver en ny inbjudan eller en öppen adress.</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Lämna</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Lämnar rummet</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Lämna rummet</translation>
+    </message>
+    <message>
+        <source>Room</source>
+        <translation>Rum</translation>
+    </message>
+    <message>
+        <source>Replaced — open the new room</source>
+        <translation>Ersatt — öppna det nya rummet</translation>
+    </message>
+    <message>
+        <source>Replaced — join the new room</source>
+        <translation>Ersatt — gå med i det nya rummet</translation>
+    </message>
+    <message>
+        <source>Older messages in the previous room</source>
+        <translation>Äldre meddelanden i det tidigare rummet</translation>
+    </message>
+    <message>
+        <source>People and messages</source>
+        <translation>Personer och meddelanden</translation>
+    </message>
+    <message>
+        <source>Members: %1 (%2 invited)</source>
+        <translation>Medlemmar: %1 (%2 inbjudna)</translation>
+    </message>
+    <message>
+        <source>Members: %1</source>
+        <translation>Medlemmar: %1</translation>
+    </message>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Fästa meddelanden</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Bjud in</translation>
+    </message>
+    <message>
+        <source>This room for me</source>
+        <translation>Det här rummet för mig</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Aviseringar</translation>
+    </message>
+    <message>
+        <source>Stored with the account, so it holds in every client</source>
+        <translation>Sparas med kontot och gäller därför i varje klient</translation>
+    </message>
+    <message>
+        <source>Account default</source>
+        <translation>Kontots standard</translation>
+    </message>
+    <message>
+        <source>Every message</source>
+        <translation>Varje meddelande</translation>
+    </message>
+    <message>
+        <source>Only mentions and keywords</source>
+        <translation>Bara omnämnanden och nyckelord</translation>
+    </message>
+    <message>
+        <source>Nothing (muted)</source>
+        <translation>Ingenting (tystat)</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Favorit</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Låg prioritet</translation>
+    </message>
+    <message>
+        <source>Sorts to the bottom of the list and stays quiet</source>
+        <translation>Hamnar längst ner i listan och håller sig tyst</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Detaljer</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Kryptering</translation>
+    </message>
+    <message>
+        <source>End-to-end encrypted</source>
+        <translation>Totalsträckskrypterat</translation>
+    </message>
+    <message>
+        <source>Not encrypted</source>
+        <translation>Inte krypterat</translation>
+    </message>
+    <message>
+        <source>Turning on encryption</source>
+        <translation>Slår på krypteringen</translation>
+    </message>
+    <message>
+        <source>Turn on encryption</source>
+        <translation>Slå på krypteringen</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption?</source>
+        <translation>Omförhandla krypteringen?</translation>
+    </message>
+    <message>
+        <source>The next message starts a new session and hands its key to every device in the room again. Messages already sent stay as they are; nothing of your own history is lost.</source>
+        <translation>Nästa meddelande startar en ny session och lämnar dess nyckel till varje enhet i rummet igen. Redan skickade meddelanden är oförändrade; inget av din historik går förlorat.</translation>
+    </message>
+    <message>
+        <source>Renegotiate</source>
+        <translation>Omförhandla</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption</source>
+        <translation>Omförhandla krypteringen</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adress</translation>
+    </message>
+    <message>
+        <source>Access</source>
+        <translation>Åtkomst</translation>
+    </message>
+    <message>
+        <source>Public</source>
+        <translation>Öppet</translation>
+    </message>
+    <message>
+        <source>On invitation</source>
+        <translation>Efter inbjudan</translation>
+    </message>
+    <message>
+        <source>Room version</source>
+        <translation>Rumsversion</translation>
+    </message>
+    <message>
+        <source>Room ID</source>
+        <translation>Rums-ID</translation>
+    </message>
+    <message>
+        <source>Room ID copied</source>
+        <translation>Rums-ID kopierat</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Redigera rummet</translation>
+    </message>
+</context>
+<context>
+    <name>RoomListPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Verkligen avböja den här inbjudan?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Verkligen lämna det här rummet?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Inbjudan är borta efteråt. Du kommer bara in igen om någon bjuder in dig på nytt.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Rummet lämnas och glöms bort. Det försvinner ur chattlistan, och att komma tillbaka kräver en ny inbjudan eller en öppen adress.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Avvisa</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Lämna</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Avböjer</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Lämnar rummet</translation>
+    </message>
+    <message>
+        <source>Rooms</source>
+        <translation>Rum</translation>
+    </message>
+    <message>
+        <source>This homeserver is not supported</source>
+        <translation>Den här hemservern stöds inte</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — väntar på nätverket</translation>
+    </message>
+    <message>
+        <source>Your homeserver does not offer the sync this app needs (simplified sliding sync, MSC4186). Rooms cannot be loaded from it. A newer server version, or an account on a server that supports it, is required.</source>
+        <translation>Din hemserver erbjuder inte den synkronisering appen behöver (simplified sliding sync, MSC4186). Rum kan inte laddas från den. Det krävs en nyare serverversion, eller ett konto på en server som stöder det.</translation>
+    </message>
+    <message>
+        <source>Search rooms</source>
+        <translation>Sök rum</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Ta bort från favoriter</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Favorit</translation>
+    </message>
+    <message>
+        <source>Normal priority</source>
+        <translation>Normal prioritet</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Låg prioritet</translation>
+    </message>
+    <message>
+        <source>Unmute</source>
+        <translation>Slå på ljudet</translation>
+    </message>
+    <message>
+        <source>Mute</source>
+        <translation>Tysta</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Avböj inbjudan</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Lämna rummet</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Inga rum</translation>
+    </message>
+    <message>
+        <source>Rooms you join show up here once the first sync is through.</source>
+        <translation>Rum du går med i visas här så snart den första synkroniseringen är klar.</translation>
+    </message>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Om Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Gör till startsida</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Konto</translation>
+    </message>
+    <message>
+        <source>Mark as read</source>
+        <translation>Markera som läst</translation>
+    </message>
+    <message>
+        <source>%1 of %2 rooms</source>
+        <translation>%1 av %2 rum</translation>
+    </message>
+    <message>
+        <source>Verify user</source>
+        <translation>Verifiera användare</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Lokala data är skadade</translation>
+    </message>
+    <message>
+        <source>Part of the data stored on this device cannot be read any more, and Shoal Messages has not been able to put it right while running — so it has stopped syncing rather than meet the same row again. Close the app and start it again. If rooms are still missing afterwards, signing out and in rebuilds the local data — but it replaces this device&apos;s keys, so check on the encryption page that the key backup is on before you do.</source>
+        <translation>En del av de data som finns på den här enheten går inte längre att läsa, och Shoal Messages kunde inte rätta till det under drift — därför har synkroniseringen stoppats i stället för att möta samma rad igen. Stäng appen och starta den igen. Saknas det fortfarande rum efteråt bygger en utloggning och inloggning om de lokala data — men den ersätter också enhetens nycklar: kontrollera först på krypteringssidan att nyckelsäkerhetskopian är på.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Verkligen avböja den här inbjudan?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Verkligen lämna det här rummet?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Inbjudan är borta efteråt. Du kommer bara in igen om någon bjuder in dig på nytt.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Rummet lämnas och glöms bort. Det försvinner ur chattlistan, och att komma tillbaka kräver en ny inbjudan eller en öppen adress.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Avvisa</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Lämna</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Avböjer</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Lämnar rummet</translation>
+    </message>
+    <message>
+        <source>The sender did not share the key: they consider this device insecure. Verify this device.</source>
+        <translation>Avsändaren delade inte nyckeln: hen anser enheten osäker. Verifiera enheten.</translation>
+    </message>
+    <message>
+        <source>The sender could not deliver the key to this device.</source>
+        <translation>Avsändaren kunde inte leverera nyckeln till enheten.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s identity has changed since you verified them, so the key was withheld.</source>
+        <translation>Avsändarens identitet har ändrats sedan du verifierade den, så nyckeln hölls tillbaka.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is not signed by its owner.</source>
+        <translation>Avsändarens enhet är inte signerad av sin ägare.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is unknown here.</source>
+        <translation>Avsändarens enhet är okänd här.</translation>
+    </message>
+    <message>
+        <source>Sent before you joined the room.</source>
+        <translation>Skickat innan du gick med i rummet.</translation>
+    </message>
+    <message>
+        <source>Older than this device, and there is no key backup.</source>
+        <translation>Äldre än enheten, och det finns ingen nyckelsäkerhetskopia.</translation>
+    </message>
+    <message>
+        <source>Older than this device. Verify this device to read it.</source>
+        <translation>Äldre än enheten. Verifiera enheten för att kunna läsa det.</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Kan inte dekrypteras — enheten saknar nyckeln</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Avböj inbjudan</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Lämna rummet</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <translation>Samtal</translation>
+    </message>
+    <message>
+        <source>Video call</source>
+        <translation>Videosamtal</translation>
+    </message>
+    <message>
+        <source>Back to the call</source>
+        <translation>Tillbaka till samtalet</translation>
+    </message>
+    <message>
+        <source>Go to the new room</source>
+        <translation>Gå till det nya rummet</translation>
+    </message>
+    <message>
+        <source>Join the new room</source>
+        <translation>Gå med i det nya rummet</translation>
+    </message>
+    <message>
+        <source>Load older messages</source>
+        <translation>Ladda äldre meddelanden</translation>
+    </message>
+    <message>
+        <source>Room info</source>
+        <translation>Rumsinfo</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — väntar på nätverket</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Inbjudan</translation>
+    </message>
+    <message>
+        <source>This room has been replaced</source>
+        <translation>Det här rummet har ersatts</translation>
+    </message>
+    <message>
+        <source>Switching to the new room…</source>
+        <translation>Byter till det nya rummet…</translation>
+    </message>
+    <message>
+        <source>Tap to open the new room</source>
+        <translation>Tryck för att öppna det nya rummet</translation>
+    </message>
+    <message>
+        <source>Tap to join the new room</source>
+        <translation>Tryck för att gå med i det nya rummet</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pinned message(s)</source>
+        <translation>
+            <numerusform>%n fäst meddelande</numerusform>
+            <numerusform>%n fästa meddelanden</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Beginning of the conversation</source>
+        <translation>Konversationens början</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <comment>timeline system line, a noun</comment>
+        <translation>Samtal</translation>
+    </message>
+    <message>
+        <source>%1 joined</source>
+        <translation>%1 gick med</translation>
+    </message>
+    <message>
+        <source>%1 left</source>
+        <translation>%1 lämnade</translation>
+    </message>
+    <message>
+        <source>%1 declined the invitation</source>
+        <translation>%1 avböjde inbjudan</translation>
+    </message>
+    <message>
+        <source>%1 asked to join</source>
+        <translation>%1 bad om att få gå med</translation>
+    </message>
+    <message>
+        <source>%1 changed membership</source>
+        <translation>%1 ändrade medlemskap</translation>
+    </message>
+    <message>
+        <source>%1 changed their profile</source>
+        <translation>%1 ändrade sin profil</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiera</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Svara</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Spara</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Vidarebefordra</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Redigera</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fäst</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Radera</translation>
+    </message>
+    <message>
+        <source>More…</source>
+        <translation>Mer…</translation>
+    </message>
+    <message>
+        <source>The quoted message cannot be loaded: it no longer exists or you are not allowed to see it.</source>
+        <translation>Det citerade meddelandet kan inte laddas: det finns inte längre eller så får du inte se det.</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Röstmeddelande</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Meddelande raderat</translation>
+    </message>
+    <message>
+        <source>Thread · %1</source>
+        <translation>Tråd · %1</translation>
+    </message>
+    <message>
+        <source>In thread</source>
+        <translation>I tråden</translation>
+    </message>
+    <message>
+        <source>not sent</source>
+        <translation>inte skickat</translation>
+    </message>
+    <message>
+        <source>edited</source>
+        <translation>redigerat</translation>
+    </message>
+    <message>
+        <source>No messages</source>
+        <translation>Inga meddelanden</translation>
+    </message>
+    <message>
+        <source>Accept invitation</source>
+        <translation>Acceptera inbjudan</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s</source>
+        <translation>Spelar in… %1 s</translation>
+    </message>
+    <message>
+        <source>Reply to %1</source>
+        <translation>Svar till %1</translation>
+    </message>
+    <message>
+        <source>Editing message</source>
+        <translation>Redigerar meddelandet</translation>
+    </message>
+    <message>
+        <source>New text</source>
+        <translation>Ny text</translation>
+    </message>
+    <message>
+        <source>Message</source>
+        <translation>Meddelande</translation>
+    </message>
+    <message>
+        <source>That message is not in the loaded history</source>
+        <translation>Det meddelandet finns inte i den laddade historiken</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Kasta</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Skicka igen</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reagera</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Svara i tråden</translation>
+    </message>
+    <message>
+        <source>Copy room link</source>
+        <translation>Kopiera rumslänk</translation>
+    </message>
+    <message>
+        <source>Room link copied</source>
+        <translation>Rumslänk kopierad</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Skickat okrypterat</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Skickades inte av kontot som anges</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Avsändarens nycklar har ändrats</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Från en overifierad enhet</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Från en overifierad person</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Äktheten är inte bekräftad</translation>
+    </message>
+    <message>
+        <source>Discarding</source>
+        <translation>Kastar</translation>
+    </message>
+    <message>
+        <source>Deleting</source>
+        <translation>Raderar</translation>
+    </message>
+    <message>
+        <source>This reaction hides text and was not sent</source>
+        <translation>Den här reaktionen döljer text och skickades inte</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <source>Search messages</source>
+        <translation>Sök i meddelanden</translation>
+    </message>
+    <message>
+        <source>What do these marks mean?</source>
+        <translation>Vad betyder de här tecknen?</translation>
+    </message>
+    <message>
+        <source>Verify contact</source>
+        <translation>Verifiera kontakt</translation>
+    </message>
+    <message>
+        <source>The conversation could not be loaded</source>
+        <translation>Konversationen kunde inte läsas in</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Öppna den här adressen?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Öppna</translation>
+    </message>
+    <message>
+        <source>Select files</source>
+        <translation>Välj filer</translation>
+    </message>
+    <message>
+        <source>New poll</source>
+        <translation>Ny omröstning</translation>
+    </message>
+    <message>
+        <source>Voting failed</source>
+        <translation>Röstningen misslyckades</translation>
+    </message>
+    <message>
+        <source>The poll could not be ended</source>
+        <translation>Omröstningen kunde inte avslutas</translation>
+    </message>
+    <message>
+        <source>The poll could not be sent</source>
+        <translation>Omröstningen kunde inte skickas</translation>
+    </message>
+    <message>
+        <source>Your vote was not sent</source>
+        <translation>Din röst skickades inte</translation>
+    </message>
+    <message>
+        <source>%1 invited %2</source>
+        <translation>%1 bjöd in %2</translation>
+    </message>
+    <message>
+        <source>%1 removed %2</source>
+        <translation>%1 tog bort %2</translation>
+    </message>
+    <message>
+        <source>%1 banned %2</source>
+        <translation>%1 bannlyste %2</translation>
+    </message>
+    <message>
+        <source>%1 unbanned %2</source>
+        <translation>%1 hävde bannlysningen av %2</translation>
+    </message>
+    <message>
+        <source>%1 withdrew the invitation for %2</source>
+        <translation>%1 drog tillbaka inbjudan till %2</translation>
+    </message>
+    <message>
+        <source>%1: %2</source>
+        <comment>system line and the reason given for it</comment>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Omvandla till text</translation>
+    </message>
+    <message>
+        <source>Converting to text…</source>
+        <translation>Omvandlar till text…</translation>
+    </message>
+    <message>
+        <source>Recognised automatically, may contain mistakes</source>
+        <translation>Automatiskt igenkänt, kan innehålla fel</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s. Tap the microphone to send.</source>
+        <translation>Spelar in… %1 s. Tryck på mikrofonen för att skicka.</translation>
+    </message>
+    <message>
+        <source>Nothing was said, so nothing was sent.</source>
+        <translation>Inget sades, så inget skickades.</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Sparad i galleriet</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Sparad i Hämtningar</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Visa mindre</translation>
+    </message>
+    <message>
+        <source>Show more</source>
+        <translation>Visa mer</translation>
+    </message>
+    <message>
+        <source>The text could not be written as a file</source>
+        <translation>Texten kunde inte skrivas som en fil</translation>
+    </message>
+    <message>
+        <source>Share location</source>
+        <translation>Dela plats</translation>
+    </message>
+    <message>
+        <source>deletion not sent</source>
+        <translation>borttagning inte skickad</translation>
+    </message>
+    <message>
+        <source>edit not sent</source>
+        <translation>redigering inte skickad</translation>
+    </message>
+    <message>
+        <source>That did not work. Try again in a moment.</source>
+        <translation>Det fungerade inte. Försök igen om en stund.</translation>
+    </message>
+    <message>
+        <source>Back to the latest messages</source>
+        <translation>Tillbaka till de senaste meddelandena</translation>
+    </message>
+    <message>
+        <source>Live location could not be started</source>
+        <translation>Liveplats kunde inte startas</translation>
+    </message>
+    <message>
+        <source>It is no longer waiting to be sent.</source>
+        <translation>Den väntar inte längre på att skickas.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomSettingsPage</name>
+    <message>
+        <source>Change it on the other network as well?</source>
+        <translation>Ändra även i det andra nätverket?</translation>
+    </message>
+    <message>
+        <source>The bridge passes the change on. Everyone in the chat there sees it, including people who do not use Matrix.</source>
+        <translation>Bryggan skickar vidare ändringen. Alla i chatten där ser den, även de som inte använder Matrix.</translation>
+    </message>
+    <message>
+        <source>Change</source>
+        <translation>Ändra</translation>
+    </message>
+    <message>
+        <source>The name could not be changed: %1</source>
+        <translation>Namnet kunde inte ändras: %1</translation>
+    </message>
+    <message>
+        <source>The topic could not be changed: %1</source>
+        <translation>Ämnet kunde inte ändras: %1</translation>
+    </message>
+    <message>
+        <source>The picture could not be changed: %1</source>
+        <translation>Bilden kunde inte ändras: %1</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Redigera rummet</translation>
+    </message>
+    <message>
+        <source>Your role in this room does not allow changing its name, topic or picture.</source>
+        <translation>Din roll i det här rummet tillåter inte att du ändrar dess namn, ämne eller bild.</translation>
+    </message>
+    <message>
+        <source>This room is bridged to another network. The bridge usually passes a new name, topic or picture on, and there it changes for everyone in the chat, including people who do not use Matrix.</source>
+        <translation>Det här rummet är bryggat till ett annat nätverk. Bryggan skickar oftast vidare ett nytt namn, ämne eller en ny bild, och där ändras det för alla i chatten, även för dem som inte använder Matrix.</translation>
+    </message>
+    <message>
+        <source>This chat is bridged to another network. There, name and picture belong to the contact: the bridge usually passes nothing on, and it can overwrite a name set here whenever the contact changes theirs. Which contact name the bridge shows is part of its own configuration.</source>
+        <translation>Den här chatten är bryggad till ett annat nätverk. Där hör namn och bild till kontakten: bryggan skickar oftast inget vidare, och den kan skriva över ett namn som angetts här så fort kontakten byter sitt. Vilket kontaktnamn bryggan visar bestäms i dess egen konfiguration.</translation>
+    </message>
+    <message>
+        <source>Name, topic and picture belong to the room: everyone in it sees the change.</source>
+        <translation>Namn, ämne och bild hör till rummet: alla i det ser ändringen.</translation>
+    </message>
+    <message>
+        <source>Bridged to</source>
+        <translation>Bryggad till</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <source>Change picture</source>
+        <translation>Byt bild</translation>
+    </message>
+    <message>
+        <source>Set picture</source>
+        <translation>Ange bild</translation>
+    </message>
+    <message>
+        <source>Remove picture</source>
+        <translation>Ta bort bild</translation>
+    </message>
+    <message>
+        <source>Name and topic</source>
+        <translation>Namn och ämne</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Namn</translation>
+    </message>
+    <message>
+        <source>No name set</source>
+        <translation>Inget namn angivet</translation>
+    </message>
+    <message>
+        <source>Without a name, the room is shown under the names of its members.</source>
+        <translation>Utan namn visas rummet under medlemmarnas namn.</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Ämne</translation>
+    </message>
+    <message>
+        <source>No topic set</source>
+        <translation>Inget ämne angivet</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Spara</translation>
+    </message>
+    <message>
+        <source>Saving…</source>
+        <translation>Sparar…</translation>
+    </message>
+    <message>
+        <source>Saved</source>
+        <translation>Sparat</translation>
+    </message>
+    <message>
+        <source>Whether this room is bridged to another network could not be checked. If it is, the change may apply there for everyone in the chat.</source>
+        <translation>Det gick inte att kontrollera om det här rummet är bryggat till ett annat nätverk. Om det är det kan ändringen gälla alla i chatten där.</translation>
+    </message>
+    <message>
+        <source>Change it anyway?</source>
+        <translation>Ändra ändå?</translation>
+    </message>
+</context>
+<context>
+    <name>SearchPage</name>
+    <message>
+        <source>Search messages</source>
+        <translation>Sök i meddelanden</translation>
+    </message>
+    <message>
+        <source>Search this conversation</source>
+        <translation>Sök i den här konversationen</translation>
+    </message>
+    <message>
+        <source>Search failed</source>
+        <translation>Sökningen misslyckades</translation>
+    </message>
+    <message>
+        <source>Nothing found</source>
+        <translation>Hittade inget</translation>
+    </message>
+    <message>
+        <source>Whole words only: &quot;test&quot; does not find &quot;test9&quot;. Pictures, files and messages from bots are not searched. And only what this device has already downloaded - load older messages in the conversation to add more.</source>
+        <translation>Bara hela ord: ”test” hittar inte ”test9”. Bilder, filer och meddelanden från bottar genomsöks inte. Och bara det enheten redan hämtat — hämta äldre meddelanden för att lägga till mer.</translation>
+    </message>
+</context>
+<context>
+    <name>SecretsHelpPage</name>
+    <message>
+        <source>Getting in again</source>
+        <translation>In igen</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys.</source>
+        <translation>Det här systemet saknar tjänsten som förvarar krypteringsnycklar.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service reports damaged data. Nothing can be unlocked in this state.</source>
+        <translation>Enhetens säkra lagring rapporterar skadade data. I det tillståndet går ingenting att låsa upp.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service itself is locked. Every app on this phone that stores secrets is affected, not only Shoal Messages.</source>
+        <translation>Enhetens säkra lagring är själv låst. Det drabbar varje app i telefonen som lagrar hemligheter, inte bara Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages' own key store is locked and waiting for your confirmation.</source>
+        <translation>Shoal Messages' egen nyckellagring är låst och väntar på din bekräftelse.</translation>
+    </message>
+    <message>
+        <source>The secrets service did not hand out a key, and it did not say why.</source>
+        <translation>Den säkra lagringen lämnade inte ut någon nyckel och sa inte varför.</translation>
+    </message>
+    <message>
+        <source>This is a property of the operating system, not a fault in Shoal Messages. The package exists and can be installed; some Sailfish images simply do not ship it.</source>
+        <translation>Detta är en egenskap hos operativsystemet, inte ett fel i Shoal Messages. Paketet finns och går att installera; vissa Sailfish-avbildningar levererar det helt enkelt inte.</translation>
+    </message>
+    <message>
+        <source>This is beyond what Shoal Messages can reach. Repairing it means resetting the service&apos;s own data, which affects every app on the device that stores secrets — ask in the Sailfish support channels before doing that.</source>
+        <translation>Det här ligger utanför vad Shoal Messages når. En reparation innebär att tjänstens egna data nollställs, vilket drabbar varje app i enheten som lagrar hemligheter — fråga först i Sailfish supportkanaler.</translation>
+    </message>
+    <message>
+        <source>The service is unlocked at start-up from your device lock code. Where that hand-off has stopped working, restarting lands in the same state every time — setting the code afresh is what starts it again.</source>
+        <translation>Tjänsten låses upp vid start med din enhetslåskod. Om den överlämningen har slutat fungera hamnar en omstart varje gång i samma tillstånd — att sätta koden på nytt är det som får igång den igen.</translation>
+    </message>
+    <message>
+        <source>The approval lasts until the device is restarted. If no request appears at all, the system components that draw it may be missing.</source>
+        <translation>Godkännandet gäller till nästa omstart av enheten. Om ingen förfrågan alls dyker upp kan systemdelarna som ritar den saknas.</translation>
+    </message>
+    <message>
+        <source>Setting the device lock code afresh and restarting is worth trying: it is what unlocks the service at start-up.</source>
+        <translation>Att sätta enhetslåskoden på nytt och starta om är värt ett försök: det är det som låser upp tjänsten vid start.</translation>
+    </message>
+    <message>
+        <source>What to do</source>
+        <translation>Vad du kan göra</translation>
+    </message>
+    <message>
+        <source>1. Switch on Developer mode in the system settings, under Settings › Developer tools.</source>
+        <translation>1. Slå på Utvecklarläge i systeminställningarna, under Inställningar › Utvecklarverktyg.</translation>
+    </message>
+    <message>
+        <source>2. Open the Terminal app and run the line below — tap it to copy. Then restart the device and start Shoal Messages again.</source>
+        <translation>2. Öppna Terminal-appen och kör raden nedan — tryck på den för att kopiera. Starta sedan om enheten och öppna Shoal Messages igen.</translation>
+    </message>
+    <message>
+        <source>Note down what this page reports below and take it to the Sailfish support channels. Signing out of Shoal Messages does not repair it.</source>
+        <translation>Anteckna vad den här sidan rapporterar nedan och ta det till Sailfish supportkanaler. Att logga ut ur Shoal Messages reparerar det inte.</translation>
+    </message>
+    <message>
+        <source>Go back and tap “Try again”, then confirm the system&apos;s request. If nothing appears, install the missing components (tap the line to copy) and restart the device.</source>
+        <translation>Gå tillbaka och tryck på ”Försök igen”, bekräfta sedan systemets förfrågan. Om ingenting dyker upp, installera de delar som saknas (tryck på raden för att kopiera) och starta om enheten.</translation>
+    </message>
+    <message>
+        <source>1. Open Settings › Device lock and set a new security code.</source>
+        <translation>1. Öppna Inställningar › Enhetslås och sätt en ny säkerhetskod.</translation>
+    </message>
+    <message>
+        <source>2. Restart the device.</source>
+        <translation>2. Starta om enheten.</translation>
+    </message>
+    <message>
+        <source>3. Start Shoal Messages again.</source>
+        <translation>3. Öppna Shoal Messages igen.</translation>
+    </message>
+    <message>
+        <source>Signing out does not help</source>
+        <translation>Att logga ut hjälper inte</translation>
+    </message>
+    <message>
+        <source>Signing out deletes this device&apos;s encryption keys along with the local data. You would then have to verify this device again from another one, and older messages would need your recovery key. It does not repair the secrets service.</source>
+        <translation>Att logga ut raderar den här enhetens krypteringsnycklar tillsammans med de lokala data. Du skulle sedan behöva verifiera enheten på nytt från en annan, och äldre meddelanden skulle kräva din återställningsnyckel. Den säkra lagringen repareras inte.</translation>
+    </message>
+    <message>
+        <source>What this page measured</source>
+        <translation>Vad den här sidan mätte</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityRows</name>
+    <message>
+        <source>Backup</source>
+        <translation>Säkerhetskopia</translation>
+    </message>
+    <message>
+        <source>Your room keys are backed up.</source>
+        <translation>Dina rumsnycklar är säkerhetskopierade.</translation>
+    </message>
+    <message>
+        <source>The backup is on the server but not unlocked on this device.</source>
+        <translation>Säkerhetskopian finns på servern men är inte upplåst på den här enheten.</translation>
+    </message>
+    <message>
+        <source>There is no key backup. Without one, messages become unreadable when this device is gone.</source>
+        <translation>Det finns ingen nyckelsäkerhetskopia. Utan den blir meddelanden olässbara när den här enheten är borta.</translation>
+    </message>
+    <message>
+        <source>Recovery</source>
+        <translation>Återställning</translation>
+    </message>
+    <message>
+        <source>Recovery is set up.</source>
+        <translation>Återställning är konfigurerad.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key to unlock the backup on this device.</source>
+        <translation>Ange din återställningsnyckel för att låsa upp säkerhetskopian på den här enheten.</translation>
+    </message>
+    <message>
+        <source>Cross-signing</source>
+        <translation>Korssignering</translation>
+    </message>
+    <message>
+        <source>This device is signed as yours.</source>
+        <translation>Den här enheten är signerad som din.</translation>
+    </message>
+    <message>
+        <source>Others see this device as unverified. The recovery key or a verification from another device settles it.</source>
+        <translation>Andra ser den här enheten som overifierad. Återställningsnyckeln eller en verifiering från en annan enhet löser det.</translation>
+    </message>
+    <message>
+        <source>Local storage</source>
+        <translation>Lokal lagring</translation>
+    </message>
+    <message>
+        <source>Session and message database are encrypted on this device.</source>
+        <translation>Session och meddelandedatabas är krypterade på den här enheten.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because they were created before this app could encrypt them. An existing database cannot be encrypted in place.</source>
+        <translation>De ligger okrypterade eftersom de skapades innan appen kunde kryptera dem. En befintlig databas kan inte krypteras i efterhand.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because the system&apos;s secure storage did not hand out a key.</source>
+        <translation>De ligger okrypterade eftersom systemets säkra lagring inte lämnade ut någon nyckel.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because this system is missing the service that keeps encryption keys.</source>
+        <translation>De ligger okrypterade eftersom systemet saknar tjänsten som förvarar krypteringsnycklar.</translation>
+    </message>
+    <message>
+        <source>Recovery key accepted — finishing. This can take a moment.</source>
+        <translation>Återställningsnyckeln godtagen — slutförs. Det kan ta ett ögonblick.</translation>
+    </message>
+    <message>
+        <source>There is no recovery for this account yet. Set up a key backup to create one.</source>
+        <translation>Det finns ännu ingen återställning för det här kontot. Konfigurera en nyckelsäkerhetskopia för att skapa en.</translation>
+    </message>
+    <message>
+        <source>The server could not be asked whether a backup exists.</source>
+        <translation>Servern kunde inte tillfrågas om det finns en säkerhetskopia.</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityStatusPage</name>
+    <message>
+        <source>Security</source>
+        <translation>Säkerhet</translation>
+    </message>
+    <message>
+        <source>Something on this device is not in order yet. You can settle it now or later.</source>
+        <translation>Något på den här enheten är inte i ordning ännu. Du kan lösa det nu eller senare.</translation>
+    </message>
+    <message>
+        <source>Enter recovery key</source>
+        <translation>Ange återställningsnyckel</translation>
+    </message>
+    <message>
+        <source>Set up backup now</source>
+        <translation>Konfigurera säkerhetskopia nu</translation>
+    </message>
+    <message>
+        <source>Encrypt storage now</source>
+        <translation>Kryptera lagringen nu</translation>
+    </message>
+    <message>
+        <source>Why is that</source>
+        <translation>Varför är det så</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Senare</translation>
+    </message>
+    <message>
+        <source>You will find all of this again under Account › Encryption.</source>
+        <translation>Allt detta hittar du igen under Konto › Kryptering.</translation>
+    </message>
+    <message>
+        <source>Everything on this device is in order.</source>
+        <translation>Allt på den här enheten är i ordning.</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Stäng</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Verifiera den här enheten</translation>
+    </message>
+</context>
+<context>
+    <name>SendMediaPage</name>
+    <message>
+        <source>Reply</source>
+        <translation>Svara</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Skicka</translation>
+    </message>
+    <message>
+        <source>Caption</source>
+        <translation>Bildtext</translation>
+    </message>
+    <message>
+        <source>Caption (optional)</source>
+        <translation>Bildtext (valfri)</translation>
+    </message>
+    <message>
+        <source>%1 files, sent one after another. The caption goes with the first one.</source>
+        <translation>%1 filer, skickas en efter en. Bildtexten följer med den första.</translation>
+    </message>
+    <message>
+        <source>Send at original resolution</source>
+        <translation>Skicka i originalupplösning</translation>
+    </message>
+    <message>
+        <source>Off, the picture is made smaller before it goes out and its metadata - the place it was taken, among them - does not travel with it.</source>
+        <translation>Av görs bilden mindre innan den skickas, och dess metadata – bland annat platsen den togs på – följer inte med.</translation>
+    </message>
+</context>
+<context>
+    <name>SendQueueBanner</name>
+    <message>
+        <source>A message could not be sent.</source>
+        <translation>Ett meddelande kunde inte skickas.</translation>
+    </message>
+    <message>
+        <source>An edit could not be sent.</source>
+        <translation>En redigering kunde inte skickas.</translation>
+    </message>
+    <message>
+        <source>A deletion could not be sent. The message is still there for everyone else.</source>
+        <translation>En borttagning kunde inte skickas. Meddelandet finns kvar för alla andra.</translation>
+    </message>
+    <message>
+        <source>A reaction could not be sent.</source>
+        <translation>En reaktion kunde inte skickas.</translation>
+    </message>
+    <message>
+        <source>A poll vote could not be sent.</source>
+        <translation>En röst i en omröstning kunde inte skickas.</translation>
+    </message>
+    <message>
+        <source>A change could not be sent.</source>
+        <translation>En ändring kunde inte skickas.</translation>
+    </message>
+    <message>
+        <source>Someone you verified has a new identity. Withdraw the verification on their profile, then send again.</source>
+        <translation>En person som du har verifierat har en ny identitet. Dra tillbaka verifieringen på personens profil och skicka sedan igen.</translation>
+    </message>
+    <message>
+        <source>This device has to be verified first.</source>
+        <translation>Den här enheten måste verifieras först.</translation>
+    </message>
+    <message>
+        <source>Some devices in this room are not verified.</source>
+        <translation>Vissa enheter i det här rummet är inte verifierade.</translation>
+    </message>
+    <message>
+        <source>Everything sent after it in this room waits behind it.</source>
+        <translation>Allt som skickats efter den i det här rummet väntar bakom den.</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Skicka igen</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Kasta</translation>
+    </message>
+    <message>
+        <source>A poll could not be sent.</source>
+        <translation>En omröstning kunde inte skickas.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionLockedPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Logga ut och radera lokala data</translation>
+    </message>
+    <message>
+        <source>Locked</source>
+        <translation>Låst</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix för Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your session is stored encrypted, and the key was not available when Shoal Messages started.</source>
+        <translation>Din session är sparad krypterad, och nyckeln var inte tillgänglig när Shoal Messages startade.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Försök igen</translation>
+    </message>
+    <message>
+        <source>The key lives in the device&apos;s secrets storage. Try again and confirm the system&apos;s request; the approval lasts until the next restart of the device. If no request appears at all, the secrets service itself is at fault rather than your account.</source>
+        <translation>Nyckeln ligger i enhetens säkra lagring. Försök igen och bekräfta systemets förfrågan; godkännandet gäller till nästa omstart av enheten. Om ingen förfrågan alls dyker upp ligger felet i den säkra lagringen och inte i ditt konto.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Behöver du hjälp?</translation>
+    </message>
+</context>
+<context>
+    <name>SessionNewerPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Logga ut och radera lokala data</translation>
+    </message>
+    <message>
+        <source>Newer version needed</source>
+        <translation>Nyare version krävs</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix för Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Försök igen</translation>
+    </message>
+    <message>
+        <source>Your session was saved in a format this version does not know, most likely by a newer version of Shoal Messages.</source>
+        <translation>Din session sparades i ett format som den här versionen inte känner till, troligen av en nyare version av Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>If a newer version of Shoal Messages was installed before, installing it again opens everything as before. Signing out instead deletes the data and keys this device holds.</source>
+        <translation>Om en nyare version av Shoal Messages var installerad tidigare öppnas allt som förut när den installeras igen. Att logga ut raderar i stället data och nycklar på den här enheten.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionOfflinePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Logga ut och radera lokala data</translation>
+    </message>
+    <message>
+        <source>No connection</source>
+        <translation>Ingen anslutning</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix för Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your homeserver could not be reached. You are still signed in, and nothing on this device has changed.</source>
+        <translation>Din hemserver kunde inte nås. Du är fortfarande inloggad, och ingenting har ändrats på den här enheten.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages keeps trying on its own. Do not sign in again: that would start a new device and cost the keys to your encrypted history.</source>
+        <translation>Shoal Messages fortsätter försöka på egen hand. Logga inte in igen: det skulle skapa en ny enhet och kosta nycklarna till din krypterade historik.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Försök igen</translation>
+    </message>
+</context>
+<context>
+    <name>ShareLocationPage</name>
+    <message>
+        <source>Share location</source>
+        <translation>Dela plats</translation>
+    </message>
+    <message>
+        <source>Finding your position…</source>
+        <translation>Hämtar din position…</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Försök igen</translation>
+    </message>
+    <message>
+        <source>Send this position</source>
+        <translation>Skicka den här positionen</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Liveplats</translation>
+    </message>
+    <message>
+        <source>Your position goes to this room when you move, while the app is open, until the time is up or you stop it. When the app is closed, the others see the last position until the end of the time.</source>
+        <translation>Din position skickas till det här rummet när du rör dig, medan appen är öppen, tills tiden är ute eller du avslutar. När appen är stängd ser de andra den senaste positionen tills tiden är slut.</translation>
+    </message>
+    <message>
+        <source>For</source>
+        <translation>I</translation>
+    </message>
+    <message>
+        <source>1 hour</source>
+        <translation>1 timme</translation>
+    </message>
+    <message>
+        <source>Share live location</source>
+        <translation>Dela liveplats</translation>
+    </message>
+    <message>
+        <source>Sharing your live location until %1.</source>
+        <translation>Du delar din liveplats till %1.</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Sluta dela</translation>
+    </message>
+    <message>
+        <source>6 hours</source>
+        <translation>6 timmar</translation>
+    </message>
+    <message>
+        <source>1 day</source>
+        <translation>1 dag</translation>
+    </message>
+</context>
+<context>
+    <name>ShareToRoomPage</name>
+    <message>
+        <source>Send to</source>
+        <translation>Skicka till</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Inga rum</translation>
+    </message>
+</context>
+<context>
+    <name>ShieldGlossaryPage</name>
+    <message>
+        <source>Message marks</source>
+        <translation>Tecken vid meddelanden</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Skickat okrypterat</translation>
+    </message>
+    <message>
+        <source>The message went out without encryption although the room uses it. Anybody who can read the server&apos;s copy can read the message.</source>
+        <translation>Meddelandet gick ut okrypterat trots att rummet använder kryptering. Den som kan läsa kopian på servern kan läsa meddelandet.</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Skickades inte av kontot som anges</translation>
+    </message>
+    <message>
+        <source>The message was encrypted by a device that does not belong to the account it claims to come from - somebody is sending under another name. Some bridges work this way and produce it harmlessly; anywhere else it is the one sign of an actual impersonation this app has.</source>
+        <translation>Meddelandet krypterades av en enhet som inte tillhör kontot det påstår sig komma från — någon skickar under annat namn. Vissa bryggor fungerar så och orsakar det harmlöst; överallt annars är det det enda tecknet på en verklig förfalskning som appen har.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Avsändarens nycklar har ändrats</translation>
+    </message>
+    <message>
+        <source>This person&apos;s cryptographic identity is no longer the one that was verified. Either they set up their account again, or somebody else is using it.</source>
+        <translation>Den här personens kryptografiska identitet är inte längre den som verifierades. Antingen har de satt upp kontot på nytt, eller så använder någon annan det.</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Från en overifierad enhet</translation>
+    </message>
+    <message>
+        <source>The device that sent this has not been confirmed by the account it belongs to. That is normal for a device somebody has just started using.</source>
+        <translation>Enheten som skickade detta har inte bekräftats av kontot den tillhör. För en enhet någon just börjat använda är det normalt.</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Från en overifierad person</translation>
+    </message>
+    <message>
+        <source>This person&apos;s identity has never been verified, so there is nothing to check the message against.</source>
+        <translation>Den här personens identitet har aldrig verifierats, så det finns inget att pröva meddelandet mot.</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Äktheten är inte bekräftad</translation>
+    </message>
+    <message>
+        <source>The message could not be checked at all. It is not necessarily wrong - only unproven.</source>
+        <translation>Meddelandet gick inte att kontrollera alls. Det är inte nödvändigtvis fel — bara obevisat.</translation>
+    </message>
+    <message>
+        <source>A mark beside a message means its authenticity could not be fully confirmed. A red triangle says the message is not what it claims to be. An orange dot says something about it could not be checked. Tap a mark in the conversation to see which of the cases below it is.</source>
+        <translation>Ett tecken bredvid ett meddelande betyder att dess äkthet inte kunde bekräftas helt. En röd triangel säger att meddelandet inte är vad det utger sig för. En orange punkt säger att något med det inte gick att kontrollera. Tryck på ett tecken i konversationen för att se vilket av fallen nedan det är.</translation>
+    </message>
+</context>
+<context>
+    <name>SpaceColourPage</name>
+    <message>
+        <source>Colour</source>
+        <translation>Färg</translation>
+    </message>
+    <message>
+        <source>Automatic colour</source>
+        <translation>Automatisk färg</translation>
+    </message>
+    <message>
+        <source>Taken from the space itself, a different one for each</source>
+        <translation>Hämtad från spacet självt, en egen för varje</translation>
+    </message>
+    <message>
+        <source>Marking the space on a room&apos;s picture is switched off under Account, Appearance. Until it is on, this colour is drawn nowhere.</source>
+        <translation>Markeringen av Space på rummets bild är avstängd under Konto, Utseende. Så länge den är av ritas den här färgen ingenstans.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacePage</name>
+    <message>
+        <source>Space</source>
+        <translation>Space</translation>
+    </message>
+    <message>
+        <source>Add rooms</source>
+        <translation>Lägg till rum</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Uppdatera</translation>
+    </message>
+    <message>
+        <source>Move to space</source>
+        <translation>Flytta till en space</translation>
+    </message>
+    <message>
+        <source>Remove from space</source>
+        <translation>Ta bort ur din space</translation>
+    </message>
+    <message>
+        <source>Linked, not joined</source>
+        <translation>Länkat, inte anslutet</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n medlem</numerusform>
+            <numerusform>%n medlemmar</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Gå med</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Går med</translation>
+    </message>
+    <message>
+        <source>No rooms in this space</source>
+        <translation>Inga rum i den här spacen</translation>
+    </message>
+    <message>
+        <source>Add rooms with the pulldown menu, or rooms of this space that you have joined show up here.</source>
+        <translation>Lägg till rum med rullgardinsmenyn, eller så visas de rum i din space som du gått med i här.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacesPage</name>
+    <message>
+        <source>Really delete this space?</source>
+        <translation>Verkligen radera den här spacen?</translation>
+    </message>
+    <message>
+        <source>The space is left and forgotten. The rooms in it are not touched — they stay in the chat list.</source>
+        <translation>Din space lämnas och glöms bort. Rummen i den rörs inte — de stannar i chattlistan.</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Radera</translation>
+    </message>
+    <message>
+        <source>Deleting space</source>
+        <translation>Raderar space</translation>
+    </message>
+    <message>
+        <source>Spaces</source>
+        <translation>Spaces</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Offline — väntar på nätverket</translation>
+    </message>
+    <message>
+        <source>Create space</source>
+        <translation>Skapa space</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Gör till startsida</translation>
+    </message>
+    <message>
+        <source>Delete space</source>
+        <translation>Radera space</translation>
+    </message>
+    <message>
+        <source>No spaces</source>
+        <translation>Inga spaces</translation>
+    </message>
+    <message>
+        <source>Spaces you are a member of show up here. Spaces group rooms together.</source>
+        <translation>De spaces du är medlem i visas här. En space grupperar rum.</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Lokala data är skadade</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Färg</translation>
+    </message>
+</context>
+<context>
+    <name>StorageBlockedPage</name>
+    <message>
+        <source>Encryption not possible</source>
+        <translation>Kryptering inte möjlig</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix för Sailfish OS</translation>
+    </message>
+    <message>
+        <source>The secure storage did not hand out a key, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Den säkra lagringen lämnade inte ut någon nyckel, så Shoal Messages kan inte skapa en krypterad databas.</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Systemet saknar tjänsten som förvarar krypteringsnycklar, så Shoal Messages kan inte skapa en krypterad databas.</translation>
+    </message>
+    <message>
+        <source>Check again</source>
+        <translation>Kontrollera igen</translation>
+    </message>
+    <message>
+        <source>Messages stay end-to-end encrypted on their way through the network either way. This is only about what lies on the device.</source>
+        <translation>Meddelanden förblir totalsäkrade på vägen genom nätet oavsett. Det här gäller bara det som ligger på enheten.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Behöver du hjälp?</translation>
+    </message>
+    <message>
+        <source>Checked — the secure storage still will not hand out a key.</source>
+        <translation>Kontrollerat — den säkra lagringen lämnar fortfarande inte ut någon nyckel.</translation>
+    </message>
+</context>
+<context>
+    <name>StoreUnreadablePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Logga ut och radera lokala data</translation>
+    </message>
+    <message>
+        <source>Local data unreadable</source>
+        <translation>Lokala data går inte att läsa</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix för Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Shoal Messages could not read back part of the data it keeps on this device. Your account, this device and its encryption keys are not affected.</source>
+        <translation>Shoal Messages kunde inte läsa in en del av de data som det sparar på den här enheten igen. Ditt konto, den här enheten och dess krypteringsnycklar påverkas inte.</translation>
+    </message>
+    <message>
+        <source>Rebuilding deletes the rooms and messages stored on this device and loads them again from your homeserver. This device and its keys stay; messages that were not sent yet are lost.</source>
+        <translation>Att bygga om raderar rummen och meddelandena som sparats på den här enheten och läser in dem igen från din hemserver. Den här enheten och dess nycklar finns kvar; meddelanden som inte har skickats ännu går förlorade.</translation>
+    </message>
+    <message>
+        <source>Rebuild local data</source>
+        <translation>Bygg om lokala data</translation>
+    </message>
+</context>
+<context>
+    <name>ThreadPage</name>
+    <message>
+        <source>Load older posts</source>
+        <translation>Ladda äldre inlägg</translation>
+    </message>
+    <message>
+        <source>Thread</source>
+        <translation>Tråd</translation>
+    </message>
+    <message>
+        <source>Event</source>
+        <translation>Händelse</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Kan inte dekrypteras — enheten saknar nyckeln</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Meddelande raderat</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Bilaga</translation>
+    </message>
+    <message>
+        <source>Thread unavailable</source>
+        <translation>Tråden är otillgänglig</translation>
+    </message>
+    <message>
+        <source>Loading thread</source>
+        <translation>Laddar tråden</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Svara i tråden</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Skickat okrypterat</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Skickades inte av kontot som anges</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Avsändarens nycklar har ändrats</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Från en overifierad enhet</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Från en overifierad person</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Äktheten är inte bekräftad</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Öppna den här adressen?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Öppna</translation>
+    </message>
+</context>
+<context>
+    <name>UnverifiedRecipientsDialog</name>
+    <message>
+        <source>Send anyway</source>
+        <translation>Skicka ändå</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n unverified device(s)</source>
+        <translation>
+            <numerusform>%n overifierad enhet</numerusform>
+            <numerusform>%n overifierade enheter</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Do not warn about this user again</source>
+        <translation>Varna inte om den här användaren igen</translation>
+    </message>
+    <message>
+        <source>Do not warn about these users again</source>
+        <translation>Varna inte om de här användarna igen</translation>
+    </message>
+    <message>
+        <source>Applies until you verify or clear it.</source>
+        <translation>Gäller tills du verifierar eller nollställer.</translation>
+    </message>
+    <message>
+        <source>keys changed since you verified them</source>
+        <translation>nycklarna ändrades efter att du verifierade dem</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>inte verifierad</translation>
+    </message>
+    <message>
+        <source>This device is not verified</source>
+        <translation>Den här enheten är inte verifierad</translation>
+    </message>
+    <message>
+        <source>Unverified recipients</source>
+        <translation>Overifierade mottagare</translation>
+    </message>
+    <message>
+        <source>The message will be encrypted for recipients you have not verified. Verify them for real certainty, or send anyway.</source>
+        <translation>Meddelandet krypteras till mottagare du inte har verifierat. Verifiera dem för verklig säkerhet, eller skicka ändå.</translation>
+    </message>
+    <message>
+        <source>Do not warn again</source>
+        <translation>Varna inte igen</translation>
+    </message>
+    <message>
+        <source>As long as this device is unverified, no other device can be shown as verified — not even one that is. Verify it under Account → Encryption, or send anyway.</source>
+        <translation>Så länge den här enheten inte är verifierad kan ingen annan enhet visas som verifierad — inte ens en som är det. Verifiera den under Konto → Kryptering, eller skicka ändå.</translation>
+    </message>
+</context>
+<context>
+    <name>VerificationPage</name>
+    <message>
+        <source>Verification</source>
+        <translation>Verifiering</translation>
+    </message>
+    <message>
+        <source>Another one of your devices</source>
+        <translation>Ännu en av dina enheter</translation>
+    </message>
+    <message>
+        <source>Your answer is in. Waiting for the other device.</source>
+        <translation>Ditt svar är registrerat. Väntar på den andra enheten.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other device to accept.</source>
+        <translation>Väntar på att den andra enheten accepterar.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other side to accept the request on their device.</source>
+        <translation>Väntar på att motparten accepterar begäran på sin enhet.</translation>
+    </message>
+    <message>
+        <source>Confirm that this is really your other device. Once verified, both can share room keys and older messages become readable.</source>
+        <translation>Bekräfta att detta verkligen är din andra enhet. När de är verifierade kan båda dela rumsnycklar och äldre meddelanden blir läsbara.</translation>
+    </message>
+    <message>
+        <source>Confirm that you are really talking to this person and not to someone in between.</source>
+        <translation>Bekräfta att du verkligen talar med den här personen och inte med någon däremellan.</translation>
+    </message>
+    <message>
+        <source>Both devices must show the same emoji, in the same order.</source>
+        <translation>Båda enheterna måste visa samma emojier, i samma ordning.</translation>
+    </message>
+    <message>
+        <source>Verified.</source>
+        <translation>Verifierad.</translation>
+    </message>
+    <message>
+        <source>The verification was cancelled.</source>
+        <translation>Verifieringen avbröts.</translation>
+    </message>
+    <message>
+        <source>They do not match</source>
+        <translation>De stämmer inte</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Avvisa</translation>
+    </message>
+    <message>
+        <source>They match</source>
+        <translation>De stämmer</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Svara</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Stäng</translation>
+    </message>
+</context>
+<context>
+    <name>VerifyUserPage</name>
+    <message>
+        <source>Verify user</source>
+        <translation>Verifiera användare</translation>
+    </message>
+    <message>
+        <source>Both sides then compare seven emoji. That is what says nobody is sitting in between — and it holds for every room you share with this person.</source>
+        <translation>Båda sidor jämför sedan sju emojier. Det är det som säger att ingen sitter emellan — och det gäller varje rum du delar med den här personen.</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Användar-ID</translation>
+    </message>
+    <message>
+        <source>For example @anna:example.org or @tom:example.net</source>
+        <translation>Till exempel @anna:example.org eller @tom:example.net</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Verifiera</translation>
+    </message>
+    <message>
+        <source>Your own device</source>
+        <translation>Din egen enhet</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Jämför sju emojier med din andra enhet. Du behöver den enheten framför dig; när båda har bekräftat kan den här läsa de delade rumsnycklarna.</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Verifiera den här enheten</translation>
+    </message>
+</context>
+<context>
+    <name>VideoPage</name>
+    <message>
+        <source>Save</source>
+        <translation>Spara</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Den här bilagan kunde inte läsas in</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Sparad i Hämtningar</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Vidarebefordra</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceRecorder</name>
+    <message>
+        <source>Nothing was recorded.</source>
+        <translation>Ingenting spelades in.</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceTranscripts</name>
+    <message>
+        <source>This voice message has no file.</source>
+        <translation>Det här röstmeddelandet har ingen fil.</translation>
+    </message>
+    <message>
+        <source>The voice message is too long to convert.</source>
+        <translation>Röstmeddelandet är för långt för att omvandlas.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be downloaded.</source>
+        <translation>Röstmeddelandet kunde inte laddas ner.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be read.</source>
+        <translation>Röstmeddelandet kunde inte läsas.</translation>
+    </message>
+    <message>
+        <source>This is not a voice message that can be converted.</source>
+        <translation>Det här är inget röstmeddelande som kan omvandlas.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be decoded.</source>
+        <translation>Röstmeddelandet kunde inte avkodas.</translation>
+    </message>
+    <message>
+        <source>Converting took too long and was stopped.</source>
+        <translation>Omvandlingen tog för lång tid och avbröts.</translation>
+    </message>
+    <message>
+        <source>Speech Note is not installed, or its service does not start.</source>
+        <translation>Speech Note är inte installerat, eller så startar inte dess tjänst.</translation>
+    </message>
+    <message>
+        <source>Speech Note has no model that recognises the language by itself. Download &quot;Auto (WhisperCpp Small)&quot; in Speech Note.</source>
+        <translation>Speech Note har ingen modell som själv känner igen språket. Ladda ner ”Auto (WhisperCpp Small)” i Speech Note.</translation>
+    </message>
+    <message>
+        <source>The speech service is busy. Try again in a moment.</source>
+        <translation>Taltjänsten är upptagen. Försök igen om en stund.</translation>
+    </message>
+    <message>
+        <source>The speech service refused the voice message.</source>
+        <translation>Taltjänsten avvisade röstmeddelandet.</translation>
+    </message>
+    <message>
+        <source>The speech service reported an error.</source>
+        <translation>Taltjänsten rapporterade ett fel.</translation>
+    </message>
+    <message>
+        <source>Everything works: voice messages can be converted.</source>
+        <translation>Allt fungerar: röstmeddelanden kan omvandlas.</translation>
+    </message>
+    <message>
+        <source>No speech was recognised.</source>
+        <translation>Inget tal kändes igen.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages may not talk to the speech service. Reinstalling Shoal Messages puts the permission back.</source>
+        <translation>Shoal Messages får inte prata med taltjänsten. Om du installerar om Shoal Messages kommer behörigheten tillbaka.</translation>
+    </message>
+    <message>
+        <source>The speech service does not answer.</source>
+        <translation>Taltjänsten svarar inte.</translation>
+    </message>
+</context>
+<context>
+    <name>shipwright-shoal-messages</name>
+    <message numerus="yes">
+        <source>%n mention(s)</source>
+        <translation>
+            <numerusform>%n omnämnande</numerusform>
+            <numerusform>%n omnämnanden</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new message(s)</source>
+        <translation>
+            <numerusform>%n nytt meddelande</numerusform>
+            <numerusform>%n nya meddelanden</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Inkommande videosamtal</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Inkommande samtal</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Nytt meddelande</translation>
+    </message>
+</context>
+</TS>

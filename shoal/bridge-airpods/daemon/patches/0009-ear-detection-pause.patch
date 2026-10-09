@@ -1,0 +1,1931 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Thu, 1 Oct 2026 07:40:44 +0000
+Subject: [PATCH] Pause media when a bud leaves the ear and resume it when it
+ is back
+
+AirPods report ear detection over AAP (packet 0x06: the primary and the
+secondary bud, each in the ear, out of it or in the case) but, unlike with
+an iPhone, nothing on the host acts on it. Add:
+
+- the read-only earDetection capability: primary, secondary and, once the
+  battery packet has said which bud is primary, left and right;
+- playback control over MPRIS on the session bus: when a worn bud is
+  taken out, the player whose PlaybackStatus is Playing is paused and
+  remembered; when the buds are back, that same player is resumed if it
+  is still paused. A player the user plays or stops in the meantime is
+  forgotten, so something the user paused is never resumed. Losing the
+  link forgets it too;
+- the earDetectionPause setting in the magicpods container: "off",
+  "oneRemoved" (the default) or "bothRemoved".
+
+The state machine (EarPauseController) is separate from D-Bus
+(MprisClient). MprisClient uses one connection without an event loop
+thread: the players' PropertiesChanged signals wait in its queue and are
+delivered in order when the controller asks, and by Pause and Play up to
+the player's answer, so a report sent before the player answered our
+Pause is never mistaken for the user taking over.
+
+DEBUG self-tests in TestsAapEarDetection cover the parser and the state
+machine with fake players. TestsEarPauseMpris runs the controller with
+the real MprisClient against fake players on a private bus, when
+MAGICPODS_TEST_MPRIS is set.
+
+Protocol reference: LibrePods (https://github.com/librepods-org/librepods),
+"AAP Definitions.md", "Ear Detection", and its Linux client's ear
+detection and media controller (pause when one bud is removed by
+default).
+---
+ CMakeLists.txt                                |   6 +
+ api-reference.md                              |  49 ++
+ src/device/AapDevice.cpp                      |   2 +
+ .../aap/AapEarDetectionCapability.cpp         |  79 +++
+ .../aap/AapEarDetectionCapability.h           |  43 ++
+ src/main.cpp                                  |  34 ++
+ src/media/EarPauseController.cpp              | 211 ++++++++
+ src/media/EarPauseController.h                | 103 ++++
+ src/media/MediaPlayers.h                      |  53 ++
+ src/media/MprisClient.cpp                     | 220 +++++++++
+ src/media/MprisClient.h                       |  65 +++
+ src/sdk/aap/AapEarDetection.cpp               |  74 +++
+ src/sdk/aap/AapEarDetection.h                 |  55 +++
+ src/sdk/aap/enums/AapCmd.h                    |   2 +
+ src/settings/SettingsService.cpp              |   2 +
+ src/tests/TestsAapEarDetection.cpp            | 464 ++++++++++++++++++
+ src/tests/TestsAapEarDetection.h              |  41 ++
+ src/tests/TestsEarPauseMpris.cpp              | 140 ++++++
+ src/tests/TestsEarPauseMpris.h                |  26 +
+ 19 files changed, 1669 insertions(+)
+ create mode 100644 src/device/capabilities/aap/AapEarDetectionCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapEarDetectionCapability.h
+ create mode 100644 src/media/EarPauseController.cpp
+ create mode 100644 src/media/EarPauseController.h
+ create mode 100644 src/media/MediaPlayers.h
+ create mode 100644 src/media/MprisClient.cpp
+ create mode 100644 src/media/MprisClient.h
+ create mode 100644 src/sdk/aap/AapEarDetection.cpp
+ create mode 100644 src/sdk/aap/AapEarDetection.h
+ create mode 100644 src/tests/TestsAapEarDetection.cpp
+ create mode 100644 src/tests/TestsAapEarDetection.h
+ create mode 100644 src/tests/TestsEarPauseMpris.cpp
+ create mode 100644 src/tests/TestsEarPauseMpris.h
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5a0477f..78c32f4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -15,12 +15,17 @@ add_executable(magicpodscore
+     src/tests/TestsAapBle.cpp
+     src/tests/TestsPbp.cpp
+     src/tests/TestsAapAppleGated.cpp
++    src/tests/TestsAapEarDetection.cpp
++    src/tests/TestsEarPauseMpris.cpp
+ 
+     src/client/Client.cpp
+     src/pulseaudio/PulseAudioClient.cpp
++    src/media/EarPauseController.cpp
++    src/media/MprisClient.cpp
+ 
+     src/sdk/aap/AapHelper.cpp
+     src/sdk/aap/AapControlCommand.cpp
++    src/sdk/aap/AapEarDetection.cpp
+     src/sdk/aap/att/AttPdu.cpp
+     src/sdk/aap/att/AapHearingSettings.cpp
+     src/sdk/aap/setters/AapEnableNotifications.cpp
+@@ -95,6 +100,7 @@ add_executable(magicpodscore
+     src/device/capabilities/aap/AapTransparencyCustomCapability.cpp
+     src/device/capabilities/aap/AapLoudSoundReductionCapability.cpp
+     src/device/capabilities/aap/AapMultiDeviceCapability.cpp
++    src/device/capabilities/aap/AapEarDetectionCapability.cpp
+     src/device/capabilities/aap/AppAnimationCapability.cpp
+ 
+     src/device/capabilities/sgb/GalaxyBudsCapability.cpp
+diff --git a/api-reference.md b/api-reference.md
+index 2e6eef3..74f452e 100644
+--- a/api-reference.md
++++ b/api-reference.md
+@@ -764,6 +764,45 @@ Specifies how a call is ended. If ending a call is assigned to a single press, m
+ | `3`      | SinglePress |
+ 
+ 
++##### Ear detection (read-only)
++
++Where each bud is, as the headphones report it (packet 0x06) whenever a bud
++is put in or taken out of an ear or put in the case. Listed from the first
++report after connecting; headphones without ear detection never list it.
++`primary` is the bud that holds the link to the host; when it is taken out
++the headphones usually make the other bud primary and report again. `left`
++and `right` are listed once the battery report has said which bud is
++primary. Headphones with one component (AirPods Max) report only `primary`
++meaningfully.
++
++```json
++{
++  "earDetection": {
++    "readonly": true,
++    "primary": "inEar",
++    "secondary": "outOfEar",
++    "left": "inEar",
++    "right": "outOfEar"
++  }
++}
++```
++
++| Value      |                                              |
++| ---------- | -------------------------------------------- |
++| `inEar`    | In an ear                                    |
++| `outOfEar` | Out of the ear, not in the case              |
++| `inCase`   | In the case                                  |
++| `unknown`  | Not connected, or a value this version does not know |
++
++The daemon also pauses the media player that is playing (MPRIS,
++`org.mpris.MediaPlayer2.*` on the session bus) when buds are taken out, and
++resumes the same player when they are back, following the
++`earDetectionPause` setting (see "Daemon settings"). It resumes only a player
++it paused itself, only if that player is still paused, and never after the
++user played or stopped it in the meantime or after the headphones
++disconnected.
++
++
+ ### Features that need Apple's Device ID
+ 
+ AirPods offer some features only to hosts whose Device ID (the DID profile)
+@@ -1003,5 +1042,15 @@ If any setting changes:
+ ```
+ 
+ 
++### Daemon settings
+ 
++The daemon keeps its own settings in the `magicpods` container, read and
++written with the methods above.
+ 
++| Setting             | Type   | Default        | Meaning |
++| ------------------- | ------ | -------------- | ------- |
++| `earDetectionPause` | string | `"oneRemoved"` | When to pause media as buds leave the ears: `"off"`; `"oneRemoved"`, when any worn bud is taken out (resumed when all of them are back); `"bothRemoved"`, when no bud is left in an ear (resumed when one is back). Any other value means `"oneRemoved"`. Applies from the next change of the buds on. |
++
++```json
++{"method":"SetSetting","arguments":{"container":"magicpods","setting":"earDetectionPause","value":"bothRemoved"}}
++```
+diff --git a/src/device/AapDevice.cpp b/src/device/AapDevice.cpp
+index 6c486f9..0cadc12 100644
+--- a/src/device/AapDevice.cpp
++++ b/src/device/AapDevice.cpp
+@@ -27,6 +27,7 @@
+ #include "capabilities/aap/AapTransparencyCustomCapability.h"
+ #include "capabilities/aap/AapLoudSoundReductionCapability.h"
+ #include "capabilities/aap/AapMultiDeviceCapability.h"
++#include "capabilities/aap/AapEarDetectionCapability.h"
+ #include "HostDeviceId.h"
+ 
+ #include <thread>
+@@ -150,6 +151,7 @@ namespace MagicPodsCore
+         device->capabilities.push_back(std::make_unique<AapToneVolumeCapability>(*device));
+         device->capabilities.push_back(std::make_unique<AapMuteMicrophoneEndCallCapability>(*device));
+         device->capabilities.push_back(std::make_unique<AapAdaptiveAudioNoiseCapability>(*device));
++        device->capabilities.push_back(std::make_unique<AapEarDetectionCapability>(*device));
+         device->capabilities.push_back(std::make_unique<AppAnimationCapability>(*device));
+ 
+         // Features AirPods offer only to hosts with Apple's Device ID.
+diff --git a/src/device/capabilities/aap/AapEarDetectionCapability.cpp b/src/device/capabilities/aap/AapEarDetectionCapability.cpp
+new file mode 100644
+index 0000000..3369a4a
+--- /dev/null
++++ b/src/device/capabilities/aap/AapEarDetectionCapability.cpp
+@@ -0,0 +1,79 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapEarDetectionCapability.h"
++#include "media/MprisClient.h"
++
++namespace MagicPodsCore
++{
++    AapEarDetectionCapability::AapEarDetectionCapability(AapDevice &device)
++        : AapCapability("earDetection", true, device), _controller(MprisClient::Instance())
++    {
++    }
++
++    nlohmann::json AapEarDetectionCapability::CreateJsonBody()
++    {
++        std::lock_guard lock{_stateMutex};
++        auto body = nlohmann::json::object();
++        body["primary"] = AapEarStateToString(_state.primary);
++        body["secondary"] = AapEarStateToString(_state.secondary);
++        if (_primaryBud == AapPrimaryBud::Left || _primaryBud == AapPrimaryBud::Right) {
++            const bool leftPrimary = _primaryBud == AapPrimaryBud::Left;
++            body["left"] = AapEarStateToString(leftPrimary ? _state.primary : _state.secondary);
++            body["right"] = AapEarStateToString(leftPrimary ? _state.secondary : _state.primary);
++        }
++        return body;
++    }
++
++    void AapEarDetectionCapability::OnReceivedData(const std::vector<unsigned char> &data)
++    {
++        if (auto primaryBud = AapParsePrimaryBud(data); primaryBud.has_value()) {
++            bool changed = false;
++            {
++                std::lock_guard lock{_stateMutex};
++                changed = _primaryBud != primaryBud;
++                _primaryBud = primaryBud;
++            }
++            if (changed) {
++                _controller.SetSingleBud(primaryBud == AapPrimaryBud::Single);
++                if (isAvailable)
++                    _onChanged.FireEvent(*this);
++            }
++            return;
++        }
++
++        auto earDetection = AapEarDetection::Parse(data);
++        if (!earDetection.has_value())
++            return;
++
++        bool changed = false;
++        {
++            std::lock_guard lock{_stateMutex};
++            changed = !isAvailable || _state.primary != earDetection->primary || _state.secondary != earDetection->secondary;
++            _state = earDetection.value();
++            isAvailable = true;
++        }
++        if (changed) {
++            Logger::Info("Ear detection: primary %s, secondary %s", AapEarStateToString(earDetection->primary).c_str(),
++                         AapEarStateToString(earDetection->secondary).c_str());
++            _onChanged.FireEvent(*this);
++        }
++
++        // The policy is read on every packet, so a changed setting applies
++        // from the next change of the buds on.
++        _controller.SetPolicy(EarPauseController::GetConfiguredPolicy());
++        _controller.OnEarStateChanged(earDetection->primary, earDetection->secondary);
++    }
++
++    void AapEarDetectionCapability::Reset()
++    {
++        {
++            std::lock_guard lock{_stateMutex};
++            AapCapability::Reset();
++            _state = AapEarDetection{};
++            _primaryBud.reset();
++        }
++        _controller.Reset();
++    }
++}
+diff --git a/src/device/capabilities/aap/AapEarDetectionCapability.h b/src/device/capabilities/aap/AapEarDetectionCapability.h
+new file mode 100644
+index 0000000..2c38279
+--- /dev/null
++++ b/src/device/capabilities/aap/AapEarDetectionCapability.h
+@@ -0,0 +1,43 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapCapability.h"
++#include "sdk/aap/AapEarDetection.h"
++#include "media/EarPauseController.h"
++
++#include <mutex>
++#include <optional>
++
++namespace MagicPodsCore
++{
++    // "earDetection" (read-only): where each bud is, from packet 0x06.
++    //   {"primary": "inEar", "secondary": "outOfEar",
++    //    "left": "inEar", "right": "outOfEar"}
++    // Each state is "inEar", "outOfEar", "inCase" or "unknown". "left" and
++    // "right" are listed once the battery packet has said which bud is
++    // primary. Listed from the first ear detection packet on.
++    //
++    // It also pauses and resumes the user's media player as buds are taken
++    // out and put back (EarPauseController), following the "earDetectionPause"
++    // setting of the "magicpods" container.
++    class AapEarDetectionCapability : public AapCapability
++    {
++    private:
++        std::mutex _stateMutex{};
++        AapEarDetection _state{};
++        std::optional<AapPrimaryBud> _primaryBud{};
++        EarPauseController _controller;
++
++    protected:
++        nlohmann::json CreateJsonBody() override;
++        void OnReceivedData(const std::vector<unsigned char> &data) override;
++        void Reset() override;
++
++    public:
++        explicit AapEarDetectionCapability(AapDevice &device);
++        void SetFromJson(const nlohmann::json &json) override {}
++    };
++}
+diff --git a/src/main.cpp b/src/main.cpp
+index b2e2ad0..821f0e6 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -21,6 +21,9 @@
+ #include "tests/TestsAapBle.h"
+ #include "tests/TestsPbp.h"
+ #include "tests/TestsAapAppleGated.h"
++#include "tests/TestsAapEarDetection.h"
++#include "tests/TestsEarPauseMpris.h"
++#include "media/EarPauseController.h"
+ #include "Logger.h"
+ #include "Config.h"
+ #include "settings/SettingsService.h"
+@@ -488,12 +491,40 @@ void StartListeningLogSettings(SettingsService &settingsService) {
+     });
+ }
+ 
++// "earDetectionPause" in the "magicpods" container: when to pause media as
++// buds leave the ears. Unknown values mean the default, "oneRemoved".
++void ApplyEarDetectionPauseSetting(const toml::node_view<toml::node>& value) {
++    EarPausePolicy policy = EarPausePolicy::OneRemoved;
++    if (value.is_string()) {
++        const std::string text = value.as_string()->get();
++        if (auto parsed = EarPausePolicyFromString(text); parsed.has_value())
++            policy = parsed.value();
++        else
++            Logger::Warn("Unknown earDetectionPause \"%s\"; using oneRemoved", text.c_str());
++    }
++    else if (value) {
++        Logger::Warn("earDetectionPause is not a string; using oneRemoved");
++    }
++    EarPauseController::SetConfiguredPolicy(policy);
++    Logger::Info("Ear detection pause: %s", EarPausePolicyToString(policy).c_str());
++}
++
++void StartListeningEarDetectionPauseSettings(SettingsService &settingsService) {
++    ApplyEarDetectionPauseSetting(settingsService.GetSetting("magicpods", "earDetectionPause"));
++
++    settingsService.GetOnSettingUpdateEvent().Subscribe([](size_t listenerId, const UpdatedSettingNotification& notification) {
++        if (notification.GetContainerName() == "magicpods" && notification.GetSettingName() == "earDetectionPause")
++            ApplyEarDetectionPauseSetting(notification.GetValue());
++    });
++}
++
+ int main(int argc, char** argv) {
+     if (TryToParseArguments(argc, argv))
+         return 0;
+ 
+     std::shared_ptr<SettingsService> settingsService = std::make_shared<SettingsService>(SettingsService::GetConfigPath("config.toml"));
+     StartListeningLogSettings(*settingsService);
++    StartListeningEarDetectionPauseSettings(*settingsService);
+ 
+     // fix stdout buffering issue, when python does not receive output
+     setvbuf(stdout, NULL, _IONBF, 0);
+@@ -588,6 +619,9 @@ int main(int argc, char** argv) {
+             TestsPbp pbp;
+             TestsAapBle aapBle;
+             TestsAapAppleGated aapAppleGated;
++            TestsAapEarDetection aapEarDetection;
++            // Only with MAGICPODS_TEST_MPRIS set (tests/run-mpris-tests.sh).
++            TestsEarPauseMpris earPauseMpris;
+             #endif
+ 
+             devicesInfoFetcher = std::make_unique<DevicesInfoFetcher>(settingsService);
+diff --git a/src/media/EarPauseController.cpp b/src/media/EarPauseController.cpp
+new file mode 100644
+index 0000000..323b3a9
+--- /dev/null
++++ b/src/media/EarPauseController.cpp
+@@ -0,0 +1,211 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "EarPauseController.h"
++#include "Logger.h"
++
++namespace MagicPodsCore
++{
++    std::atomic<EarPausePolicy> EarPauseController::_configuredPolicy{EarPausePolicy::OneRemoved};
++
++    std::optional<EarPausePolicy> EarPausePolicyFromString(const std::string &value)
++    {
++        if (value == "off")
++            return EarPausePolicy::Off;
++        if (value == "oneRemoved")
++            return EarPausePolicy::OneRemoved;
++        if (value == "bothRemoved")
++            return EarPausePolicy::BothRemoved;
++        return std::nullopt;
++    }
++
++    std::string EarPausePolicyToString(EarPausePolicy policy)
++    {
++        switch (policy) {
++        case EarPausePolicy::Off:
++            return "off";
++        case EarPausePolicy::BothRemoved:
++            return "bothRemoved";
++        default:
++            return "oneRemoved";
++        }
++    }
++
++    EarPauseController::EarPauseController(MediaPlayers &players) : _players(players)
++    {
++        _statusListenerId = _players.SubscribeStatusChanged([this](const std::string &owner, const std::string &status) {
++            std::lock_guard lock{_reportsMutex};
++            _reports.emplace_back(owner, status);
++        });
++    }
++
++    EarPauseController::~EarPauseController()
++    {
++        // Waits for a listener call in progress, so none runs after this.
++        _players.UnsubscribeStatusChanged(_statusListenerId);
++    }
++
++    void EarPauseController::SetPolicy(EarPausePolicy policy)
++    {
++        std::lock_guard lock{_mutex};
++        if (policy == _policy)
++            return;
++        _policy = policy;
++        if (policy == EarPausePolicy::Off && _paused.has_value()) {
++            Logger::Info("Ear detection pause turned off; will not resume %s", _paused->name.c_str());
++            _paused.reset();
++        }
++    }
++
++    EarPausePolicy EarPauseController::GetPolicy()
++    {
++        std::lock_guard lock{_mutex};
++        return _policy;
++    }
++
++    void EarPauseController::SetSingleBud(bool singleBud)
++    {
++        std::lock_guard lock{_mutex};
++        _singleBud = singleBud;
++    }
++
++    int EarPauseController::CountInEar(const AapEarDetection &state) const
++    {
++        int count = state.primary == AapEarState::InEar ? 1 : 0;
++        if (!_singleBud && state.secondary == AapEarState::InEar)
++            ++count;
++        return count;
++    }
++
++    int EarPauseController::CountRemoved(const AapEarDetection &state) const
++    {
++        auto removed = [](AapEarState s) { return s == AapEarState::OutOfEar || s == AapEarState::InCase; };
++        int count = removed(state.primary) ? 1 : 0;
++        if (!_singleBud && removed(state.secondary))
++            ++count;
++        return count;
++    }
++
++    bool EarPauseController::ShouldPause(const AapEarDetection &state) const
++    {
++        switch (_policy) {
++        case EarPausePolicy::OneRemoved:
++            return CountRemoved(state) >= 1;
++        case EarPausePolicy::BothRemoved:
++            return CountInEar(state) == 0 && CountRemoved(state) >= 1;
++        default:
++            return false;
++        }
++    }
++
++    void EarPauseController::OnEarStateChanged(AapEarState primary, AapEarState secondary)
++    {
++        std::lock_guard lock{_mutex};
++        // The user may have taken over the player we paused meanwhile. Also
++        // keeps the players' reports from piling up between pauses.
++        ApplyReports();
++
++        const AapEarDetection state{primary, secondary};
++        const std::optional<AapEarDetection> last = _last;
++        _last = state;
++        if (!last.has_value() || _policy == EarPausePolicy::Off)
++            return;
++
++        const int before = CountInEar(last.value());
++        const int now = CountInEar(state);
++        if (now < before && !_paused.has_value() && ShouldPause(state))
++            Pause(before);
++        else if (now > before && _paused.has_value() && now >= _resumeAt)
++            Resume();
++    }
++
++    void EarPauseController::Pause(int inEarBefore)
++    {
++        const auto player = _players.FindPlaying();
++        if (!player.has_value()) {
++            Logger::Debug("Bud removed; no media player is playing");
++            return;
++        }
++        const bool paused = _players.Pause(player.value());
++        // Reports up to the player's answer predate the pause: none of them
++        // means the user took over.
++        ApplyReports();
++        if (!paused) {
++            Logger::Warn("Bud removed; failed to pause %s", player->name.c_str());
++            return;
++        }
++        Logger::Info("Bud removed; paused %s", player->name.c_str());
++        _paused = player;
++        _resumeAt = _policy == EarPausePolicy::BothRemoved ? 1 : inEarBefore;
++    }
++
++    void EarPauseController::Resume()
++    {
++        ApplyReports();
++        if (!_paused.has_value())
++            return;
++        const MediaPlayerRef player = _paused.value();
++        _paused.reset();
++        const std::string status = _players.GetPlaybackStatus(player);
++        if (status != "Paused") {
++            Logger::Info("Buds back in; not resuming %s, which is %s", player.name.c_str(),
++                         status.empty() ? "gone" : status.c_str());
++            return;
++        }
++        if (_players.Play(player))
++            Logger::Info("Buds back in; resumed %s", player.name.c_str());
++        else
++            Logger::Warn("Buds back in; failed to resume %s", player.name.c_str());
++    }
++
++    void EarPauseController::Reset()
++    {
++        std::lock_guard lock{_mutex};
++        ApplyReports();
++        _last.reset();
++        if (_paused.has_value()) {
++            Logger::Info("Headphones disconnected; will not resume %s", _paused->name.c_str());
++            _paused.reset();
++        }
++    }
++
++    void EarPauseController::ApplyReports()
++    {
++        _players.ProcessStatusReports();
++        std::vector<std::pair<std::string, std::string>> reports{};
++        {
++            std::lock_guard lock{_reportsMutex};
++            reports.swap(_reports);
++        }
++        for (const auto &[owner, status] : reports)
++            HandleReport(owner, status);
++    }
++
++    void EarPauseController::HandleReport(const std::string &owner, const std::string &status)
++    {
++        // Our own Pause reports "Paused". Anything else after it means the
++        // user (or the player) took over: from now on it is theirs.
++        if (_paused.has_value() && _paused->owner == owner && status != "Paused") {
++            Logger::Info("%s is %s; will not resume it", _paused->name.c_str(), status.c_str());
++            _paused.reset();
++        }
++    }
++
++    std::optional<MediaPlayerRef> EarPauseController::GetPausedPlayer()
++    {
++        std::lock_guard lock{_mutex};
++        ApplyReports();
++        return _paused;
++    }
++
++    void EarPauseController::SetConfiguredPolicy(EarPausePolicy policy)
++    {
++        _configuredPolicy = policy;
++    }
++
++    EarPausePolicy EarPauseController::GetConfiguredPolicy()
++    {
++        return _configuredPolicy;
++    }
++}
+diff --git a/src/media/EarPauseController.h b/src/media/EarPauseController.h
+new file mode 100644
+index 0000000..936041a
+--- /dev/null
++++ b/src/media/EarPauseController.h
+@@ -0,0 +1,103 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "MediaPlayers.h"
++#include "sdk/aap/AapEarDetection.h"
++
++#include <atomic>
++#include <mutex>
++#include <optional>
++#include <string>
++#include <utility>
++#include <vector>
++
++namespace MagicPodsCore
++{
++    // When to pause playback as buds leave the ears. Stored as the string
++    // setting "earDetectionPause" in the "magicpods" settings container.
++    enum class EarPausePolicy
++    {
++        Off,         // "off"
++        OneRemoved,  // "oneRemoved" (default): pause when a worn bud is taken out
++        BothRemoved, // "bothRemoved": pause when no bud is left in an ear
++    };
++
++    std::optional<EarPausePolicy> EarPausePolicyFromString(const std::string &value);
++    std::string EarPausePolicyToString(EarPausePolicy policy);
++
++    // Pauses the playing media player when buds are taken out of the ears,
++    // and resumes it when they are back, for one pair of headphones:
++    //
++    // - Only a change acts. The first state after connecting is recorded;
++    //   so is any change while nothing qualifies.
++    // - Pause: a bud left an ear (into the hand or the case) and the policy
++    //   now holds (one removed: any worn bud out; both removed: none in an
++    //   ear). The player whose PlaybackStatus is "Playing" is paused, and
++    //   remembered as paused by us.
++    // - Resume: only the player we paused, only when as many buds are back in
++    //   the ears as were in them before the pause (both removed: one), and
++    //   only if it is still paused. If the user plays or stops it in the
++    //   meantime it is forgotten, so something the user paused is never
++    //   resumed.
++    // - Losing the link, or the policy becoming Off, forgets it.
++    //
++    // A bud whose state is unknown (not connected) is not counted, so a bud
++    // that runs flat does not pause anything.
++    //
++    // The players' status reports are queued by the listener (which takes
++    // only _reportsMutex) and applied under _mutex when a decision needs
++    // them: after our own Pause, where everything up to the player's answer
++    // is older than the pause and ignored, and before any later decision.
++    // Lock order: _mutex, then the players' locks, then _reportsMutex.
++    class EarPauseController
++    {
++    private:
++        std::mutex _mutex{};
++        std::mutex _reportsMutex{};
++        std::vector<std::pair<std::string, std::string>> _reports{};
++        MediaPlayers &_players;
++        size_t _statusListenerId{};
++        EarPausePolicy _policy{EarPausePolicy::OneRemoved};
++        bool _singleBud{false};
++        std::optional<AapEarDetection> _last{};
++        std::optional<MediaPlayerRef> _paused{};
++        int _resumeAt{};
++
++        static std::atomic<EarPausePolicy> _configuredPolicy;
++
++        int CountInEar(const AapEarDetection &state) const;
++        int CountRemoved(const AapEarDetection &state) const;
++        bool ShouldPause(const AapEarDetection &state) const;
++        void Pause(int inEarBefore);
++        void Resume();
++        void ApplyReports();
++        void HandleReport(const std::string &owner, const std::string &status);
++
++    public:
++        explicit EarPauseController(MediaPlayers &players);
++        ~EarPauseController();
++
++        EarPauseController(const EarPauseController &) = delete;
++        EarPauseController &operator=(const EarPauseController &) = delete;
++
++        void SetPolicy(EarPausePolicy policy);
++        EarPausePolicy GetPolicy();
++        // Headphones with one component (AirPods Max): only the primary
++        // state counts.
++        void SetSingleBud(bool singleBud);
++
++        void OnEarStateChanged(AapEarState primary, AapEarState secondary);
++        // The link to the headphones is gone.
++        void Reset();
++        // The player we paused and would resume, if any, after the reports
++        // received so far.
++        std::optional<MediaPlayerRef> GetPausedPlayer();
++
++        // The policy from the daemon's settings, shared by every device.
++        static void SetConfiguredPolicy(EarPausePolicy policy);
++        static EarPausePolicy GetConfiguredPolicy();
++    };
++}
+diff --git a/src/media/MediaPlayers.h b/src/media/MediaPlayers.h
+new file mode 100644
+index 0000000..06c3f01
+--- /dev/null
++++ b/src/media/MediaPlayers.h
+@@ -0,0 +1,53 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include <cstddef>
++#include <functional>
++#include <optional>
++#include <string>
++
++namespace MagicPodsCore
++{
++    // A media player found on the bus: its well-known name
++    // ("org.mpris.MediaPlayer2.foo") and the unique name that owned it when
++    // it was found (":1.42"). Calls go to the owner, so a player that quit
++    // and started again is a different player.
++    struct MediaPlayerRef
++    {
++        std::string name{};
++        std::string owner{};
++
++        bool operator==(const MediaPlayerRef &other) const = default;
++    };
++
++    // The media players of the user session. MprisClient is the real one;
++    // the tests use a fake.
++    class MediaPlayers
++    {
++    public:
++        using StatusListener = std::function<void(const std::string &owner, const std::string &status)>;
++
++        virtual ~MediaPlayers() = default;
++
++        // The first player, by name, whose PlaybackStatus is "Playing".
++        virtual std::optional<MediaPlayerRef> FindPlaying() = 0;
++        // "Playing", "Paused" or "Stopped"; empty if the player is gone or
++        // does not answer.
++        virtual std::string GetPlaybackStatus(const MediaPlayerRef &player) = 0;
++        virtual bool Pause(const MediaPlayerRef &player) = 0;
++        virtual bool Play(const MediaPlayerRef &player) = 0;
++
++        // Delivers the PlaybackStatus reports (owner, status) received since
++        // the last delivery to every listener, in the order the players sent
++        // them, on the caller's thread. Pause() and Play() also deliver what
++        // arrived up to their reply, so a report delivered after one of them
++        // returns was sent after the player handled it. Listeners must not
++        // call back into this object.
++        virtual void ProcessStatusReports() = 0;
++        virtual size_t SubscribeStatusChanged(StatusListener listener) = 0;
++        virtual void UnsubscribeStatusChanged(size_t id) = 0;
++    };
++}
+diff --git a/src/media/MprisClient.cpp b/src/media/MprisClient.cpp
+new file mode 100644
+index 0000000..95afce0
+--- /dev/null
++++ b/src/media/MprisClient.cpp
+@@ -0,0 +1,220 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "MprisClient.h"
++#include "Logger.h"
++
++#include <algorithm>
++#include <chrono>
++
++namespace MagicPodsCore
++{
++    namespace
++    {
++        constexpr auto BUS_NAME = "org.freedesktop.DBus";
++        constexpr auto BUS_PATH = "/org/freedesktop/DBus";
++        constexpr auto PROPERTIES_INTERFACE = "org.freedesktop.DBus.Properties";
++        // A player that does not answer within this time is skipped.
++        constexpr auto CALL_TIMEOUT = std::chrono::milliseconds(1000);
++        // Signals handled per delivery at most; the rest wait for the next.
++        constexpr int MAX_SIGNALS_PER_DRAIN = 1000;
++    }
++
++    MprisClient &MprisClient::Instance()
++    {
++        static MprisClient instance{};
++        return instance;
++    }
++
++    bool MprisClient::Connect()
++    {
++        if (_connection)
++            return true;
++        try {
++            _connection = sdbus::createSessionBusConnection();
++            _connection->addMatch(
++                std::string{"type='signal',interface='"} + PROPERTIES_INTERFACE +
++                    "',member='PropertiesChanged',path='" + PlayerPath + "',arg0='" + PlayerInterface + "'",
++                [this](sdbus::Message &message) { OnPropertiesChanged(message); },
++                sdbus::floating_slot);
++            Logger::Info("Connected to the session bus for media players");
++            return true;
++        }
++        catch (const sdbus::Error &error) {
++            Logger::Warn("Cannot reach media players on the session bus: %s", error.what());
++            Disconnect();
++            return false;
++        }
++    }
++
++    void MprisClient::Disconnect()
++    {
++        _connection.reset();
++    }
++
++    // Handles the queued signals on this thread (OnPropertiesChanged).
++    void MprisClient::Drain()
++    {
++        try {
++            for (int i = 0; i < MAX_SIGNALS_PER_DRAIN && _connection->processPendingRequest(); ++i) {
++            }
++        }
++        catch (const sdbus::Error &error) {
++            Logger::Warn("Lost the session bus connection for media players: %s", error.what());
++            Disconnect();
++        }
++    }
++
++    void MprisClient::OnPropertiesChanged(sdbus::Message &message)
++    {
++        std::string status{};
++        try {
++            std::string interfaceName{};
++            std::map<std::string, sdbus::Variant> changed{};
++            message >> interfaceName >> changed;
++            const auto it = changed.find("PlaybackStatus");
++            if (interfaceName != PlayerInterface || it == changed.end())
++                return;
++            status = it->second.get<std::string>();
++        }
++        catch (const std::exception &error) {
++            Logger::Debug("Ignoring a malformed PropertiesChanged from a media player: %s", error.what());
++            return;
++        }
++
++        const std::string owner = message.getSender();
++        std::lock_guard lock{_listenersMutex};
++        for (auto &[id, listener] : _listeners)
++            listener(owner, status);
++    }
++
++    std::vector<std::string> MprisClient::ListPlayerNames()
++    {
++        std::vector<std::string> names{};
++        auto proxy = sdbus::createProxy(*_connection, BUS_NAME, BUS_PATH);
++        proxy->callMethod("ListNames").onInterface(BUS_NAME).withTimeout(CALL_TIMEOUT).storeResultsTo(names);
++        const std::string prefix{PlayerPrefix};
++        names.erase(std::remove_if(names.begin(), names.end(),
++                                   [&prefix](const std::string &name) { return name.rfind(prefix, 0) != 0; }),
++                    names.end());
++        std::sort(names.begin(), names.end());
++        return names;
++    }
++
++    std::string MprisClient::GetNameOwner(const std::string &name)
++    {
++        std::string owner{};
++        auto proxy = sdbus::createProxy(*_connection, BUS_NAME, BUS_PATH);
++        proxy->callMethod("GetNameOwner").onInterface(BUS_NAME).withArguments(name).withTimeout(CALL_TIMEOUT).storeResultsTo(owner);
++        return owner;
++    }
++
++    std::string MprisClient::ReadPlaybackStatus(const std::string &destination)
++    {
++        sdbus::Variant value{};
++        auto proxy = sdbus::createProxy(*_connection, destination, PlayerPath);
++        proxy->callMethod("Get")
++            .onInterface(PROPERTIES_INTERFACE)
++            .withArguments(std::string{PlayerInterface}, std::string{"PlaybackStatus"})
++            .withTimeout(CALL_TIMEOUT)
++            .storeResultsTo(value);
++        return value.get<std::string>();
++    }
++
++    std::optional<MediaPlayerRef> MprisClient::FindPlaying()
++    {
++        std::lock_guard lock{_mutex};
++        if (!Connect())
++            return std::nullopt;
++
++        std::vector<std::string> names{};
++        try {
++            names = ListPlayerNames();
++        }
++        catch (const sdbus::Error &error) {
++            // The bus itself failed: connect again next time.
++            Logger::Warn("Cannot list media players: %s", error.what());
++            Disconnect();
++            return std::nullopt;
++        }
++
++        for (const auto &name : names) {
++            try {
++                MediaPlayerRef player{name, GetNameOwner(name)};
++                const std::string status = ReadPlaybackStatus(player.owner);
++                Logger::Debug("Media player %s (%s) is %s", name.c_str(), player.owner.c_str(), status.c_str());
++                if (status == "Playing")
++                    return player;
++            }
++            catch (const std::exception &error) {
++                Logger::Debug("Media player %s did not answer: %s", name.c_str(), error.what());
++            }
++        }
++        return std::nullopt;
++    }
++
++    std::string MprisClient::GetPlaybackStatus(const MediaPlayerRef &player)
++    {
++        std::lock_guard lock{_mutex};
++        if (!Connect())
++            return {};
++        try {
++            return ReadPlaybackStatus(player.owner);
++        }
++        catch (const std::exception &error) {
++            Logger::Debug("Media player %s did not answer: %s", player.name.c_str(), error.what());
++            return {};
++        }
++    }
++
++    bool MprisClient::Call(const MediaPlayerRef &player, const char *method)
++    {
++        std::lock_guard lock{_mutex};
++        if (!Connect())
++            return false;
++        bool done = false;
++        try {
++            auto proxy = sdbus::createProxy(*_connection, player.owner, PlayerPath);
++            proxy->callMethod(method).onInterface(PlayerInterface).withTimeout(CALL_TIMEOUT).storeResultsTo();
++            done = true;
++        }
++        catch (const sdbus::Error &error) {
++            Logger::Warn("%s on %s failed: %s", method, player.name.c_str(), error.what());
++        }
++        // What the player reported before its answer belongs before this call.
++        if (_connection)
++            Drain();
++        return done;
++    }
++
++    bool MprisClient::Pause(const MediaPlayerRef &player)
++    {
++        return Call(player, "Pause");
++    }
++
++    bool MprisClient::Play(const MediaPlayerRef &player)
++    {
++        return Call(player, "Play");
++    }
++
++    void MprisClient::ProcessStatusReports()
++    {
++        std::lock_guard lock{_mutex};
++        if (_connection)
++            Drain();
++    }
++
++    size_t MprisClient::SubscribeStatusChanged(StatusListener listener)
++    {
++        std::lock_guard lock{_listenersMutex};
++        _listeners.emplace(++_nextListenerId, std::move(listener));
++        return _nextListenerId;
++    }
++
++    void MprisClient::UnsubscribeStatusChanged(size_t id)
++    {
++        std::lock_guard lock{_listenersMutex};
++        _listeners.erase(id);
++    }
++}
+diff --git a/src/media/MprisClient.h b/src/media/MprisClient.h
+new file mode 100644
+index 0000000..5c85e4f
+--- /dev/null
++++ b/src/media/MprisClient.h
+@@ -0,0 +1,65 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "MediaPlayers.h"
++
++#include <map>
++#include <memory>
++#include <mutex>
++#include <vector>
++#include <sdbus-c++/sdbus-c++.h>
++
++namespace MagicPodsCore
++{
++    // The user's media players over MPRIS (org.mpris.MediaPlayer2.*) on the
++    // session bus.
++    //
++    // It connects on first use, not at start-up, and tries again on the next
++    // use if the session bus is not there. One connection and no event loop
++    // thread: calls are made with a timeout on the caller's thread, and the
++    // players' PropertiesChanged signals wait in the connection's queue until
++    // ProcessStatusReports() (or a Pause or Play) delivers them, in order. So
++    // a report always reaches the listeners in its true order relative to
++    // our own calls: one sent before a player answered our Pause is
++    // delivered before Pause returns.
++    class MprisClient : public MediaPlayers
++    {
++    private:
++        std::mutex _mutex{};
++        std::unique_ptr<sdbus::IConnection> _connection{};
++
++        std::mutex _listenersMutex{};
++        std::map<size_t, StatusListener> _listeners{};
++        size_t _nextListenerId{};
++
++        bool Connect();
++        void Disconnect();
++        void Drain();
++        void OnPropertiesChanged(sdbus::Message &message);
++        std::vector<std::string> ListPlayerNames();
++        std::string GetNameOwner(const std::string &name);
++        std::string ReadPlaybackStatus(const std::string &destination);
++        bool Call(const MediaPlayerRef &player, const char *method);
++
++        MprisClient() = default;
++
++    public:
++        static constexpr const char *PlayerPrefix = "org.mpris.MediaPlayer2.";
++        static constexpr const char *PlayerPath = "/org/mpris/MediaPlayer2";
++        static constexpr const char *PlayerInterface = "org.mpris.MediaPlayer2.Player";
++
++        static MprisClient &Instance();
++        ~MprisClient() override = default;
++
++        std::optional<MediaPlayerRef> FindPlaying() override;
++        std::string GetPlaybackStatus(const MediaPlayerRef &player) override;
++        bool Pause(const MediaPlayerRef &player) override;
++        bool Play(const MediaPlayerRef &player) override;
++        void ProcessStatusReports() override;
++        size_t SubscribeStatusChanged(StatusListener listener) override;
++        void UnsubscribeStatusChanged(size_t id) override;
++    };
++}
+diff --git a/src/sdk/aap/AapEarDetection.cpp b/src/sdk/aap/AapEarDetection.cpp
+new file mode 100644
+index 0000000..a50b1cd
+--- /dev/null
++++ b/src/sdk/aap/AapEarDetection.cpp
+@@ -0,0 +1,74 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapEarDetection.h"
++#include "sdk/aap/enums/AapCmd.h"
++#include "sdk/aap/enums/AapBatteryType.h"
++
++namespace MagicPodsCore
++{
++    AapEarState AapEarStateFromByte(unsigned char value)
++    {
++        switch (value) {
++        case 0x00:
++            return AapEarState::InEar;
++        case 0x01:
++            return AapEarState::OutOfEar;
++        case 0x02:
++            return AapEarState::InCase;
++        default:
++            return AapEarState::Unknown;
++        }
++    }
++
++    std::string AapEarStateToString(AapEarState state)
++    {
++        switch (state) {
++        case AapEarState::InEar:
++            return "inEar";
++        case AapEarState::OutOfEar:
++            return "outOfEar";
++        case AapEarState::InCase:
++            return "inCase";
++        default:
++            return "unknown";
++        }
++    }
++
++    std::optional<AapEarDetection> AapEarDetection::Parse(const std::vector<unsigned char> &data)
++    {
++        if (data.size() < 8)
++            return std::nullopt;
++        if (data[0] != 0x04 || data[1] != 0x00 || data[2] != 0x04 || data[3] != 0x00 ||
++            data[4] != static_cast<unsigned char>(AapCmd::EarDetection) || data[5] != 0x00)
++            return std::nullopt;
++
++        AapEarDetection result{};
++        result.primary = AapEarStateFromByte(data[6]);
++        result.secondary = AapEarStateFromByte(data[7]);
++        return result;
++    }
++
++    std::optional<AapPrimaryBud> AapParsePrimaryBud(const std::vector<unsigned char> &data)
++    {
++        if (data.size() < 7 || data[4] != static_cast<unsigned char>(AapCmd::Battery))
++            return std::nullopt;
++
++        const size_t count = data[6];
++        size_t offset = 7;
++        for (size_t i = 0; i < count && offset + 5 <= data.size(); ++i, offset += 5) {
++            switch (static_cast<AapBatteryType>(data[offset])) {
++            case AapBatteryType::Left:
++                return AapPrimaryBud::Left;
++            case AapBatteryType::Right:
++                return AapPrimaryBud::Right;
++            case AapBatteryType::Single:
++                return AapPrimaryBud::Single;
++            default:
++                break; // the case: look further
++            }
++        }
++        return std::nullopt;
++    }
++}
+diff --git a/src/sdk/aap/AapEarDetection.h b/src/sdk/aap/AapEarDetection.h
+new file mode 100644
+index 0000000..c6fe9f0
+--- /dev/null
++++ b/src/sdk/aap/AapEarDetection.h
+@@ -0,0 +1,55 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include <optional>
++#include <string>
++#include <vector>
++
++namespace MagicPodsCore
++{
++    // Where a bud is, as the ear detection packet reports it.
++    enum class AapEarState : unsigned char
++    {
++        InEar = 0x00,
++        OutOfEar = 0x01,
++        InCase = 0x02,
++        // Any other byte: the bud is not connected, or the value is new.
++        Unknown = 0xFF,
++    };
++
++    AapEarState AapEarStateFromByte(unsigned char value);
++    std::string AapEarStateToString(AapEarState state); // "inEar", "outOfEar", "inCase", "unknown"
++
++    // Packet type 0x06, sent by the AirPods whenever a bud is put in or taken
++    // out of an ear, or put in the case:
++    //   04 00 04 00 06 00 <primary> <secondary>
++    // The primary bud is the one holding the link to the host. When it is
++    // taken out, the AirPods usually make the other bud primary and send the
++    // packet again.
++    struct AapEarDetection
++    {
++        AapEarState primary{AapEarState::Unknown};
++        AapEarState secondary{AapEarState::Unknown};
++
++        static std::optional<AapEarDetection> Parse(const std::vector<unsigned char> &data);
++    };
++
++    // Which bud is primary, from the battery packet (type 0x04), which lists
++    // the primary bud before the secondary one:
++    //   04 00 04 00 04 00 <count> then per component
++    //   <type> 01 <level> <status> 01, type 0x01 single, 0x02 right,
++    //   0x04 left, 0x08 case.
++    enum class AapPrimaryBud : unsigned char
++    {
++        Left,
++        Right,
++        // Headphones with one component (AirPods Max, Beats over-ear): only
++        // the primary state means something.
++        Single,
++    };
++
++    std::optional<AapPrimaryBud> AapParsePrimaryBud(const std::vector<unsigned char> &data);
++}
+diff --git a/src/sdk/aap/enums/AapCmd.h b/src/sdk/aap/enums/AapCmd.h
+index 9541aaf..5104f91 100644
+--- a/src/sdk/aap/enums/AapCmd.h
++++ b/src/sdk/aap/enums/AapCmd.h
+@@ -10,6 +10,8 @@ namespace MagicPodsCore
+     enum class AapCmd : unsigned char
+     {
+         Battery = 0x04,
++        // A bud was put in or taken out of an ear, or put in the case
++        EarDetection = 0x06,
+         // Request to change or response that setting in headphones was changed
+         Settings = 0x09,
+         Notifications = 0x0f,
+diff --git a/src/settings/SettingsService.cpp b/src/settings/SettingsService.cpp
+index 02b4793..5fec776 100644
+--- a/src/settings/SettingsService.cpp
++++ b/src/settings/SettingsService.cpp
+@@ -50,6 +50,8 @@ toml::table SettingsService::GetDefaults() {
+     toml::table magicpods{};
+     magicpods.insert_or_assign("animation", true);
+     magicpods.insert_or_assign("logLevel", static_cast<int>(LogLevel::Info));
++    // Pause media when buds leave the ears: "off", "oneRemoved", "bothRemoved".
++    magicpods.insert_or_assign("earDetectionPause", "oneRemoved");
+ 
+     toml::table defaults{};
+     defaults.insert_or_assign("magicpods", std::move(magicpods));
+diff --git a/src/tests/TestsAapEarDetection.cpp b/src/tests/TestsAapEarDetection.cpp
+new file mode 100644
+index 0000000..daab365
+--- /dev/null
++++ b/src/tests/TestsAapEarDetection.cpp
+@@ -0,0 +1,464 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "TestsAapEarDetection.h"
++#include "sdk/aap/AapEarDetection.h"
++#include "media/EarPauseController.h"
++#include "Logger.h"
++
++#include <cstring>
++#include <functional>
++#include <map>
++#include <string>
++#include <utility>
++#include <vector>
++
++using namespace MagicPodsCore;
++
++namespace
++{
++    constexpr auto In = AapEarState::InEar;
++    constexpr auto Out = AapEarState::OutOfEar;
++    constexpr auto Case = AapEarState::InCase;
++    constexpr auto Gone = AapEarState::Unknown;
++
++    // Media players in memory, with MprisClient's delivery contract: status
++    // reports wait in a queue until ProcessStatusReports(), and Pause() and
++    // Play() deliver everything up to and including the player's own report
++    // of the change before they return.
++    class FakeMediaPlayers : public MediaPlayers
++    {
++    public:
++        struct Player
++        {
++            std::string owner;
++            std::string status;
++            int pauses = 0;
++            int plays = 0;
++        };
++        std::map<std::string, Player> players{};
++        std::map<size_t, StatusListener> listeners{};
++        std::vector<std::pair<std::string, std::string>> queued{};
++        size_t nextId{};
++        // Runs when Pause is called, before the player answers: for reports
++        // that reach us only while we wait for that answer.
++        std::function<void()> beforePauseAnswer{};
++
++        void Add(const std::string &name, const std::string &owner, const std::string &status)
++        {
++            players[name] = Player{owner, status};
++        }
++
++        Player &Get(const std::string &name) { return players.at(name); }
++
++        // The player changes its status and reports it, as after the user
++        // pressed a key. Delivered later.
++        void Report(const std::string &name, const std::string &status)
++        {
++            auto &player = players.at(name);
++            player.status = status;
++            queued.emplace_back(player.owner, status);
++        }
++
++        void ProcessStatusReports() override
++        {
++            auto reports = std::move(queued);
++            queued.clear();
++            for (const auto &[owner, status] : reports)
++                for (auto &[id, listener] : listeners)
++                    listener(owner, status);
++        }
++
++        std::optional<MediaPlayerRef> FindPlaying() override
++        {
++            for (auto &[name, player] : players)
++                if (player.status == "Playing")
++                    return MediaPlayerRef{name, player.owner};
++            return std::nullopt;
++        }
++
++        std::string GetPlaybackStatus(const MediaPlayerRef &ref) override
++        {
++            auto it = players.find(ref.name);
++            return it != players.end() && it->second.owner == ref.owner ? it->second.status : "";
++        }
++
++        bool Pause(const MediaPlayerRef &ref) override
++        {
++            players.at(ref.name).pauses++;
++            if (beforePauseAnswer)
++                beforePauseAnswer();
++            Report(ref.name, "Paused");
++            ProcessStatusReports();
++            return true;
++        }
++
++        bool Play(const MediaPlayerRef &ref) override
++        {
++            players.at(ref.name).plays++;
++            Report(ref.name, "Playing");
++            ProcessStatusReports();
++            return true;
++        }
++
++        size_t SubscribeStatusChanged(StatusListener listener) override
++        {
++            listeners.emplace(++nextId, std::move(listener));
++            return nextId;
++        }
++
++        void UnsubscribeStatusChanged(size_t id) override { listeners.erase(id); }
++    };
++
++    // One player playing, buds in, default policy.
++    struct Fixture
++    {
++        FakeMediaPlayers players{};
++        EarPauseController controller{players};
++
++        explicit Fixture(EarPausePolicy policy = EarPausePolicy::OneRemoved, const std::string &status = "Playing")
++        {
++            players.Add("org.mpris.MediaPlayer2.music", ":1.10", status);
++            controller.SetPolicy(policy);
++        }
++
++        FakeMediaPlayers::Player &music() { return players.Get("org.mpris.MediaPlayer2.music"); }
++        void Ears(AapEarState primary, AapEarState secondary) { controller.OnEarStateChanged(primary, secondary); }
++    };
++}
++
++bool TestsAapEarDetection::TestParseEarDetection()
++{
++    auto both = AapEarDetection::Parse({0x04, 0x00, 0x04, 0x00, 0x06, 0x00, 0x00, 0x00});
++    auto out = AapEarDetection::Parse({0x04, 0x00, 0x04, 0x00, 0x06, 0x00, 0x01, 0x00});
++    auto inCase = AapEarDetection::Parse({0x04, 0x00, 0x04, 0x00, 0x06, 0x00, 0x00, 0x02});
++    auto unknown = AapEarDetection::Parse({0x04, 0x00, 0x04, 0x00, 0x06, 0x00, 0x03, 0x01});
++    return both.has_value() && both->primary == In && both->secondary == In &&
++           out.has_value() && out->primary == Out && out->secondary == In &&
++           inCase.has_value() && inCase->primary == In && inCase->secondary == Case &&
++           unknown.has_value() && unknown->primary == Gone && unknown->secondary == Out;
++}
++
++bool TestsAapEarDetection::TestParseEarDetectionRejects()
++{
++    // Too short, another packet type (battery, settings), another header.
++    return !AapEarDetection::Parse({0x04, 0x00, 0x04, 0x00, 0x06, 0x00, 0x00}).has_value() &&
++           !AapEarDetection::Parse({0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00, 0x00}).has_value() &&
++           !AapEarDetection::Parse({0x04, 0x00, 0x04, 0x00, 0x09, 0x00, 0x00, 0x00}).has_value() &&
++           !AapEarDetection::Parse({0x01, 0x00, 0x04, 0x00, 0x06, 0x00, 0x00, 0x00}).has_value() &&
++           !AapEarDetection::Parse({}).has_value();
++}
++
++bool TestsAapEarDetection::TestParsePrimaryBud()
++{
++    // Right, left, case: right is primary.
++    std::vector<unsigned char> rightFirst{0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x03,
++                                          0x02, 0x01, 0x50, 0x02, 0x01,
++                                          0x04, 0x01, 0x46, 0x02, 0x01,
++                                          0x08, 0x01, 0x28, 0x02, 0x01};
++    std::vector<unsigned char> leftFirst{0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x02,
++                                         0x04, 0x01, 0x46, 0x02, 0x01,
++                                         0x02, 0x01, 0x50, 0x02, 0x01};
++    // The case first: the first bud after it decides.
++    std::vector<unsigned char> caseFirst{0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x02,
++                                         0x08, 0x01, 0x28, 0x02, 0x01,
++                                         0x04, 0x01, 0x46, 0x02, 0x01};
++    std::vector<unsigned char> single{0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x01,
++                                      0x01, 0x01, 0x50, 0x02, 0x01};
++    std::vector<unsigned char> truncated{0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x01, 0x02, 0x01, 0x50};
++    std::vector<unsigned char> earPacket{0x04, 0x00, 0x04, 0x00, 0x06, 0x00, 0x00, 0x00};
++    return AapParsePrimaryBud(rightFirst) == AapPrimaryBud::Right &&
++           AapParsePrimaryBud(leftFirst) == AapPrimaryBud::Left &&
++           AapParsePrimaryBud(caseFirst) == AapPrimaryBud::Left &&
++           AapParsePrimaryBud(single) == AapPrimaryBud::Single &&
++           !AapParsePrimaryBud(truncated).has_value() &&
++           !AapParsePrimaryBud(earPacket).has_value();
++}
++
++bool TestsAapEarDetection::TestEarStateNames()
++{
++    return AapEarStateToString(In) == "inEar" && AapEarStateToString(Out) == "outOfEar" &&
++           AapEarStateToString(Case) == "inCase" && AapEarStateToString(Gone) == "unknown";
++}
++
++bool TestsAapEarDetection::TestPolicyStrings()
++{
++    return EarPausePolicyFromString("off") == EarPausePolicy::Off &&
++           EarPausePolicyFromString("oneRemoved") == EarPausePolicy::OneRemoved &&
++           EarPausePolicyFromString("bothRemoved") == EarPausePolicy::BothRemoved &&
++           !EarPausePolicyFromString("OneRemoved").has_value() &&
++           !EarPausePolicyFromString("").has_value() &&
++           EarPausePolicyToString(EarPausePolicy::Off) == "off" &&
++           EarPausePolicyToString(EarPausePolicy::OneRemoved) == "oneRemoved" &&
++           EarPausePolicyToString(EarPausePolicy::BothRemoved) == "bothRemoved";
++}
++
++bool TestsAapEarDetection::TestFirstStateDoesNothing()
++{
++    // Connecting with the buds out (or in) is not a change.
++    Fixture f{};
++    f.Ears(Out, Out);
++    f.Ears(In, In);
++    return f.music().pauses == 0 && f.music().plays == 0 && f.music().status == "Playing";
++}
++
++bool TestsAapEarDetection::TestPauseWhenOneRemoved()
++{
++    Fixture f{};
++    f.Ears(In, In);
++    f.Ears(Out, In);
++    auto paused = f.controller.GetPausedPlayer();
++    return f.music().pauses == 1 && f.music().status == "Paused" && paused.has_value() &&
++           paused->name == "org.mpris.MediaPlayer2.music" && paused->owner == ":1.10";
++}
++
++bool TestsAapEarDetection::TestResumeSamePlayer()
++{
++    Fixture f{};
++    f.players.Add("org.mpris.MediaPlayer2.other", ":1.20", "Paused");
++    f.Ears(In, In);
++    f.Ears(In, Out);
++    // The AirPods swap primary and report again: nothing more happens.
++    f.Ears(Out, In);
++    f.Ears(In, In);
++    return f.music().pauses == 1 && f.music().plays == 1 && f.music().status == "Playing" &&
++           f.players.Get("org.mpris.MediaPlayer2.other").plays == 0 && !f.controller.GetPausedPlayer().has_value();
++}
++
++bool TestsAapEarDetection::TestUserPausedNotResumed()
++{
++    // The user paused before taking a bud out: nothing to pause, nothing to
++    // resume.
++    Fixture f{EarPausePolicy::OneRemoved, "Paused"};
++    f.Ears(In, In);
++    f.Ears(Out, In);
++    f.Ears(In, In);
++    return f.music().pauses == 0 && f.music().plays == 0 && f.music().status == "Paused";
++}
++
++bool TestsAapEarDetection::TestUserTookOverNotResumed()
++{
++    // We paused; the user played it again with one bud out, then paused it
++    // themselves. Putting the bud back must not resume it.
++    Fixture f{};
++    f.Ears(In, In);
++    f.Ears(Out, In);
++    f.players.Report("org.mpris.MediaPlayer2.music", "Playing");
++    const bool forgotten = !f.controller.GetPausedPlayer().has_value();
++    f.players.Report("org.mpris.MediaPlayer2.music", "Paused");
++    f.Ears(In, In);
++    return forgotten && f.music().pauses == 1 && f.music().plays == 0 && f.music().status == "Paused";
++}
++
++bool TestsAapEarDetection::TestOwnPauseSignalKeepsResume()
++{
++    // The player reporting the pause we asked for, and another player
++    // starting, change nothing.
++    Fixture f{};
++    f.players.Add("org.mpris.MediaPlayer2.other", ":1.20", "Paused");
++    f.Ears(In, In);
++    f.Ears(Out, In);
++    f.players.Report("org.mpris.MediaPlayer2.music", "Paused");
++    f.players.Report("org.mpris.MediaPlayer2.other", "Playing");
++    f.Ears(In, In);
++    return f.music().plays == 1 && f.music().status == "Playing" && f.players.Get("org.mpris.MediaPlayer2.other").plays == 0;
++}
++
++bool TestsAapEarDetection::TestReportBeforePauseIgnored()
++{
++    // Reports the player sent before it answered our Pause are older than
++    // the pause; they must not cancel the resume. Here a "Playing" (say,
++    // from the previous resume) reaches us only while we wait for that
++    // answer, so Pause() delivers it.
++    Fixture f{};
++    f.Ears(In, In);
++    f.players.beforePauseAnswer = [&f]() { f.players.Report("org.mpris.MediaPlayer2.music", "Playing"); };
++    f.Ears(Out, In);
++    const bool kept = f.controller.GetPausedPlayer().has_value();
++    f.Ears(In, In);
++    return kept && f.music().pauses == 1 && f.music().plays == 1 && f.music().status == "Playing";
++}
++
++bool TestsAapEarDetection::TestNotResumedUnlessStillPaused()
++{
++    // Stopped without a report reaching us, or quit and started again
++    // under another owner: not resumed.
++    Fixture stopped{};
++    stopped.Ears(In, In);
++    stopped.Ears(Out, In);
++    stopped.music().status = "Stopped";
++    stopped.Ears(In, In);
++
++    Fixture restarted{};
++    restarted.Ears(In, In);
++    restarted.Ears(Out, In);
++    restarted.music().owner = ":1.99";
++    restarted.Ears(In, In);
++
++    return stopped.music().plays == 0 && !stopped.controller.GetPausedPlayer().has_value() &&
++           restarted.music().plays == 0 && !restarted.controller.GetPausedPlayer().has_value();
++}
++
++bool TestsAapEarDetection::TestBudIntoCase()
++{
++    // Straight from the ear into the case pauses; back in the ear resumes.
++    Fixture f{};
++    f.Ears(In, In);
++    f.Ears(In, Case);
++    const bool paused = f.music().pauses == 1 && f.music().status == "Paused";
++    f.Ears(In, Out); // out of the case, in the hand: not yet
++    const bool waiting = f.music().plays == 0;
++    f.Ears(In, In);
++    return paused && waiting && f.music().plays == 1 && f.music().status == "Playing";
++}
++
++bool TestsAapEarDetection::TestOneBudListening()
++{
++    // One bud stays in the case and the user listens with the other: taking
++    // that one out pauses, putting it back resumes.
++    Fixture f{};
++    f.Ears(In, Case);
++    f.Ears(Out, Case);
++    const bool paused = f.music().pauses == 1;
++    f.Ears(In, Case);
++    return paused && f.music().plays == 1 && f.music().status == "Playing";
++}
++
++bool TestsAapEarDetection::TestBothOutThenOneBack()
++{
++    // One removed: pause at the first bud, resume only when both are back.
++    Fixture one{};
++    one.Ears(In, In);
++    one.Ears(Out, In);
++    one.Ears(Out, Out);
++    one.Ears(In, Out);
++    const bool oneWaits = one.music().pauses == 1 && one.music().plays == 0 && one.controller.GetPausedPlayer().has_value();
++    one.Ears(In, In);
++    const bool oneResumed = one.music().plays == 1 && one.music().status == "Playing";
++
++    // Both removed: pause when the second goes, resume when one is back.
++    Fixture both{EarPausePolicy::BothRemoved};
++    both.Ears(In, In);
++    both.Ears(Out, In);
++    both.Ears(Out, Out);
++    const bool bothPaused = both.music().pauses == 1;
++    both.Ears(In, Out);
++    return oneWaits && oneResumed && bothPaused && both.music().plays == 1 && both.music().status == "Playing";
++}
++
++bool TestsAapEarDetection::TestBothRemovedPolicy()
++{
++    Fixture f{EarPausePolicy::BothRemoved};
++    f.Ears(In, In);
++    f.Ears(In, Out);
++    f.Ears(In, Case);
++    const bool notYet = f.music().pauses == 0 && f.music().status == "Playing";
++    f.Ears(Out, Case);
++    const bool paused = f.music().pauses == 1;
++    f.Ears(Out, In);
++    return notYet && paused && f.music().plays == 1;
++}
++
++bool TestsAapEarDetection::TestPolicyOff()
++{
++    Fixture off{EarPausePolicy::Off};
++    off.Ears(In, In);
++    off.Ears(Out, Out);
++    off.Ears(In, In);
++
++    // Turned off while we hold a paused player: it is forgotten.
++    Fixture turnedOff{};
++    turnedOff.Ears(In, In);
++    turnedOff.Ears(Out, In);
++    turnedOff.controller.SetPolicy(EarPausePolicy::Off);
++    turnedOff.controller.SetPolicy(EarPausePolicy::OneRemoved);
++    turnedOff.Ears(In, In);
++
++    return off.music().pauses == 0 && off.music().plays == 0 &&
++           turnedOff.music().pauses == 1 && turnedOff.music().plays == 0;
++}
++
++bool TestsAapEarDetection::TestDisconnectForgets()
++{
++    Fixture f{};
++    f.Ears(In, In);
++    f.Ears(Out, In);
++    f.controller.Reset();
++    // After reconnecting, the first state is not a change.
++    f.Ears(Out, In);
++    f.Ears(In, In);
++    return f.music().pauses == 1 && f.music().plays == 0 && f.music().status == "Paused";
++}
++
++bool TestsAapEarDetection::TestUnknownBudDoesNotPause()
++{
++    // A bud that runs flat or drops its link reports neither in nor out.
++    Fixture f{};
++    f.Ears(In, In);
++    f.Ears(In, Gone);
++    const bool notPaused = f.music().pauses == 0;
++    // The remaining bud taken out still pauses.
++    f.Ears(Out, Gone);
++    return notPaused && f.music().pauses == 1;
++}
++
++bool TestsAapEarDetection::TestSingleBud()
++{
++    // AirPods Max: only the primary state counts.
++    Fixture f{};
++    f.controller.SetSingleBud(true);
++    f.Ears(In, Out);
++    f.Ears(In, In);
++    const bool secondaryIgnored = f.music().pauses == 0;
++    f.Ears(Out, In);
++    const bool paused = f.music().pauses == 1;
++    f.Ears(In, Out);
++    return secondaryIgnored && paused && f.music().plays == 1;
++}
++
++bool TestsAapEarDetection::TestPausesOnlyPlayingPlayer()
++{
++    // The paused "aaa" sorts first; only the playing one is paused.
++    Fixture f{};
++    f.players.Add("org.mpris.MediaPlayer2.aaa", ":1.5", "Paused");
++    f.Ears(In, In);
++    f.Ears(Out, In);
++    f.Ears(In, In);
++    auto &other = f.players.Get("org.mpris.MediaPlayer2.aaa");
++    return other.pauses == 0 && other.plays == 0 && other.status == "Paused" && f.music().pauses == 1 &&
++           f.music().plays == 1;
++}
++
++void TestsAapEarDetection::Test(const char *name, bool b)
++{
++    int spaceCount = 50 - static_cast<int>(std::strlen(name));
++    std::string space(spaceCount > 0 ? spaceCount : 1, ' ');
++    Logger::Debug("%s%s: %s", name, space.c_str(), b ? "PASS" : "FAIL");
++}
++
++TestsAapEarDetection::TestsAapEarDetection()
++{
++    Test("TestParseEarDetection", TestParseEarDetection());
++    Test("TestParseEarDetectionRejects", TestParseEarDetectionRejects());
++    Test("TestParsePrimaryBud", TestParsePrimaryBud());
++    Test("TestEarStateNames", TestEarStateNames());
++    Test("TestPolicyStrings", TestPolicyStrings());
++    Test("TestFirstStateDoesNothing", TestFirstStateDoesNothing());
++    Test("TestPauseWhenOneRemoved", TestPauseWhenOneRemoved());
++    Test("TestResumeSamePlayer", TestResumeSamePlayer());
++    Test("TestUserPausedNotResumed", TestUserPausedNotResumed());
++    Test("TestUserTookOverNotResumed", TestUserTookOverNotResumed());
++    Test("TestOwnPauseSignalKeepsResume", TestOwnPauseSignalKeepsResume());
++    Test("TestReportBeforePauseIgnored", TestReportBeforePauseIgnored());
++    Test("TestNotResumedUnlessStillPaused", TestNotResumedUnlessStillPaused());
++    Test("TestBudIntoCase", TestBudIntoCase());
++    Test("TestOneBudListening", TestOneBudListening());
++    Test("TestBothOutThenOneBack", TestBothOutThenOneBack());
++    Test("TestBothRemovedPolicy", TestBothRemovedPolicy());
++    Test("TestPolicyOff", TestPolicyOff());
++    Test("TestDisconnectForgets", TestDisconnectForgets());
++    Test("TestUnknownBudDoesNotPause", TestUnknownBudDoesNotPause());
++    Test("TestSingleBud", TestSingleBud());
++    Test("TestPausesOnlyPlayingPlayer", TestPausesOnlyPlayingPlayer());
++}
+diff --git a/src/tests/TestsAapEarDetection.h b/src/tests/TestsAapEarDetection.h
+new file mode 100644
+index 0000000..f99cd97
+--- /dev/null
++++ b/src/tests/TestsAapEarDetection.h
+@@ -0,0 +1,41 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++namespace MagicPodsCore
++{
++    // The ear detection packet parser and the pause/resume state machine
++    // (EarPauseController, with fake media players).
++    class TestsAapEarDetection
++    {
++    private:
++        bool TestParseEarDetection();
++        bool TestParseEarDetectionRejects();
++        bool TestParsePrimaryBud();
++        bool TestEarStateNames();
++        bool TestPolicyStrings();
++        bool TestFirstStateDoesNothing();
++        bool TestPauseWhenOneRemoved();
++        bool TestResumeSamePlayer();
++        bool TestUserPausedNotResumed();
++        bool TestUserTookOverNotResumed();
++        bool TestOwnPauseSignalKeepsResume();
++        bool TestReportBeforePauseIgnored();
++        bool TestNotResumedUnlessStillPaused();
++        bool TestBudIntoCase();
++        bool TestOneBudListening();
++        bool TestBothOutThenOneBack();
++        bool TestBothRemovedPolicy();
++        bool TestPolicyOff();
++        bool TestDisconnectForgets();
++        bool TestUnknownBudDoesNotPause();
++        bool TestSingleBud();
++        bool TestPausesOnlyPlayingPlayer();
++        void Test(const char *name, bool b);
++
++    public:
++        TestsAapEarDetection();
++    };
++}
+diff --git a/src/tests/TestsEarPauseMpris.cpp b/src/tests/TestsEarPauseMpris.cpp
+new file mode 100644
+index 0000000..ad8d9d9
+--- /dev/null
++++ b/src/tests/TestsEarPauseMpris.cpp
+@@ -0,0 +1,140 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "TestsEarPauseMpris.h"
++#include "media/EarPauseController.h"
++#include "media/MprisClient.h"
++#include "Logger.h"
++
++#include <chrono>
++#include <cstdlib>
++#include <cstring>
++#include <functional>
++#include <string>
++#include <thread>
++#include <sdbus-c++/sdbus-c++.h>
++
++using namespace MagicPodsCore;
++
++namespace
++{
++    constexpr auto Music = "org.mpris.MediaPlayer2.music";
++    constexpr auto App = "org.mpris.MediaPlayer2.app";
++    constexpr auto In = AapEarState::InEar;
++    constexpr auto Out = AapEarState::OutOfEar;
++
++    std::unique_ptr<sdbus::IProxy> UserProxy(const std::string &name)
++    {
++        return sdbus::createProxy(sdbus::createSessionBusConnection(), name, MprisClient::PlayerPath,
++                                  sdbus::dont_run_event_loop_thread);
++    }
++
++    // What another client (the lock screen, the player's own UI) sees and does.
++    std::string StatusOf(const std::string &name)
++    {
++        try {
++            sdbus::Variant value{};
++            UserProxy(name)
++                ->callMethod("Get")
++                .onInterface("org.freedesktop.DBus.Properties")
++                .withArguments(std::string{MprisClient::PlayerInterface}, std::string{"PlaybackStatus"})
++                .storeResultsTo(value);
++            return value.get<std::string>();
++        }
++        catch (const std::exception &error) {
++            Logger::Error("Reading %s failed: %s", name.c_str(), error.what());
++            return {};
++        }
++    }
++
++    bool UserCall(const std::string &name, const char *method)
++    {
++        try {
++            UserProxy(name)->callMethod(method).onInterface(MprisClient::PlayerInterface).storeResultsTo();
++            return true;
++        }
++        catch (const std::exception &error) {
++            Logger::Error("%s on %s failed: %s", method, name.c_str(), error.what());
++            return false;
++        }
++    }
++
++    // The player's report of a change reaches our socket a moment after the
++    // user's call returns; GetPausedPlayer() delivers what has arrived.
++    bool WaitFor(const std::function<bool()> &condition)
++    {
++        for (int i = 0; i < 50; ++i) {
++            if (condition())
++                return true;
++            std::this_thread::sleep_for(std::chrono::milliseconds(100));
++        }
++        return condition();
++    }
++}
++
++bool TestsEarPauseMpris::TestMprisFindsPlayingPlayer()
++{
++    auto player = MprisClient::Instance().FindPlaying();
++    return player.has_value() && player->name == Music && !player->owner.empty() && player->owner[0] == ':' &&
++           MprisClient::Instance().GetPlaybackStatus(player.value()) == "Playing";
++}
++
++bool TestsEarPauseMpris::TestMprisPauseAndResume()
++{
++    EarPauseController controller{MprisClient::Instance()};
++    controller.OnEarStateChanged(In, In);
++    controller.OnEarStateChanged(Out, In);
++    const bool paused = StatusOf(Music) == "Paused" && controller.GetPausedPlayer().has_value() &&
++                        controller.GetPausedPlayer()->name == Music;
++    // Our own pause comes back as a signal; it must not cancel the resume.
++    std::this_thread::sleep_for(std::chrono::milliseconds(300));
++    const bool kept = controller.GetPausedPlayer().has_value();
++    controller.OnEarStateChanged(In, In);
++    return paused && kept && StatusOf(Music) == "Playing" && StatusOf(App) == "Paused";
++}
++
++bool TestsEarPauseMpris::TestMprisUserTakeOverNotResumed()
++{
++    EarPauseController controller{MprisClient::Instance()};
++    controller.OnEarStateChanged(In, In);
++    controller.OnEarStateChanged(Out, In);
++    const bool paused = StatusOf(Music) == "Paused" && controller.GetPausedPlayer().has_value();
++    // The user plays it again with one bud out, then pauses it.
++    UserCall(Music, "Play");
++    const bool forgotten = WaitFor([&controller]() { return !controller.GetPausedPlayer().has_value(); });
++    UserCall(Music, "Pause");
++    controller.OnEarStateChanged(In, In);
++    const bool stayedPaused = StatusOf(Music) == "Paused";
++    UserCall(Music, "Play"); // back to the starting state
++    return paused && forgotten && stayedPaused && StatusOf(Music) == "Playing";
++}
++
++bool TestsEarPauseMpris::TestMprisUserPausedNotResumed()
++{
++    UserCall(Music, "Pause");
++    EarPauseController controller{MprisClient::Instance()};
++    controller.OnEarStateChanged(In, In);
++    controller.OnEarStateChanged(Out, In);
++    const bool nothingPaused = !controller.GetPausedPlayer().has_value();
++    controller.OnEarStateChanged(In, In);
++    std::this_thread::sleep_for(std::chrono::milliseconds(300));
++    return nothingPaused && StatusOf(Music) == "Paused" && StatusOf(App) == "Paused";
++}
++
++void TestsEarPauseMpris::Test(const char *name, bool b)
++{
++    int spaceCount = 50 - static_cast<int>(std::strlen(name));
++    std::string space(spaceCount > 0 ? spaceCount : 1, ' ');
++    Logger::Debug("%s%s: %s", name, space.c_str(), b ? "PASS" : "FAIL");
++}
++
++TestsEarPauseMpris::TestsEarPauseMpris()
++{
++    if (std::getenv("MAGICPODS_TEST_MPRIS") == nullptr)
++        return;
++    Test("TestMprisFindsPlayingPlayer", TestMprisFindsPlayingPlayer());
++    Test("TestMprisPauseAndResume", TestMprisPauseAndResume());
++    Test("TestMprisUserTakeOverNotResumed", TestMprisUserTakeOverNotResumed());
++    Test("TestMprisUserPausedNotResumed", TestMprisUserPausedNotResumed());
++}
+diff --git a/src/tests/TestsEarPauseMpris.h b/src/tests/TestsEarPauseMpris.h
+new file mode 100644
+index 0000000..4233bb5
+--- /dev/null
++++ b/src/tests/TestsEarPauseMpris.h
+@@ -0,0 +1,26 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++namespace MagicPodsCore
++{
++    // EarPauseController with the real MprisClient, against fake players on
++    // a private session bus. Runs only when MAGICPODS_TEST_MPRIS is set; the
++    // daemon's tests/run-mpris-tests.sh starts the bus and two players:
++    //   org.mpris.MediaPlayer2.app    Paused
++    //   org.mpris.MediaPlayer2.music  Playing
++    class TestsEarPauseMpris
++    {
++    private:
++        bool TestMprisFindsPlayingPlayer();
++        bool TestMprisPauseAndResume();
++        bool TestMprisUserTakeOverNotResumed();
++        bool TestMprisUserPausedNotResumed();
++        void Test(const char *name, bool b);
++
++    public:
++        TestsEarPauseMpris();
++    };
++}

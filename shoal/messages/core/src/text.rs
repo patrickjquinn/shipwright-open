@@ -1,0 +1,330 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; rustfmt and clippy fixes; see CHANGES-FROM-UPSTREAM.md.
+//! Text that came from someone else, made safe to look at. Not to *parse* -
+//! that is `markup.rs`. This is about what the eye can be made to believe.
+
+/// Removes the invisible characters that reorder what follows - `holiday.jpg`
+/// that ends in `.exe`. Removed, not replaced: a marker would be noise in a name.
+pub fn strip_bidi(text: &str) -> String {
+    if !text.chars().any(is_bidi_control) {
+        // The overwhelming case: hand back what came in, without allocating a
+        // second copy of every message body in the room.
+        return text.to_owned();
+    }
+    text.chars()
+        .filter(|character| !is_bidi_control(*character))
+        .collect()
+}
+
+pub fn is_bidi_control(character: char) -> bool {
+    matches!(character,
+        '\u{061C}' | '\u{200E}' | '\u{200F}'
+        | '\u{202A}'..='\u{202E}'
+        | '\u{2066}'..='\u{2069}')
+}
+
+/// A file name safe to write, from a name that came from somebody else: it is
+/// an event field, so it can hold slashes, `..` or nothing. Qt strips it again.
+pub fn safe_file_name(name: &str) -> String {
+    let name = strip_bidi(name);
+    // Both separators: a name is not necessarily written on this system.
+    let base = name.rsplit(['/', '\\']).next().unwrap_or_default();
+    let base: String = base
+        .chars()
+        .filter(|character| !character.is_control())
+        .collect();
+    let base = base.trim();
+    if base.is_empty() || base == "." || base == ".." {
+        return String::new();
+    }
+    // Long enough for any real name, short enough not to fight the filesystem.
+    const MAX: usize = 120;
+    if base.chars().count() <= MAX {
+        return base.to_owned();
+    }
+    base.chars().take(MAX).collect()
+}
+
+/// Blanks anything that could identify somebody. Applied at the sinks: an SDK
+/// error carries the request URL, and a Matrix URL carries room and user.
+pub fn scrub_ids(text: &str) -> String {
+    text.split_whitespace()
+        .map(|word| {
+            // Every part of the word, not only what trimming the ends leaves over.
+            // Rust's `Debug` writes a host as `Domain("example.org")`, and the
+            // brackets sat *inside* the word: the candidate failed every test,
+            // including the two length ones, and the host went into the journal.
+            // A field that names what it holds: eight upper-case letters are a word
+            // like any other until `device_id=` stands in front of them. Whole word,
+            // so the quotes around the value do not separate it from its name.
+            let named = word.contains("_id=") || word.contains("token=");
+            if named
+                || word
+                    .split(|c: char| "(),;:\"'[]{}<>".contains(c))
+                    .any(identifies_somebody)
+            {
+                "<id>".to_owned()
+            } else {
+                word.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Whether one candidate out of a log line names a person, a room or a machine.
+/// Every class here was seen in an SDK error; `M_LIMIT_EXCEEDED` is the one
+/// token a report keeps.
+fn identifies_somebody(candidate: &str) -> bool {
+    // Punctuation the sentence brought, including the colon a DNS error ends
+    // its host with. What is left is the candidate.
+    let trimmed = candidate.trim_matches(|c: char| "(),;:.\"'[]{}<>".contains(c));
+    if trimmed.is_empty() {
+        return false;
+    }
+
+    let url = trimmed.contains("://");
+    // A sigil anywhere in the word. The server part is not required:
+    // `!room` and `@alice` name somebody just as well.
+    let matrix_id = trimmed
+        .chars()
+        .any(|c| matches!(c, '@' | '!' | '#' | '$' | '+'))
+        && trimmed.len() >= 3;
+    let path = trimmed.matches('/').count() >= 2;
+
+    // `host`, `host:port`, or an address. Split the port off first -
+    // a homeserver is addressed with one more often than without.
+    let host_part = trimmed.split(':').next().unwrap_or(trimmed);
+    let labels: Vec<&str> = host_part.split('.').collect();
+    let dotted = labels.len() >= 2
+        && labels.iter().all(|label| {
+            !label.is_empty()
+                && label
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+                // `_tcp` is a DNS label, `join_rules` a field name.
+                && !label[1..].contains('_')
+        });
+    // A name (last label is letters) or an address (all digits).
+    let hostname = dotted
+        && labels
+            .last()
+            .map(|last| {
+                (last.len() >= 2 && last.chars().all(|c| c.is_ascii_alphabetic()))
+                    || last.chars().all(|c| c.is_ascii_digit())
+            })
+            .unwrap_or(false);
+
+    // `M_LIMIT_EXCEEDED` and its relatives: upper case, no identifier in them, and
+    // the one token worth keeping in a report.
+    let error_code = trimmed.len() >= 3
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c == '_' || c.is_ascii_digit())
+        && trimmed.contains('_');
+
+    let token = !error_code
+        && trimmed.len() > 12
+        && trimmed
+            .split_once('_')
+            .map(|(prefix, rest)| {
+                prefix.len() <= 4
+                    && !prefix.is_empty()
+                    && prefix.chars().all(|c| c.is_ascii_alphabetic())
+                    && rest.len() >= 8
+                    && rest.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+            })
+            .unwrap_or(false);
+    let blob = !error_code
+        && trimmed.len() >= 32
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '/' | '=' | '-' | '_' | '.'));
+
+    url || matrix_id || path || hostname || token || blob
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_scrubber_blanks_every_class_of_identifier() {
+        assert_eq!(
+            scrub_ids("failed for url (https://server/_matrix/x)"),
+            "failed for url <id>"
+        );
+        assert_eq!(
+            scrub_ids("no room !abcdefgh:server.tld here"),
+            "no room <id> here"
+        );
+        assert_eq!(scrub_ids("user @name:server.tld left"), "user <id> left");
+        assert_eq!(
+            scrub_ids("event $abcdef:server.tld gone"),
+            "event <id> gone"
+        );
+        assert_eq!(scrub_ids("token syt_YWxpY2U_abcdefgh_1234"), "token <id>");
+        assert_eq!(scrub_ids("at /home/defaultuser/.local/share/x"), "at <id>");
+        assert_eq!(
+            scrub_ids("key AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+            "key <id>"
+        );
+    }
+
+    #[test]
+    fn a_field_path_is_not_a_host() {
+        assert_eq!(
+            scrub_ids("in a store: base_info.join_rules.content"),
+            "in a store: base_info.join_rules.content"
+        );
+        assert_eq!(
+            scrub_ids("lookup _matrix-fed._tcp.server.tld failed"),
+            "lookup <id> failed"
+        );
+    }
+
+    #[test]
+    fn the_scrubber_catches_what_the_system_really_says() {
+        // Verbatim shapes from std::io, hyper and reqwest - the previous test asserted
+        // on a string no operating system emits.
+        for probe in [
+            "dns error: failed to lookup address information for matrix.example.org: Name or service not known",
+            "error trying to connect: tcp connect error: chat.example.org:8448: Connection refused",
+            "failed to connect to 203.0.113.42:8448",
+            "no route to 198.51.100.5",
+            "could not reach the homeserver matrix.example.org.",
+            "the room !AbCdEfGhIjKlMnOpQr was not found",
+            "user @alice was not found",
+        ] {
+            let scrubbed = scrub_ids(probe);
+            assert!(scrubbed.contains("<id>"), "not scrubbed: {probe} -> {scrubbed}");
+            assert!(!scrubbed.contains("example.org"), "host survived: {scrubbed}");
+            assert!(!scrubbed.contains("203.0.113"), "address survived: {scrubbed}");
+            assert!(!scrubbed.contains("alice"), "user survived: {scrubbed}");
+        }
+    }
+
+    #[test]
+    fn the_scrubber_catches_what_the_second_hearing_smuggled_past_it() {
+        for probe in [
+            "dns error: failed to lookup address information for matrix.example.org",
+            "the homeserver chat.company.internal refused the connection",
+            "server returned {\"room_id\":\"!SecretRoom:example.org\"}",
+            "invited by [@alice:example.org] to the room",
+            "sender=@bob:example.org could not be reached",
+            "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N",
+            "at home/defaultuser/.local/share/org.shipwright/ShoalMessages/session.json",
+        ] {
+            let scrubbed = scrub_ids(probe);
+            assert!(
+                scrubbed.contains("<id>"),
+                "not scrubbed: {probe} -> {scrubbed}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_scrubber_keeps_what_makes_a_report_useful() {
+        // Two failures of one class must not read differently because one
+        // word happened to be longer than the other.
+        for probe in [
+            "M_LIMIT_EXCEEDED",
+            "M_UNKNOWN_TOKEN",
+            "M_FORBIDDEN",
+            "M_NOT_FOUND",
+        ] {
+            assert_eq!(scrub_ids(probe), probe);
+        }
+        assert_eq!(
+            scrub_ids("M_LIMIT_EXCEEDED, retrying"),
+            "M_LIMIT_EXCEEDED, retrying"
+        );
+    }
+
+    /// Rust's `Debug` is the one formatting in the non-test code, and it puts
+    /// the host inside brackets rather than at the end of a word.
+    #[test]
+    fn the_scrubber_looks_inside_a_debug_line() {
+        // Measured, not assumed: the whole word goes, brackets and all.
+        assert_eq!(
+            scrub_ids(
+                "upload rejected: Url { host: Some(Domain(\"matrix.example.org\")), port: None }"
+            ),
+            "upload rejected: Url { host: <id> port: None }"
+        );
+        assert_eq!(
+            scrub_ids("reqwest::Error(Connect, \"dns error for chat.example.net\")"),
+            "reqwest::Error(Connect, \"dns error for <id>"
+        );
+        // The value is a plain word; the field name is what gives it away.
+        assert_eq!(
+            scrub_ids("session(device_id=\"ABCDEFGH\", user=@a:b.c)"),
+            "<id> <id>"
+        );
+        // The limit, stated rather than implied away: a name and its value split
+        // over two words are two words, and the value alone says nothing.
+        assert_eq!(
+            scrub_ids("device_id: \"ABCDEFGH\""),
+            "device_id: \"ABCDEFGH\""
+        );
+    }
+
+    #[test]
+    fn the_scrubber_leaves_ordinary_words_alone() {
+        assert_eq!(
+            scrub_ids("the server said 429, try again"),
+            "the server said 429, try again"
+        );
+        assert_eq!(
+            scrub_ids("could not read the devices"),
+            "could not read the devices"
+        );
+    }
+
+    #[test]
+    fn a_file_name_cannot_pretend_to_end_differently() {
+        // "photo_gpj.exe" written with an override reads as "photo_exe.jpg".
+        let disguised = "photo_\u{202E}gpj.exe";
+        assert_eq!(strip_bidi(disguised), "photo_gpj.exe");
+    }
+
+    #[test]
+    fn ordinary_text_is_returned_unchanged() {
+        for text in ["hello", "Grüße", "مرحبا", "שלום", "こんにちは", ""] {
+            assert_eq!(strip_bidi(text), text);
+        }
+    }
+
+    #[test]
+    fn a_sender_cannot_name_a_file_out_of_its_folder() {
+        assert_eq!(
+            safe_file_name("../../.ssh/authorized_keys"),
+            "authorized_keys"
+        );
+        assert_eq!(safe_file_name("/etc/passwd"), "passwd");
+        assert_eq!(
+            safe_file_name("..\\..\\windows\\system32\\evil.dll"),
+            "evil.dll"
+        );
+        assert_eq!(safe_file_name("holiday.jpg"), "holiday.jpg");
+    }
+
+    #[test]
+    fn a_name_that_is_no_name_becomes_none() {
+        for name in ["", "..", ".", "   ", "some/path/", "\n\t"] {
+            assert_eq!(safe_file_name(name), "", "{name:?}");
+        }
+    }
+
+    #[test]
+    fn a_name_cannot_carry_control_characters_or_a_reversal() {
+        assert_eq!(safe_file_name("re\u{202E}port.pdf"), "report.pdf");
+        assert_eq!(safe_file_name("two\nlines.txt"), "twolines.txt");
+        assert_eq!(safe_file_name(&"a".repeat(400)).chars().count(), 120);
+    }
+
+    #[test]
+    fn every_control_goes_including_the_isolates() {
+        let noisy = "a\u{061C}b\u{200E}c\u{200F}d\u{202A}e\u{202B}f\u{202C}g\u{202D}h\u{202E}i\u{2066}j\u{2067}k\u{2068}l\u{2069}m";
+        assert_eq!(strip_bidi(noisy), "abcdefghijklm");
+    }
+}

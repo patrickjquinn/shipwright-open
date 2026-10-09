@@ -1,0 +1,538 @@
+// Modified by Shipwright, 2026: only the chosen source is highlighted (All and Videos share a path); New poll and Share location in the pull-down; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+import Sailfish.Gallery 1.0
+import QtDocGallery 5.0
+import Qt.labs.folderlistmodel 2.1
+import QtMultimedia 5.6
+
+// Two ways to the same thing, side by side: the gallery, divided by folder,
+// and the file system from the home folder down. The platform offers each of
+// them but not together, and its gallery is one undivided grid.
+Dialog {
+    id: dialog
+
+    allowedOrientations: Orientation.All
+
+    /// What the caller reads once accepted: [{ path, mimeType }, …] in the
+    /// order they were tapped.
+    property var picked: []
+
+    /// Set instead of a file where the pull-down asks for the platform's own
+    /// picker: a dialog cannot push a page and pop itself in one breath.
+    property bool otherFilesWanted: false
+
+    /// Whether the caller holds a draft, and whether the pull-down's entry for it
+    /// was tapped. The text itself never comes here.
+    property bool draftText: false
+    property bool textFileWanted: false
+
+    /// The two things sent from here that are not files: what the caller
+    /// starts once this dialog has gone, as with the platform's picker.
+    /// "poll" or "location"; empty for files.
+    property string otherWanted: ""
+
+    /// "gallery" or "files".
+    property string mode: "gallery"
+
+    /// The gallery's folder. Empty is every picture below the home folder.
+    property string folder: ""
+    /// Which gallery the grid shows. One model per root type, so a film and a
+    /// photograph cannot stand in the same grid.
+    property string kind: "image"
+
+    // The home folder is start and ceiling: below it are the only directories
+    // the sandbox shows, above it nothing worth walking into.
+    readonly property string root: StandardPaths.home
+    property string directory: StandardPaths.home
+
+    readonly property bool canGoUp: dialog.directory !== dialog.root
+                                    && dialog.directory.length > dialog.root.length
+
+    canAccept: picked.length > 0 || otherFilesWanted || textFileWanted
+               || otherWanted.length > 0
+
+    function up() {
+        if (!dialog.canGoUp) {
+            return
+        }
+        var cut = dialog.directory.lastIndexOf("/")
+        dialog.directory = cut > dialog.root.length
+                           ? dialog.directory.substring(0, cut) : dialog.root
+    }
+
+    function indexOfPath(path) {
+        for (var i = 0; i < dialog.picked.length; i++) {
+            if (dialog.picked[i].path === path) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    /// Adds or removes one file. The whole array is replaced rather than
+    /// changed in place: a binding follows the property, not its contents.
+    function toggle(path, mimeType) {
+        var next = dialog.picked.slice()
+        var at = dialog.indexOfPath(path)
+        if (at >= 0) {
+            next.splice(at, 1)
+        } else {
+            next.push({
+                "path": path,
+                "mimeType": mimeType && mimeType.length > 0
+                            ? mimeType : matrix.mimeTypeForPath(path)
+            })
+        }
+        dialog.picked = next
+    }
+
+    function askForOtherFiles() {
+        dialog.otherFilesWanted = true
+        dialog.accept()
+    }
+
+    function askForTextFile() {
+        dialog.textFileWanted = true
+        dialog.accept()
+    }
+
+    function askFor(what) {
+        dialog.otherWanted = what
+        dialog.accept()
+    }
+
+    /// A photo from the camera page, taken in once this dialog is on top again.
+    property string pendingShot: ""
+
+    function openCamera() {
+        var camera = pageStack.push(Qt.resolvedUrl("CameraCapturePage.qml"))
+        if (camera) {
+            camera.taken.connect(function (path) { dialog.pendingShot = path })
+        }
+    }
+
+    // Straight on to sending, as a taken photo is what was wanted.
+    onStatusChanged: {
+        if (status === PageStatus.Active && dialog.pendingShot.length > 0) {
+            var shot = dialog.pendingShot
+            dialog.pendingShot = ""
+            if (dialog.indexOfPath(shot) < 0) {
+                dialog.toggle(shot, "image/jpeg")
+            }
+            acceptLater.start()
+        }
+    }
+
+    // Not inside the status change: accepting changes the status again.
+    Timer {
+        id: acceptLater
+
+        interval: 0
+        onTriggered: dialog.accept()
+    }
+
+    // The folders that exist, not the ones we imagine: the strip is built from
+    // what lies under Pictures, plus the two places that are always there.
+    ListModel {
+        id: sources
+    }
+
+    FolderListModel {
+        id: pictureFolders
+
+        folder: "file://" + StandardPaths.pictures
+        showDirs: true
+        showFiles: false
+        showDotAndDotDot: false
+        sortField: FolderListModel.Name
+
+        onCountChanged: dialog.rebuildSources()
+    }
+
+    function rebuildSources() {
+        var shown = dialog.folder
+        sources.clear()
+        // Every row names its kind (Shipwright): "All" and "Videos" share a
+        // path, and a role missing from the first row reads back empty.
+        sources.append({ "name": qsTr("All"), "path": "", "kind": "image" })
+        sources.append({ "name": qsTr("Pictures"), "path": StandardPaths.pictures, "kind": "image" })
+        for (var i = 0; i < pictureFolders.count; i++) {
+            sources.append({
+                "name": String(pictureFolders.get(i, "fileName")),
+                "path": String(pictureFolders.get(i, "filePath")),
+                "kind": "image"
+            })
+        }
+        sources.append({ "name": qsTr("Downloads"), "path": StandardPaths.download, "kind": "image" })
+        // Its own entry rather than mixed in: the gallery model takes one root
+        // type, and films and photographs do not live in the same folders anyway.
+        sources.append({ "name": qsTr("Videos"), "path": "", "kind": "video" })
+        dialog.folder = shown
+    }
+
+    Component.onCompleted: rebuildSources()
+
+    DocumentGalleryModel {
+        id: videos
+
+        rootType: DocumentGallery.Video
+        properties: ["url", "filePath", "fileName", "mimeType", "lastModified"]
+        sortProperties: ["-lastModified"]
+        autoUpdate: true
+    }
+
+    DocumentGalleryModel {
+        id: pictures
+
+        rootType: DocumentGallery.Image
+        properties: ["url", "filePath", "fileName", "mimeType", "lastModified"]
+        sortProperties: ["-lastModified"]
+        autoUpdate: true
+
+        filter: GalleryStartsWithFilter {
+            property: "filePath"
+            value: dialog.folder.length > 0 ? dialog.folder : StandardPaths.home
+        }
+    }
+
+    // Outside both views: whichever one is hidden must not take the way back
+    // with it. Every state keeps a visible action.
+    Column {
+        id: head
+
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+
+        DialogHeader {
+            acceptText: dialog.picked.length > 0
+                        ? qsTr("%1 selected").arg(dialog.picked.length)
+                        : qsTr("Attachment")
+        }
+
+        Row {
+            width: parent.width
+
+            ModeTab {
+                width: parent.width / 2
+                label: qsTr("Gallery")
+                active: dialog.mode === "gallery"
+                onClicked: dialog.mode = "gallery"
+            }
+
+            ModeTab {
+                width: parent.width / 2
+                label: qsTr("Files")
+                active: dialog.mode === "files"
+                onClicked: dialog.mode = "files"
+            }
+        }
+
+        // Sideways, because the folder names are as long as they are and a
+        // menu of them could not be scrolled in landscape.
+        SilicaListView {
+            id: strip
+
+            width: parent.width
+            height: dialog.mode === "gallery" ? Theme.itemSizeSmall : 0
+            visible: dialog.mode === "gallery"
+            orientation: ListView.Horizontal
+            currentIndex: -1
+            clip: true
+            model: sources
+
+            delegate: BackgroundItem {
+                width: sourceName.implicitWidth + 2 * Theme.paddingLarge
+                height: strip.height
+
+                onClicked: {
+                    dialog.kind = model.kind ? model.kind : "image"
+                    dialog.folder = model.path
+                }
+
+                Label {
+                    id: sourceName
+
+                    anchors.centerIn: parent
+                    font.pixelSize: Theme.fontSizeSmall
+                    // Shipwright: "All" and "Videos" share a path; the
+                    // kind tells them apart.
+                    color: dialog.folder === model.path && dialog.kind === model.kind
+                           ? Theme.highlightColor : Theme.primaryColor
+                    text: model.name
+                }
+            }
+        }
+
+        // Where the browser stands, and the way up. A row rather than a menu
+        // entry: it is the only way back out of a folder.
+        BackgroundItem {
+            width: parent.width
+            height: dialog.mode === "files" ? Theme.itemSizeSmall : 0
+            visible: dialog.mode === "files"
+            enabled: dialog.canGoUp
+
+            onClicked: dialog.up()
+
+            Image {
+                id: upMark
+
+                anchors {
+                    left: parent.left
+                    leftMargin: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
+                }
+                visible: dialog.canGoUp
+                source: "image://theme/icon-m-back"
+            }
+
+            Label {
+                anchors {
+                    left: upMark.right
+                    leftMargin: Theme.paddingMedium
+                    right: parent.right
+                    rightMargin: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
+                }
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                truncationMode: TruncationMode.Fade
+                text: dialog.directory === dialog.root
+                      ? qsTr("Home folder")
+                      : dialog.directory.substring(dialog.root.length + 1)
+            }
+        }
+    }
+
+    SilicaGridView {
+        id: grid
+
+        readonly property int columns: Math.max(1, Math.floor(width / Theme.itemSizeHuge))
+
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: head.bottom
+            bottom: parent.bottom
+        }
+        visible: dialog.mode === "gallery"
+        // Qt Quick focuses row 0 on every model reset; switching folders is one.
+        currentIndex: -1
+        cellWidth: Math.floor(width / columns)
+        cellHeight: cellWidth
+        // The camera takes the first cell of the picture grid.
+        readonly property int offset: dialog.kind === "video" ? 0 : 1
+        readonly property var gallery: dialog.kind === "video" ? videos : pictures
+        model: gallery.count + offset
+        clip: true
+
+        PullDownMenu {
+            // Only where Privacy allows sending the position at all.
+            MenuItem {
+                text: qsTranslate("RoomPage", "Share location")
+                visible: settings.locationSharing
+                onClicked: dialog.askFor("location")
+            }
+
+            MenuItem {
+                text: qsTranslate("RoomPage", "New poll")
+                onClicked: dialog.askFor("poll")
+            }
+
+            MenuItem {
+                text: qsTr("Send text as a file")
+                visible: dialog.draftText
+                onClicked: dialog.askForTextFile()
+            }
+
+            MenuItem {
+                text: qsTr("Other files")
+                onClicked: dialog.askForOtherFiles()
+            }
+        }
+
+        delegate: Item {
+            id: cell
+
+            readonly property bool isCamera: index < grid.offset
+            readonly property var entry: isCamera ? null : grid.gallery.get(index - grid.offset)
+
+            width: grid.cellWidth
+            height: grid.cellHeight
+
+            ThumbnailImage {
+                visible: !cell.isCamera
+                source: cell.entry ? cell.entry.url : ""
+                size: grid.cellWidth
+                // The platform's own selection look comes with the component.
+                selected: !!cell.entry && dialog.indexOfPath(cell.entry.filePath) >= 0
+                onClicked: dialog.toggle(cell.entry.filePath, cell.entry.mimeType)
+            }
+
+            BackgroundItem {
+                anchors.fill: parent
+                visible: cell.isCamera
+                onClicked: dialog.openCamera()
+
+                // Only where the user turned it on, and only while someone looks.
+                // Portrait only: the viewfinder is not turned with the page.
+                Loader {
+                    anchors.fill: parent
+                    active: cell.isCamera && settings.cameraLivePreview && dialog.isPortrait
+                    clip: true
+
+                    sourceComponent: Item {
+                        Camera {
+                            id: tileCamera
+
+                            captureMode: Camera.CaptureStillImage
+                            cameraState: dialog.status === PageStatus.Active
+                                         && Qt.application.active
+                                         && dialog.mode === "gallery"
+                                         && matrix.calls.state === "idle"
+                                         ? Camera.ActiveState : Camera.UnloadedState
+                        }
+
+                        VideoOutput {
+                            anchors.fill: parent
+                            source: tileCamera
+                            fillMode: VideoOutput.PreserveAspectCrop
+                        }
+                    }
+                }
+
+                Image {
+                    anchors.centerIn: parent
+                    source: "image://theme/icon-m-camera?"
+                            + (parent.highlighted ? Theme.highlightColor : Theme.primaryColor)
+                }
+            }
+        }
+
+        ViewPlaceholder {
+            enabled: pictures.count === 0
+            text: qsTr("No pictures here")
+        }
+
+        VerticalScrollDecorator { }
+    }
+
+    SilicaListView {
+        id: files
+
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: head.bottom
+            bottom: parent.bottom
+        }
+        visible: dialog.mode === "files"
+        currentIndex: -1
+        clip: true
+
+        PullDownMenu {
+            // Only where Privacy allows sending the position at all.
+            MenuItem {
+                text: qsTranslate("RoomPage", "Share location")
+                visible: settings.locationSharing
+                onClicked: dialog.askFor("location")
+            }
+
+            MenuItem {
+                text: qsTranslate("RoomPage", "New poll")
+                onClicked: dialog.askFor("poll")
+            }
+
+            MenuItem {
+                text: qsTr("Send text as a file")
+                visible: dialog.draftText
+                onClicked: dialog.askForTextFile()
+            }
+
+            MenuItem {
+                text: qsTr("Other files")
+                onClicked: dialog.askForOtherFiles()
+            }
+        }
+
+        model: FolderListModel {
+            id: entries
+
+            folder: "file://" + dialog.directory
+            showDirs: true
+            showDirsFirst: true
+            showFiles: true
+            showDotAndDotDot: false
+            showHidden: false
+            sortField: FolderListModel.Name
+        }
+
+        delegate: ListItem {
+            id: row
+
+            width: files.width
+            highlighted: down || dialog.indexOfPath(model.filePath) >= 0
+
+            // A picture shows itself; everything else gets the theme's mark.
+            // Asked for at the size it is drawn, not at the size it was taken.
+            Image {
+                id: mark
+
+                anchors {
+                    left: parent.left
+                    leftMargin: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
+                }
+                width: Theme.iconSizeMedium
+                height: Theme.iconSizeMedium
+                fillMode: Image.PreserveAspectCrop
+                clip: true
+                asynchronous: true
+                sourceSize.width: Theme.iconSizeMedium
+                sourceSize.height: Theme.iconSizeMedium
+                source: {
+                    if (model.fileIsDir) {
+                        return "image://theme/icon-m-file-folder"
+                    }
+                    var kind = matrix.mimeTypeForPath(model.filePath)
+                    if (kind.indexOf("image/") === 0) {
+                        return "file://" + model.filePath
+                    }
+                    if (kind.indexOf("video/") === 0) {
+                        return "image://theme/icon-m-file-video"
+                    }
+                    if (kind.indexOf("audio/") === 0) {
+                        return "image://theme/icon-m-file-audio"
+                    }
+                    return "image://theme/icon-m-file-other"
+                }
+            }
+
+            Label {
+                anchors {
+                    left: mark.right
+                    leftMargin: Theme.paddingMedium
+                    right: parent.right
+                    rightMargin: Theme.horizontalPageMargin
+                    verticalCenter: parent.verticalCenter
+                }
+                text: model.fileName
+                truncationMode: TruncationMode.Fade
+            }
+
+            onClicked: {
+                if (model.fileIsDir) {
+                    dialog.directory = model.filePath
+                    return
+                }
+                dialog.toggle(model.filePath, "")
+            }
+        }
+
+        ViewPlaceholder {
+            enabled: entries.count === 0
+            text: qsTr("Nothing here")
+        }
+
+        VerticalScrollDecorator { }
+    }
+}

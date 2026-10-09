@@ -1,0 +1,510 @@
+// Modified by Shipwright, 2026: contact matching switch and its phone-number limits, bridged conversations note; Sailfish UI rules pass; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+
+// What other people may do to this device. The call rules are enforced in the
+// core: a refused call rings nothing and is answered in no observable way.
+Page {
+    id: page
+
+    allowedOrientations: Orientation.All
+
+    // Anything left over from another page is not this page's news.
+    onStatusChanged: {
+        if (status === PageStatus.Activating) {
+            matrix.clearLastError()
+        }
+    }
+
+    SilicaFlickable {
+        anchors.fill: parent
+        contentHeight: content.height
+
+        VerticalScrollDecorator {}
+
+        Column {
+            id: content
+
+            width: parent.width
+            spacing: Theme.paddingMedium
+
+            // One direction, and here the other one: a wrapping button takes its width as
+            // given, so deriving it from the children collapses every button on the page.
+            readonly property real buttonWidth: Math.min(
+                    Theme.buttonWidthLarge,
+                    width - 2 * Theme.horizontalPageMargin)
+
+            PageHeader {
+                title: qsTr("Privacy")
+            }
+
+            // Writing the lists that name people is refused while the store key is away,
+            // and this page had nowhere to say so - with "only these may call" that matters.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.errorColor
+                textFormat: Text.PlainText
+                visible: matrix.lastError.length > 0
+                text: matrix.lastError
+            }
+
+            ComboBox {
+                width: parent.width
+                label: qsTr("Who may call you")
+                description: qsTr("A call rings past a muted room. Refused calls never ring, and the caller learns nothing.")
+                currentIndex: settings.callPolicy === "all"
+                              ? 0 : (settings.callPolicy === "direct" ? 1 : 2)
+
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("Everyone") }
+                    MenuItem { text: qsTr("People you have a direct chat with") }
+                    MenuItem { text: qsTr("Only my list") }
+                }
+
+                onCurrentIndexChanged: {
+                    settings.callPolicy = currentIndex === 0
+                            ? "all" : (currentIndex === 1 ? "direct" : "list")
+                }
+            }
+
+            TextSwitch {
+                text: qsTr("Calls from group rooms")
+                description: qsTr("In a group room everybody sees the call. The list does not override this.")
+                checked: settings.groupCalls
+                automaticCheck: false
+                onClicked: settings.groupCalls = !settings.groupCalls
+            }
+
+            TextSwitch {
+                text: qsTr("Limit repeated calls")
+                description: qsTr("On, the same person can only ring again after a short pause. It also delays a second, genuine attempt.")
+                checked: settings.callFlood
+                automaticCheck: false
+                onClicked: settings.callFlood = !settings.callFlood
+            }
+
+            TextSwitch {
+                text: qsTr("Video calls")
+                // Says what the switch does and stops there: it shuts this phone's camera. The
+                // other side's stream is still decoded before it is thrown away.
+                description: qsTr("Off, an offer with video is answered as a voice call: your camera stays shut and no picture is shown. The other side may still send one, which this phone discards.")
+                checked: settings.videoCalls
+                automaticCheck: false
+                onClicked: settings.videoCalls = !settings.videoCalls
+            }
+
+            // Shipwright: names from the address book, read on this phone only.
+            SectionHeader {
+                text: qsTr("Contacts")
+            }
+
+            TextSwitch {
+                text: qsTr("Match people with my contacts")
+                description: qsTr("On, people are shown with the name from your address book where their Matrix address, Telegram username or phone number is saved there. The address book is read on this phone only; nothing from it is uploaded or stored by this app.")
+                checked: settings.contactsMatching
+                automaticCheck: false
+                onClicked: settings.contactsMatching = !settings.contactsMatching
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                visible: settings.contactsMatching
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: matrix.contacts.status === "unavailable" ? Theme.errorColor : Theme.secondaryColor
+                text: matrix.contacts.status === "unavailable"
+                      ? qsTr("The address book could not be read.")
+                      : matrix.contacts.status === "reading" ? qsTr("Reading the address book…")
+                      : qsTr("%n contact(s) with something to match.", "", matrix.contacts.indexed)
+            }
+
+            // Shipwright: how numbers without a country code are read, and what
+            // that cannot do (review finding E-4).
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                visible: settings.contactsMatching && matrix.contacts.status === "ready"
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: {
+                    var dialling = matrix.contacts.dialling
+                    if (dialling.source === "sim") {
+                        return qsTr("Numbers saved without a country code are read as +%1 numbers (%2, from the SIM).")
+                               .arg(dialling.callingCode).arg(dialling.region)
+                    }
+                    if (dialling.source === "locale") {
+                        return qsTr("Numbers saved without a country code are read as +%1 numbers (%2, from the phone's language settings, as there is no SIM to ask).")
+                               .arg(dialling.callingCode).arg(dialling.region)
+                    }
+                    return qsTr("The country of numbers saved without a country code is not known here; they are matched on their last eight digits only.")
+                }
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                visible: settings.contactsMatching
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Phone numbers match best when they are saved with their country code (+…). Without one, the country is taken from the SIM, or from the language settings where there is no SIM, and a number saved without its area code may not match at all. The bridges on your cell do not pass on numbers: Signal contacts are found by number only where Signal shows the number as their name, Telegram contacts by the username saved on the contact.")
+            }
+
+            // Shipwright: what the bridges mean for privacy.
+            SectionHeader {
+                text: qsTr("Signal and Telegram chats")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Chats marked Signal or Telegram in the chat list reach those networks through the bridge on your Shipwright cell. Messages are encrypted between this phone and the bridge; the bridge decrypts them to hand them on, so they pass through it readable on your cell. The bridge keeps the login of your linked account until you unlink it under Account › Signal and Telegram.")
+            }
+
+            SectionHeader {
+                text: qsTr("What others learn")
+            }
+
+            TextSwitch {
+                text: qsTr("Message text in notifications")
+                description: qsTr("Off: notifications only say how many messages arrived. On: they show the latest message, also on the lock screen.")
+                checked: settings.notificationPreview
+                automaticCheck: false
+                onClicked: settings.notificationPreview = !settings.notificationPreview
+            }
+
+            TextSwitch {
+                text: qsTr("Send read receipts")
+                // Says the one direction this switch governs. The other is the switch below,
+                // and claiming both made this one look broken.
+                description: qsTr("Off, nobody is told how far you have read. What others read is the setting below.")
+                checked: settings.sendReadReceipts
+                automaticCheck: false
+                onClicked: settings.sendReadReceipts = !settings.sendReadReceipts
+            }
+
+            TextSwitch {
+                text: qsTr("Show others' read status")
+                description: qsTr("Off, who read what is neither tracked nor shown, which also keeps the conversation smoother. On, your own messages say how many people have read them.")
+                checked: settings.showReadStatus
+                automaticCheck: false
+                onClicked: settings.showReadStatus = !settings.showReadStatus
+            }
+
+            TextSwitch {
+                text: qsTr("Load pictures automatically")
+                description: qsTr("On: pictures and videos load as soon as their message appears, which contacts the sender's server. Off: they load when you tap them.")
+                checked: settings.autoLoadMedia
+                automaticCheck: false
+                onClicked: settings.autoLoadMedia = !settings.autoLoadMedia
+            }
+
+            TextSwitch {
+                text: qsTr("Voice messages")
+                description: qsTr("On, a microphone sits next to the message field: hold it to record, let go to send - or tap it to record hands-free, and a second tap or seven seconds of silence sends. Off, it is not there.")
+                checked: settings.voiceMessages
+                automaticCheck: false
+                onClicked: settings.voiceMessages = !settings.voiceMessages
+            }
+
+            TextSwitch {
+                text: qsTr("Tappable web links")
+                description: qsTr("On, a link in a message opens the browser when tapped. Off, links stay plain text.")
+                checked: settings.clickableLinks
+                automaticCheck: false
+                onClicked: settings.clickableLinks = !settings.clickableLinks
+            }
+
+            // Off by default and said why: the server, not the phone, fetches the
+            // page - and so learns the link, in an encrypted room a thing it never sees.
+            ComboBox {
+                width: parent.width
+                label: qsTr("Link previews")
+                description: qsTr("Your homeserver fetches the page and shows its title. It learns every link it is asked about; in an encrypted room that is content it otherwise never sees.")
+                currentIndex: {
+                    switch (settings.linkPreviews) {
+                    case "unencrypted": return 1
+                    case "always": return 2
+                    default: return 0
+                    }
+                }
+
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("Never") }
+                    MenuItem { text: qsTr("Only in unencrypted rooms") }
+                    MenuItem { text: qsTr("Always") }
+                }
+
+                onCurrentIndexChanged: {
+                    switch (currentIndex) {
+                    case 1: settings.linkPreviews = "unencrypted"; break
+                    case 2: settings.linkPreviews = "always"; break
+                    default: settings.linkPreviews = "never"; break
+                    }
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Location")
+            }
+
+            TextSwitch {
+                text: qsTr("Share your location")
+                description: qsTr("On, a room's pull-down menu offers to send your position, once or live for a while. Nothing is sent unless you choose it there.")
+                checked: settings.locationSharing
+                automaticCheck: false
+                onClicked: settings.locationSharing = !settings.locationSharing
+            }
+
+            // Off by default and said why: the tile server, not the homeserver,
+            // is asked - and learns this phone's address and where the point lies.
+            ComboBox {
+                width: parent.width
+                label: qsTr("Maps for locations")
+                description: qsTr("Map pieces come from OpenStreetMap. Its server learns your IP address and roughly where the location lies; in an encrypted room that is content it otherwise never sees. Without a map the coordinates are shown.")
+                currentIndex: {
+                    switch (settings.locationMaps) {
+                    case "unencrypted": return 1
+                    case "always": return 2
+                    default: return 0
+                    }
+                }
+
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("Never") }
+                    MenuItem { text: qsTr("Only in unencrypted rooms") }
+                    MenuItem { text: qsTr("Always") }
+                }
+
+                onCurrentIndexChanged: {
+                    switch (currentIndex) {
+                    case 1: settings.locationMaps = "unencrypted"; break
+                    case 2: settings.locationMaps = "always"; break
+                    default: settings.locationMaps = "never"; break
+                    }
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Camera")
+            }
+
+            // Off: a live cell would run the camera whenever the picker is open.
+            TextSwitch {
+                text: qsTr("Live picture in the attachment picker")
+                description: qsTr("On, the camera cell shows what the camera sees while the picker is open. Off, the camera only runs once you tap the cell.")
+                checked: settings.cameraLivePreview
+                automaticCheck: false
+                onClicked: settings.cameraLivePreview = !settings.cameraLivePreview
+            }
+
+            SectionHeader {
+                text: qsTr("Voice messages as text")
+            }
+
+            TextSwitch {
+                text: qsTr("Convert voice messages to text")
+                description: qsTr("On, a long press on a voice message offers to convert it. Nothing is converted unless you ask, and the recording never leaves this phone.")
+                checked: settings.voiceTranscripts
+                automaticCheck: false
+                onClicked: settings.voiceTranscripts = !settings.voiceTranscripts
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                textFormat: Text.PlainText
+                text: qsTr("This needs a program this app does not bring, from OpenRepos, installed by you: \"Speech Note\" (about 40 MB to download, 104 MB installed), and in it the model \"Auto (WhisperCpp Small)\" (190 MB), which recognises the language of each message by itself. Only on 64-bit phones.")
+            }
+
+            WrapButton {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: content.buttonWidth
+                label: qsTr("Check")
+                enabled: matrix.transcripts.checkState !== "running"
+                onClicked: matrix.transcripts.check()
+            }
+
+            // What the check found, in its own words: which of the pieces is missing.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: matrix.transcripts.checkState.length > 0
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                textFormat: Text.PlainText
+                color: matrix.transcripts.checkState === "failed" ? Theme.errorColor
+                                                                   : Theme.highlightColor
+                text: matrix.transcripts.checkState === "running"
+                      ? qsTr("Checking. The first time can take half a minute.")
+                      : matrix.transcripts.checkMessage
+            }
+
+            SectionHeader {
+                text: qsTr("On this device")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                // Both halves are this app's own text, so the markup is ours; the second is
+                // bold because it is the one that costs something when overlooked.
+                textFormat: Text.StyledText
+                // Asked, not claimed: on a device without secrets storage this page used to
+                // state the good case unconditionally, in its most scrupulous paragraph.
+                text: (matrix.storageStatus.encrypted
+                       ? qsTr("Messages and keys are stored encrypted.")
+                       : qsTr("Messages and keys lie on this device unencrypted - the encryption page says why and what can be done about it."))
+                      + " "
+                      + qsTr("Pictures, videos and documents you opened are not - they lie on the device like the ones in the gallery, readable to anybody who has it.")
+                      + " <b>" + qsTr("By default they are deleted when you sign out, so save what you want to keep.") + "</b> "
+                      + qsTr("\"Never\" keeps them for good - convenient, and not recommended.")
+            }
+
+            ComboBox {
+                width: parent.width
+                label: qsTr("Delete downloaded media")
+                description: qsTr("Anything deleted is fetched again when you open it.")
+                currentIndex: {
+                    switch (settings.mediaWipe) {
+                    case "never": return 0
+                    case "exit": return 2
+                    case "background": return 3
+                    default: return 1
+                    }
+                }
+
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("Never") }
+                    MenuItem { text: qsTr("When you sign out") }
+                    MenuItem { text: qsTr("When the app is closed") }
+                    MenuItem { text: qsTr("As soon as the app is not in front") }
+                }
+
+                onCurrentIndexChanged: {
+                    switch (currentIndex) {
+                    case 0: settings.mediaWipe = "never"; break
+                    case 2: settings.mediaWipe = "exit"; break
+                    case 3: settings.mediaWipe = "background"; break
+                    default: settings.mediaWipe = "logout"; break
+                    }
+                }
+            }
+
+            WrapButton {
+                id: clearMediaButton
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: content.buttonWidth
+                label: qsTr("Delete media now")
+                onClicked: matrix.clearMediaCache()
+            }
+
+            SectionHeader {
+                text: qsTr("Allowed callers")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("They may always call. The list stays on this device.")
+            }
+
+            TextField {
+                id: addressField
+
+                width: parent.width
+                label: qsTr("Matrix address")
+                placeholderText: qsTr("@name:server")
+                inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                EnterKey.iconSource: "image://theme/icon-m-enter-accept"
+                EnterKey.onClicked: page.add()
+            }
+
+            WrapButton {
+                id: allowButton
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: content.buttonWidth
+                label: qsTr("Allow calls")
+                enabled: addressField.text.trim().length > 0
+                onClicked: page.add()
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: matrix.allowedCallers.length === 0
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: matrix.privateListsReadable ? Theme.secondaryHighlightColor
+                                                   : Theme.errorColor
+                // An empty list and one that could not be read look the same and are
+                // opposites: with "only these may call" the second refuses everybody.
+                text: matrix.privateListsReadable
+                      ? qsTr("Nobody yet.")
+                      : qsTr("The list is encrypted and its key is not available. It can be read again after the device has been unlocked and the app restarted.")
+            }
+
+            Repeater {
+                model: matrix.allowedCallers
+
+                ListItem {
+                    contentHeight: Theme.itemSizeSmall
+
+                    menu: ContextMenu {
+                        MenuItem {
+                            text: qsTr("Remove")
+                            onClicked: matrix.forbidCaller(modelData)
+                        }
+                    }
+
+                    Label {
+                        anchors {
+                            left: parent.left
+                            leftMargin: Theme.horizontalPageMargin
+                            right: parent.right
+                            rightMargin: Theme.horizontalPageMargin
+                            verticalCenter: parent.verticalCenter
+                        }
+                        truncationMode: TruncationMode.Fade
+                        textFormat: Text.PlainText
+                        text: modelData
+                    }
+                }
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingLarge
+            }
+        }
+    }
+
+    function add() {
+        var address = addressField.text.trim()
+        if (address.length === 0) {
+            return
+        }
+        matrix.allowCaller(address)
+        addressField.text = ""
+        addressField.focus = false
+    }
+}

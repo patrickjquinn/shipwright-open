@@ -1,0 +1,3677 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; hosted push, mark-all-read, bridges, contacts, start-chat, dialling plan, stale pusher after a hosted move, Keel Actions; rustfmt and clippy fixes; see CHANGES-FROM-UPSTREAM.md.
+//! The command dispatcher and the callback sink. Each command is its own
+//! task, so a login that waits minutes for the browser blocks nothing.
+
+use std::ffi::CString;
+use std::os::raw::{c_char, c_void};
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::sync::{Arc, Mutex as StdMutex};
+
+use matrix_sdk::{
+    authentication::oauth::{error::OAuthDiscoveryError, CsrfToken},
+    ruma::{OwnedRoomId, RoomId},
+    store::RoomLoadSettings,
+    utils::local_server::LocalServerShutdownHandle,
+    Client, SessionChange,
+};
+use serde_json::{json, Value};
+use tokio::sync::{broadcast::error::RecvError, mpsc, Mutex};
+
+use crate::actions;
+use crate::bridges;
+use crate::call;
+use crate::contacts;
+use crate::directory;
+use crate::linkpreview;
+use crate::location;
+use crate::login;
+use crate::media;
+use crate::members;
+use crate::mention;
+use crate::poll;
+use crate::private;
+use crate::profile;
+use crate::protocol::{event, reply_error, reply_ok, Command, MediaStill, Secret};
+use crate::readall;
+use crate::recovery;
+use crate::roomlist::{self, RoomListHandle};
+use crate::roomsettings;
+use crate::search;
+use crate::sendqueue;
+use crate::session::{self, Paths, StoredSession};
+use crate::storehealth;
+use crate::timeline::{self, TimelineHandle};
+use crate::verification;
+
+/// Signature of the function the front end registers to receive messages.
+pub type XmCallback = extern "C" fn(*mut c_void, *const c_char);
+
+/// The most results one search command may ask for: a page fills a screen and
+/// is asked for again. Every row costs an event load.
+const SEARCH_PAGE_MAX: usize = 50;
+
+struct CallbackSlot {
+    func: Option<XmCallback>,
+    user_data: *mut c_void,
+}
+
+// The pointer is opaque to Rust and only handed back with a message. C++ owns
+// it, keeps it alive, and its trampoline is safe from any thread.
+unsafe impl Send for CallbackSlot {}
+unsafe impl Sync for CallbackSlot {}
+
+/// Delivers JSON messages to the front end.
+pub struct Sink {
+    slot: StdMutex<CallbackSlot>,
+}
+
+impl Sink {
+    pub fn new() -> Self {
+        Self {
+            slot: StdMutex::new(CallbackSlot {
+                func: None,
+                user_data: std::ptr::null_mut(),
+            }),
+        }
+    }
+
+    pub fn set_callback(&self, func: Option<XmCallback>, user_data: *mut c_void) {
+        if let Ok(mut slot) = self.slot.lock() {
+            slot.func = func;
+            slot.user_data = user_data;
+        }
+    }
+
+    /// Serialises `value` and hands it to the front end. Messages sent before a
+    /// callback is registered are dropped.
+    pub fn emit(&self, value: Value) {
+        // Pointer copied out, lock released before the front end is called: a
+        // deadlock should not be the price of the first callback in.
+        let (func, user_data) = {
+            let Ok(slot) = self.slot.lock() else { return };
+            let Some(func) = slot.func else { return };
+            (func, slot.user_data)
+        };
+        let Ok(text) = serde_json::to_string(&value) else {
+            return;
+        };
+        let Ok(message) = CString::new(text) else {
+            return;
+        };
+
+        let _ = catch_unwind(AssertUnwindSafe(|| func(user_data, message.as_ptr())));
+    }
+}
+
+/// A login waiting for the user, kept so it can be cancelled.
+struct PendingLogin {
+    shutdown: LocalServerShutdownHandle,
+    state: CsrfToken,
+}
+
+struct State {
+    paths: Paths,
+    /// The store key; `None` opens nothing new. Behind a lock because the front
+    /// end may hand it in later, after the user retried a locked collection.
+    store_key: std::sync::RwLock<Option<session::StoreKey>>,
+    client: Mutex<Option<Client>>,
+    pending: Mutex<Option<PendingLogin>>,
+    /// A device-code login polling for approval, kept so it can be cancelled.
+    pending_device: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    rooms: Mutex<Option<RoomListHandle>>,
+    /// The UnifiedPush connector, started on the first push command: it claims a
+    /// D-Bus name and must not do so for a feature nobody turned on.
+    push: Mutex<Option<crate::push::PushHandle>>,
+    spaces: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    open_space: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    /// Behind an `Arc` so a command can clone the handle out and release the
+    /// lock before going to the server — see `State::timeline`.
+    timeline: Mutex<Option<Arc<TimelineHandle>>>,
+    /// The open thread's timeline, next to the room's — same locking rules.
+    thread: Mutex<Option<Arc<TimelineHandle>>>,
+    /// Serialises `open_timeline` against itself. Held for the whole open,
+    /// including the network part, which is why it cannot be `timeline`.
+    opening: Mutex<()>,
+    /// The same for `open_thread`, and deliberately not `opening`: a thread
+    /// that is slow to build must not hold up a room switch.
+    opening_thread: Mutex<()>,
+    /// Serialises `direct_chat`: a second tap waits and finds the first room.
+    opening_direct: Mutex<()>,
+    /// Serialises `session.restore`: one client per store.
+    restoring: Mutex<()>,
+    /// Serialises `persist`: one temporary file.
+    persisting: Mutex<()>,
+    /// Every room that currently needs a sliding-sync subscription. See
+    /// `Subscriptions` — they have to be requested together or not at all.
+    subscriptions: Mutex<Subscriptions>,
+    directory: Mutex<Option<DirectoryHandle>>,
+    /// Observers that outlive a command. Each holds a client clone and keeps the
+    /// SQLite pool open, so they are stopped before `reset_store` runs.
+    observers: Mutex<Vec<tokio::task::JoinHandle<()>>>,
+    verification: verification::Slot,
+    /// Shipwright: the hosted bridges' state, shared with the sync handler.
+    bridges: Arc<bridges::Registry>,
+    /// How many command tasks are in flight. They cannot be aborted mid-send, so
+    /// they are counted and the sign-out waits briefly for the count to fall.
+    running: std::sync::atomic::AtomicUsize,
+    sink: Arc<Sink>,
+}
+
+/// The rooms needing a sliding-sync subscription, by what wants them.
+/// `set_room_subscriptions` is not additive - a call forgets every earlier one.
+#[derive(Default)]
+struct Subscriptions {
+    /// The room whose conversation is on screen.
+    open: Option<OwnedRoomId>,
+    /// The direct chat a running verification talks through.
+    verification: Option<OwnedRoomId>,
+    /// The room of a call being set up or running.
+    call: Option<OwnedRoomId>,
+    /// Shipwright: bridge bots' direct chats while linking or asking for status.
+    /// Unsubscribed, a room gets one event per sync, and a QR code arrives
+    /// right behind its instructions.
+    bridges: Vec<OwnedRoomId>,
+}
+
+impl Subscriptions {
+    fn wanted(&self) -> Vec<OwnedRoomId> {
+        let mut rooms: Vec<OwnedRoomId> = [&self.open, &self.verification, &self.call]
+            .into_iter()
+            .flatten()
+            .cloned()
+            .chain(self.bridges.iter().cloned())
+            .collect();
+        rooms.sort();
+        rooms.dedup();
+        rooms
+    }
+}
+
+/// The directory-search task and the channel its orders go in through.
+struct DirectoryHandle {
+    task: tokio::task::JoinHandle<()>,
+    orders: mpsc::UnboundedSender<directory::Order>,
+}
+
+impl State {
+    /// The signed-in client, or `None`. Cloned so no lock is held across an
+    /// await point.
+    async fn client(&self) -> Option<Client> {
+        self.client.lock().await.clone()
+    }
+
+    /// The open timeline, cloned like the client: every timeline command is a
+    /// round trip, and holding the lock across one froze every room switch.
+    async fn timeline(&self) -> Option<Arc<TimelineHandle>> {
+        self.timeline.lock().await.clone()
+    }
+
+    /// Live only: a send on a slice takes the slice's thread.
+    async fn sendable_timeline(&self) -> Result<Arc<TimelineHandle>, String> {
+        match self.timeline().await {
+            Some(handle) if handle.is_live() => Ok(handle),
+            Some(_) => Err("not in the live conversation; nothing is sent from here".to_owned()),
+            None => Err("no timeline is open".to_owned()),
+        }
+    }
+
+    async fn thread(&self) -> Option<Arc<TimelineHandle>> {
+        self.thread.lock().await.clone()
+    }
+
+    /// Waits briefly for running commands. Bounded: a command in the SDK's retry
+    /// budget must not hold a sign-out for a quarter of an hour.
+    async fn drain_commands(&self, limit: std::time::Duration) {
+        let deadline = tokio::time::Instant::now() + limit;
+        while self.running.load(std::sync::atomic::Ordering::SeqCst) > 1
+            && tokio::time::Instant::now() < deadline
+        {
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+    }
+
+    /// Records what a part of the app needs and asks for the whole set. Always the
+    /// whole set: a call with fewer rooms unsubscribes the rest.
+    async fn subscribe(&self, change: impl FnOnce(&mut Subscriptions)) {
+        // The lock is held across the request: the call replaces the whole list, so a
+        // second caller getting ahead would leave the older list standing.
+        let mut subscriptions = self.subscriptions.lock().await;
+        change(&mut subscriptions);
+        let wanted = subscriptions.wanted();
+
+        let service = self
+            .rooms
+            .lock()
+            .await
+            .as_ref()
+            .map(|handle| handle.service());
+        let Some(service) = service else {
+            // No sync service yet; whatever was recorded is applied by the next
+            // change once there is one.
+            return;
+        };
+
+        let borrowed: Vec<&RoomId> = wanted.iter().map(|room| room.as_ref()).collect();
+        service.set_room_subscriptions(&borrowed).await;
+    }
+
+    /// Describes the current session for a reply or an event.
+    /// A copy of the store key, if there is one; the copy is zeroized on drop.
+    fn store_key(&self) -> Option<session::StoreKey> {
+        self.store_key
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone()
+    }
+
+    async fn session_data(&self) -> Value {
+        match &*self.client.lock().await {
+            Some(client) => match (client.user_id(), client.device_id()) {
+                (Some(user), Some(device)) => json!({
+                    "state": "signed-in",
+                    "userId": user.as_str(),
+                    "deviceId": device.as_str(),
+                }),
+                _ => json!({ "state": "none" }),
+            },
+            None => json!({ "state": "none" }),
+        }
+    }
+}
+
+/// Starts the dispatcher on `runtime` and returns the channel commands go into.
+pub fn spawn(
+    runtime: &tokio::runtime::Runtime,
+    paths: Paths,
+    store_key: Option<session::StoreKey>,
+    sink: Arc<Sink>,
+) -> mpsc::UnboundedSender<Command> {
+    let (sender, mut receiver) = mpsc::unbounded_channel::<Command>();
+
+    let state = Arc::new(State {
+        paths,
+        store_key: std::sync::RwLock::new(store_key),
+        client: Mutex::new(None),
+        pending: Mutex::new(None),
+        pending_device: Mutex::new(None),
+        rooms: Mutex::new(None),
+        push: Mutex::new(None),
+        spaces: Mutex::new(None),
+        open_space: Mutex::new(None),
+        timeline: Mutex::new(None),
+        thread: Mutex::new(None),
+        opening: Mutex::new(()),
+        opening_thread: Mutex::new(()),
+        opening_direct: Mutex::new(()),
+        restoring: Mutex::new(()),
+        persisting: Mutex::new(()),
+        subscriptions: Mutex::new(Subscriptions::default()),
+        directory: Mutex::new(None),
+        observers: Mutex::new(Vec::new()),
+        verification: Arc::new(Mutex::new(None)),
+        bridges: Arc::new(bridges::Registry::new()),
+        running: std::sync::atomic::AtomicUsize::new(0),
+        sink,
+    });
+
+    runtime.spawn(async move {
+        while let Some(command) = receiver.recv().await {
+            let state = state.clone();
+            // Boxed: the combined future of all command arms is large, and
+            // moving it to the heap keeps the task allocation small.
+            state
+                .running
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            tokio::spawn(Box::pin(async move {
+                let counted = state.clone();
+                let id = command.id();
+                // A panic here would take the reply and the counter with it, and
+                // the protocol promises exactly one answer per id.
+                let outcome = futures_util::FutureExt::catch_unwind(std::panic::AssertUnwindSafe(
+                    handle(state, command),
+                ))
+                .await;
+                if outcome.is_err() {
+                    counted
+                        .sink
+                        .emit(reply_error(id, "the command failed unexpectedly"));
+                }
+                counted
+                    .running
+                    .fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+            }));
+        }
+    });
+
+    sender
+}
+
+async fn handle(state: Arc<State>, command: Command) {
+    let id = command.id();
+    match command {
+        Command::SessionRestore { store_key, .. } => restore_session(&state, id, store_key).await,
+        Command::SessionRebuildStore { .. } => rebuild_store(&state, id).await,
+        Command::LoginStart { homeserver, .. } => start_login(&state, id, homeserver).await,
+        Command::LoginPassword {
+            homeserver,
+            user,
+            password,
+            ..
+        } => password_login(&state, id, homeserver, user, password).await,
+        Command::LoginDeviceCode { homeserver, .. } => {
+            start_device_login(&state, id, homeserver).await
+        }
+        Command::LoginRegistrationUrl { homeserver, .. } => {
+            registration_url(&state, id, homeserver).await
+        }
+        Command::LoginAbort { .. } => abort_login(&state, id).await,
+        Command::RoomEnableEncryption { room_id, .. } => {
+            enable_room_encryption(&state, id, room_id).await
+        }
+        Command::Logout { .. } => logout(&state, id).await,
+        Command::RoomListStart { .. } => start_room_list(&state, id).await,
+        Command::RoomListFilter { pattern, .. } => filter_room_list(&state, id, pattern).await,
+        Command::RoomListMore { .. } => load_more_rooms(&state, id).await,
+        Command::RoomListStop { .. } => stop_room_list(&state, id).await,
+        Command::SpacesStart { .. } => start_spaces(&state, id).await,
+        Command::SpacesStop { .. } => stop_spaces(&state, id).await,
+        Command::SpaceOpen { room_id, .. } => open_space(&state, id, room_id).await,
+        Command::SpaceClose { .. } => close_space(&state, id).await,
+        Command::SpaceCreate { name, .. } => create_space(&state, id, name).await,
+        Command::SpaceLeave { room_id, .. } => leave_space(&state, id, room_id).await,
+        Command::SpaceAddChild {
+            space_id, room_id, ..
+        } => add_space_child(&state, id, space_id, room_id).await,
+        Command::SpaceRemoveChild {
+            space_id, room_id, ..
+        } => remove_space_child(&state, id, space_id, room_id).await,
+        Command::TimelineOpen {
+            room_id,
+            focus,
+            receipts,
+            token,
+            rebuild,
+            ..
+        } => open_timeline(&state, id, room_id, focus, receipts, token, rebuild).await,
+        Command::RoomMarkRead {
+            room_id, receipt, ..
+        } => mark_room_read(&state, id, room_id, receipt).await,
+        Command::RoomsMarkAllRead { receipt, .. } => mark_all_read(&state, id, receipt).await,
+        Command::BridgesStatus { bridge, bot, .. } => bridges_status(&state, id, bridge, bot).await,
+        Command::BridgesLogin {
+            bridge, bot, flow, ..
+        } => bridges_request(&state, id, bridge, bot, bridges::Request::Login { flow }).await,
+        Command::BridgesSubmit {
+            bridge, bot, value, ..
+        } => {
+            let value = zeroize::Zeroizing::new(value.as_str().to_owned());
+            bridges_request(&state, id, bridge, bot, bridges::Request::Submit(value)).await
+        }
+        Command::BridgesCancel { bridge, bot, .. } => {
+            bridges_request(&state, id, bridge, bot, bridges::Request::Cancel).await
+        }
+        Command::BridgesLogout {
+            bridge,
+            bot,
+            login_id,
+            ..
+        } => {
+            bridges_request(
+                &state,
+                id,
+                bridge,
+                bot,
+                bridges::Request::Logout { login_id },
+            )
+            .await
+        }
+        Command::BridgesStartChat {
+            bridge,
+            bot,
+            number,
+            ..
+        } => match contacts::international(number.as_str()) {
+            Some(identifier) => {
+                let identifier = zeroize::Zeroizing::new(identifier);
+                drop(number);
+                bridges_request(
+                    &state,
+                    id,
+                    bridge,
+                    bot,
+                    bridges::Request::StartChat { identifier },
+                )
+                .await
+            }
+            None => state.sink.emit(reply_error(
+                id,
+                "this number has no country code; add it to the contact in People",
+            )),
+        },
+        Command::ContactsSetIndex {
+            contacts: list,
+            mcc,
+            region,
+            ..
+        } => {
+            let plan = crate::dialling::resolve(&mcc, &region);
+            let index = contacts::Index::new(contacts::parse_contacts(&list.0), plan);
+            let dialling = index.plan_json();
+            let count = contacts::set_index(index);
+            // The rows carry contact names: summarized again with the new book.
+            if let Some(handle) = state.rooms.lock().await.as_ref() {
+                handle.refresh();
+            }
+            state.sink.emit(reply_ok(
+                id,
+                json!({ "contacts": count, "dialling": dialling }),
+            ));
+        }
+        Command::ContactsClear { .. } => {
+            contacts::clear();
+            if let Some(handle) = state.rooms.lock().await.as_ref() {
+                handle.refresh();
+            }
+            state.sink.emit(reply_ok(id, json!({ "contacts": 0 })));
+        }
+        // Shipwright: Keel Actions for Pilot (actions.rs). The manifest needs no
+        // session; the rest runs with the signed-in client.
+        Command::KeelDescribe { .. } => state.sink.emit(actions::reply(id, actions::describe())),
+        Command::KeelInvoke {
+            action, arguments, ..
+        } => {
+            let client = keel_client(&state).await;
+            let result = actions::invoke(client, &action, arguments).await;
+            state.sink.emit(actions::reply(id, result));
+        }
+        Command::KeelGetEntity {
+            entity_type,
+            entity_id,
+            ..
+        } => {
+            let client = keel_client(&state).await;
+            let result = actions::get_entity(client, &entity_type, &entity_id);
+            state.sink.emit(actions::reply(id, result));
+        }
+        Command::KeelFindEntities {
+            entity_type,
+            query,
+            limit,
+            ..
+        } => {
+            let client = keel_client(&state).await;
+            let result = actions::find_entities(client, &entity_type, &query, limit);
+            state.sink.emit(actions::reply(id, result));
+        }
+        Command::RoomResolve { address, .. } => resolve_room(&state, id, address).await,
+        Command::TimelineClose { room_id, .. } => close_timeline(&state, id, room_id).await,
+        Command::TimelinePaginate { room_id, .. } => paginate_timeline(&state, id, room_id).await,
+        Command::TimelineSend { body, mentions, .. } => {
+            send_message(&state, id, body, mentions).await
+        }
+        Command::TimelineMarkRead { receipt, .. } => mark_read(&state, id, receipt).await,
+        Command::PrivateGet { .. } => {
+            match private::load(&state.paths.private_file, state.store_key().as_ref()) {
+                private::Loaded::Lists(lists) => state
+                    .sink
+                    .emit(reply_ok(id, json!({ "lists": lists, "readable": true }))),
+                // Empty *and* writable is only true where a key exists. Otherwise the app
+                // went into the migration, whose failure asks again - an endless loop.
+                private::Loaded::Empty => {
+                    let readable = state.store_key().is_some();
+                    state
+                        .sink
+                        .emit(reply_ok(id, json!({ "lists": {}, "readable": readable })))
+                }
+                // Locked or damaged: say so rather than answering "there is
+                // nothing", which is what a write would then destroy.
+                private::Loaded::Unreadable => state
+                    .sink
+                    .emit(reply_ok(id, json!({ "lists": {}, "readable": false }))),
+            }
+        }
+
+        Command::PrivateSet { lists, .. } => {
+            // The front end sends the whole state, so nothing is read first and no two
+            // writes collide. The file is only consulted to refuse writing over it.
+            if let private::Loaded::Unreadable =
+                private::load(&state.paths.private_file, state.store_key().as_ref())
+            {
+                state.sink.emit(reply_error(
+                    id,
+                    "the stored lists cannot be read; nothing was changed".to_owned(),
+                ));
+                return;
+            }
+            match private::save(
+                &state.paths.private_file,
+                state.store_key().as_ref(),
+                &lists,
+            ) {
+                Ok(()) => state
+                    .sink
+                    .emit(reply_ok(id, json!({ "lists": lists, "readable": true }))),
+                Err(error) => state
+                    .sink
+                    .emit(reply_error(id, format!("list could not be saved: {error}"))),
+            }
+        }
+
+        Command::CallsSetPolicy {
+            policy,
+            groups,
+            video,
+            flood,
+            allowed,
+            ..
+        } => {
+            call::set_policy(call::CallPolicy {
+                who: policy,
+                groups,
+                video,
+                flood,
+                allowed,
+            });
+            state.sink.emit(reply_ok(id, json!({ "set": true })));
+        }
+
+        Command::RoomPermalink { room_id, .. } => {
+            let client = match state.client().await {
+                Some(client) => client,
+                None => {
+                    state.sink.emit(reply_error(id, "not signed in".to_owned()));
+                    return;
+                }
+            };
+            match roomlist::permalink(&client, &room_id).await {
+                Ok(link) => state.sink.emit(reply_ok(id, json!({ "link": link }))),
+                Err(message) => state.sink.emit(reply_error(id, message)),
+            }
+        }
+
+        Command::TimelineReaders { event_id, .. } => {
+            let outcome = match state.timeline().await {
+                Some(handle) => handle.readers(&event_id).await,
+                None => Err("no timeline is open".to_owned()),
+            };
+            match outcome {
+                Ok(readers) => state.sink.emit(reply_ok(id, json!({ "readers": readers }))),
+                Err(message) => state.sink.emit(reply_error(id, message)),
+            }
+        }
+        Command::TimelineReactors { event_id, key, .. } => {
+            let outcome = match state.timeline().await {
+                Some(handle) => handle.reactors(&event_id, &key).await,
+                None => Err("no timeline is open".to_owned()),
+            };
+            match outcome {
+                Ok(reactors) => state.sink.emit(reply_ok(
+                    id,
+                    json!({ "eventId": event_id, "key": key, "reactors": reactors }),
+                )),
+                Err(message) => state.sink.emit(reply_error(id, message)),
+            }
+        }
+        Command::TimelineReply {
+            event_id,
+            body,
+            mentions,
+            ..
+        } => reply_message(&state, id, event_id, body, mentions).await,
+        Command::TimelineEdit { event_id, body, .. } => {
+            edit_message(&state, id, event_id, body).await
+        }
+        Command::TimelineReact { event_id, key, .. } => react(&state, id, event_id, key).await,
+        Command::LinkPreview { url, .. } => {
+            linkpreview::handle(state.client().await, &state.sink, id, url).await
+        }
+        // core/src/roomsettings.rs.
+        Command::RoomSettingsLoad { .. }
+        | Command::RoomSettingsSetName { .. }
+        | Command::RoomSettingsSetTopic { .. }
+        | Command::RoomSettingsSetAvatar { .. }
+        | Command::RoomSettingsRemoveAvatar { .. } => {
+            roomsettings::handle(command, state.client().await, &state.sink).await
+        }
+        // Routed, not handled: the poll rules live in core/src/poll.rs.
+        // A new poll could take a slice's thread; vote and end carry their relation.
+        Command::PollStart { .. } => match state.sendable_timeline().await {
+            Ok(handle) => poll::handle(command, Some(handle.timeline()), &state.sink).await,
+            Err(message) => state.sink.emit(reply_error(id, message)),
+        },
+        Command::PollVote { .. } | Command::PollEnd { .. } => {
+            let timeline = state.timeline().await.map(|handle| handle.timeline());
+            poll::handle(command, timeline, &state.sink).await
+        }
+        // Routed, not handled: core/src/sendqueue.rs.
+        Command::QueueStuck { .. } | Command::QueueRetry { .. } | Command::QueueDiscard { .. } => {
+            sendqueue::handle(command, state.client().await, &state.sink).await
+        }
+        // Routed, not handled: core/src/location.rs.
+        Command::LocationSend { .. }
+        | Command::LocationLiveStart { .. }
+        | Command::LocationBeacon { .. }
+        | Command::LocationLiveStop { .. }
+        | Command::LocationTiles { .. } => {
+            // A one-off location goes through the timeline: refused in a slice.
+            let sendable = state.sendable_timeline().await;
+            if let (Command::LocationSend { .. }, Err(message)) = (&command, &sendable) {
+                state.sink.emit(reply_error(id, message.clone()));
+                return;
+            }
+            let timeline = sendable.ok().map(|handle| handle.timeline());
+            let tiles = state.paths.media_cache.join("tiles");
+            location::handle(command, state.client().await, timeline, tiles, &state.sink).await
+        }
+        Command::TimelineRedact {
+            event_id, txn_id, ..
+        } => redact_message(&state, id, event_id, txn_id).await,
+        Command::TimelineSendMedia {
+            path,
+            mime_type,
+            caption,
+            reply_to,
+            voice,
+            duration,
+            width,
+            height,
+            thumbnail,
+            room_id,
+            ..
+        } => {
+            send_media(
+                &state, id, path, mime_type, caption, reply_to, voice, duration, width, height,
+                thumbnail, room_id,
+            )
+            .await
+        }
+        Command::MediaFetch {
+            source,
+            thumbnail,
+            size,
+            limit,
+            ..
+        } => fetch_media(&state, id, source, thumbnail, size, limit).await,
+        Command::RoomForward {
+            room_id,
+            body,
+            path,
+            mime_type,
+            width,
+            height,
+            thumbnail,
+            ..
+        } => {
+            let request = Forward {
+                room_id,
+                body,
+                path,
+                mime_type,
+                width,
+                height,
+                still: thumbnail,
+            };
+            forward(&state, id, request).await
+        }
+        Command::RoomJoin { room_id, .. } => join_room(&state, id, room_id).await,
+        Command::RoomFollowSuccessor { room_id, .. } => follow_successor(&state, id, room_id).await,
+        Command::RoomInfo { room_id, .. } => room_info(&state, id, room_id).await,
+        Command::RoomCreate {
+            name,
+            topic,
+            alias,
+            encrypted,
+            public,
+            history_visibility,
+            invite,
+            federate,
+            read_only,
+            equal_power,
+            ..
+        } => {
+            create_room(
+                &state,
+                id,
+                roomlist::NewRoom {
+                    name,
+                    topic,
+                    alias,
+                    encrypted,
+                    public,
+                    history_visibility,
+                    invite,
+                    federate,
+                    read_only,
+                    equal_power,
+                },
+            )
+            .await
+        }
+        Command::RoomLeave { room_id, .. } => leave_room(&state, id, room_id).await,
+        Command::RoomInvite {
+            room_id, user_id, ..
+        } => invite_to_room(&state, id, room_id, user_id).await,
+        Command::RoomJoinByAlias { alias, .. } => join_by_alias(&state, id, alias).await,
+        Command::RoomDirectChat { user_id, .. } => direct_chat(&state, id, user_id).await,
+        Command::CallInvite {
+            room_id,
+            call_id,
+            party_id,
+            sdp,
+            ..
+        } => {
+            // A call's signalling rides the room timeline, and an unsubscribed room hands
+            // out one event per sync - a burst of ICE candidates arrives as its last.
+            set_call_room(&state, Some(&room_id)).await;
+            let client = match state.client().await {
+                Some(client) => client,
+                None => {
+                    state.sink.emit(reply_error(id, "not signed in".to_owned()));
+                    return;
+                }
+            };
+            match call::invite(&client, &room_id, &call_id, &party_id, sdp).await {
+                // `peer` is who may answer: in a two-person room the one other
+                // member, bound before the call rings.
+                Ok(peer) => state
+                    .sink
+                    .emit(reply_ok(id, json!({ "sent": true, "peer": peer }))),
+                Err(message) => state.sink.emit(reply_error(id, message)),
+            }
+        }
+        Command::CallAnswer {
+            room_id,
+            call_id,
+            party_id,
+            sdp,
+            ..
+        } => {
+            set_call_room(&state, Some(&room_id)).await;
+            call_step(&state, id, move |client| async move {
+                call::answer(&client, &room_id, &call_id, &party_id, sdp).await
+            })
+            .await
+        }
+        Command::CallCandidates {
+            room_id,
+            call_id,
+            party_id,
+            candidates,
+            ..
+        } => {
+            call_step(&state, id, move |client| async move {
+                call::candidates(&client, &room_id, &call_id, &party_id, candidates).await
+            })
+            .await
+        }
+        Command::CallHangup {
+            room_id,
+            call_id,
+            party_id,
+            ..
+        } => {
+            call_step(&state, id, move |client| async move {
+                call::hangup(&client, &room_id, &call_id, &party_id).await
+            })
+            .await;
+            // Released after the goodbye is on its way, not before, or the
+            // hangup itself could go out on an unsubscribed room.
+            set_call_room(&state, None).await;
+        }
+        Command::CallTurnServers { .. } => turn_servers(&state, id).await,
+        Command::VerificationRequest { user_id, .. } => {
+            request_verification(&state, id, user_id).await
+        }
+        Command::VerificationAccept { .. } => verification_step(&state, id, Step::Accept).await,
+        Command::VerificationConfirm { .. } => verification_step(&state, id, Step::Confirm).await,
+        Command::VerificationCancel { .. } => verification_step(&state, id, Step::Cancel).await,
+        Command::VerificationMismatch { .. } => verification_step(&state, id, Step::Mismatch).await,
+        Command::EncryptionStatus { .. } => encryption_status(&state, id).await,
+        Command::StorageStatus { .. } => storage_status(&state, id),
+        Command::StorageRepair { .. } => repair_storage(&state, id).await,
+        Command::PushStatus { .. } => push_status(&state, id).await,
+        Command::PushEnable {
+            gateway,
+            distributor,
+            ..
+        } => push_enable(&state, id, gateway, distributor).await,
+        Command::PushDisable { endpoint, .. } => push_disable(&state, id, endpoint).await,
+        Command::PushConfigureHosted {
+            bundle,
+            endpoint,
+            p256dh,
+            auth,
+            ..
+        } => push_configure_hosted(&state, id, bundle, endpoint, p256dh, auth).await,
+        Command::PushNotify {
+            room_id, event_id, ..
+        } => push_notify(&state, id, room_id, event_id).await,
+        Command::PushPusher {
+            endpoint,
+            p256dh,
+            auth,
+            gateway,
+            ..
+        } => push_pusher(&state, id, endpoint, p256dh, auth, gateway).await,
+        Command::EncryptionRecover { key, .. } => encryption_recover(&state, id, key).await,
+        Command::EncryptionEnableBackup { .. } => encryption_enable_backup(&state, id).await,
+        Command::EncryptionFetchKeys { room_id, .. } => fetch_room_keys(&state, id, room_id).await,
+        Command::AccountGet { .. } => account_get(&state, id).await,
+        Command::AccountSetDisplayName { name, .. } => {
+            account_set_display_name(&state, id, name).await
+        }
+        Command::AccountSetAvatar { path, .. } => account_set_avatar(&state, id, path).await,
+        Command::RoomSetNotifyMode { room_id, mode, .. } => {
+            room_set_notify_mode(&state, id, room_id, mode).await
+        }
+        Command::RoomSetFavourite {
+            room_id, favourite, ..
+        } => room_set_favourite(&state, id, room_id, favourite).await,
+        Command::RoomSetLowPriority {
+            room_id,
+            low_priority,
+            ..
+        } => room_set_low_priority(&state, id, room_id, low_priority).await,
+        Command::TimelinePin { event_id, pin, .. } => pin_message(&state, id, event_id, pin).await,
+        Command::DirectorySearch {
+            pattern, server, ..
+        } => directory_search(&state, id, pattern, server).await,
+        Command::DirectoryLoadMore { .. } => directory_more(&state, id).await,
+        Command::DirectoryStop { .. } => directory_stop(&state, id).await,
+        Command::SearchIndex { room_id, .. } => search_index(&state, id, room_id).await,
+        Command::SearchRoom {
+            room_id,
+            query,
+            offset,
+            limit,
+            ..
+        } => search_room(&state, id, room_id, query, offset, limit).await,
+        Command::MembersLoad { room_id, .. } => members_load(&state, id, room_id).await,
+        // Routed, not handled: what a mention is lives in core/src/mention.rs.
+        Command::MentionCandidates { room_id, query, .. } => {
+            mention_candidates(&state, id, room_id, query).await
+        }
+        Command::RoomCheckRecipients { room_id, .. } => {
+            room_check_recipients(&state, id, room_id).await
+        }
+        Command::MemberRemove {
+            room_id, user_id, ..
+        } => member_remove(&state, id, room_id, user_id).await,
+        Command::MemberProfile {
+            room_id, user_id, ..
+        } => member_profile(&state, id, room_id, user_id).await,
+        Command::MemberBan {
+            room_id, user_id, ..
+        } => member_ban(&state, id, room_id, user_id).await,
+        Command::MemberUnban {
+            room_id, user_id, ..
+        } => member_unban(&state, id, room_id, user_id).await,
+        Command::MemberSetPower {
+            room_id,
+            user_id,
+            power,
+            ..
+        } => member_set_power(&state, id, room_id, user_id, power).await,
+        Command::MemberSetIgnored {
+            user_id, ignored, ..
+        } => member_set_ignored(&state, id, user_id, ignored).await,
+        Command::MemberWithdrawVerification { user_id, .. } => {
+            member_withdraw_verification(&state, id, user_id).await
+        }
+        Command::AccountIgnoredUsers { .. } => account_ignored_users(&state, id).await,
+        Command::RoomResetKeys { room_id, .. } => room_reset_keys(&state, id, room_id).await,
+        Command::SpaceHierarchy { room_id, .. } => space_hierarchy(&state, id, room_id).await,
+        Command::ThreadOpen {
+            room_id,
+            root_event_id,
+            token,
+            ..
+        } => open_thread(&state, id, room_id, root_event_id, token).await,
+        Command::ThreadClose { root_event_id, .. } => close_thread(&state, id, root_event_id).await,
+        Command::ThreadSend { body, mentions, .. } => {
+            send_thread_message(&state, id, body, mentions).await
+        }
+        Command::ThreadPaginate { .. } => paginate_thread(&state, id).await,
+    }
+}
+
+/// Shipwright: the client a Keel request runs with. A request can start the
+/// app (D-Bus activation) and then arrives while the session is still being
+/// restored; it waits for that, ten seconds at most, as the Keel.Actions
+/// runtime waits for an action that has not registered yet.
+async fn keel_client(state: &Arc<State>) -> Option<Client> {
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        // A restore in progress holds this lock until its client is there.
+        drop(state.restoring.lock().await);
+        if let Some(client) = state.client().await {
+            return Some(client);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return None;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+    }
+}
+
+async fn account_get(state: &Arc<State>, id: u64) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match profile::get(&client).await {
+        Ok(data) => state.sink.emit(reply_ok(id, data)),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn account_set_display_name(state: &Arc<State>, id: u64, name: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match profile::set_display_name(&client, &name).await {
+        Ok(()) => {
+            state.sink.emit(reply_ok(id, json!({ "saved": true })));
+            emit_profile(state).await;
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn account_set_avatar(state: &Arc<State>, id: u64, path: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match profile::set_avatar(&client, &path).await {
+        Ok(data) => {
+            state.sink.emit(reply_ok(id, data));
+            emit_profile(state).await;
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Re-reads the profile from the server and pushes it, so every page showing
+/// it updates after a change without asking again.
+async fn emit_profile(state: &Arc<State>) {
+    if let Some(client) = state.client().await {
+        if let Ok(data) = profile::get(&client).await {
+            state.sink.emit(event("profile.changed", data));
+        }
+    }
+}
+
+async fn room_set_notify_mode(state: &Arc<State>, id: u64, room_id: String, mode: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match roomlist::set_notification_mode(&client, &room_id, &mode).await {
+        Ok(()) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "mode": mode, "muted": mode == "mute" }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn room_set_favourite(state: &Arc<State>, id: u64, room_id: String, favourite: bool) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match roomlist::set_favourite(&client, &room_id, favourite).await {
+        Ok(()) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "favourite": favourite }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn room_set_low_priority(state: &Arc<State>, id: u64, room_id: String, low_priority: bool) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match roomlist::set_low_priority(&client, &room_id, low_priority).await {
+        Ok(()) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "lowPriority": low_priority }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn pin_message(state: &Arc<State>, id: u64, event_id: String, pin: bool) {
+    let Some(handle) = state.timeline().await else {
+        state.sink.emit(reply_error(id, "no open room"));
+        return;
+    };
+    match handle.set_pinned(&event_id, pin).await {
+        Ok(()) => {
+            state.sink.emit(reply_ok(id, json!({ "pinned": pin })));
+            // The banner and the row markers follow this list; the server's
+            // answer already contains the change made a moment ago.
+            let (ids, preview) = handle.pinned_info().await;
+            state.sink.emit(event(
+                "timeline.pinned",
+                json!({
+                    "roomId": handle.room_id(),
+                    "eventIds": ids,
+                    "preview": preview,
+                }),
+            ));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn directory_search(state: &Arc<State>, id: u64, pattern: String, server: Option<String>) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    let via_server = match server
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+    {
+        None => None,
+        Some(name) => match matrix_sdk::ruma::OwnedServerName::try_from(name) {
+            Ok(name) => Some(name),
+            Err(_) => {
+                state.sink.emit(reply_error(id, "not a valid server name"));
+                return;
+            }
+        },
+    };
+
+    let mut slot = state.directory.lock().await;
+    if slot.is_none() {
+        let (task, orders) = directory::start(client, state.sink.clone());
+        *slot = Some(DirectoryHandle { task, orders });
+    }
+    let sent = slot
+        .as_ref()
+        .expect("just ensured")
+        .orders
+        .send(directory::Order::Search(pattern, via_server))
+        .is_ok();
+    drop(slot);
+
+    if sent {
+        state.sink.emit(reply_ok(id, json!({ "searching": true })));
+    } else {
+        state
+            .sink
+            .emit(reply_error(id, "the search is not running"));
+    }
+}
+
+async fn directory_more(state: &Arc<State>, id: u64) {
+    let slot = state.directory.lock().await;
+    let sent = slot
+        .as_ref()
+        .map(|handle| handle.orders.send(directory::Order::More).is_ok())
+        .unwrap_or(false);
+    drop(slot);
+
+    if sent {
+        state.sink.emit(reply_ok(id, json!({ "searching": true })));
+    } else {
+        state
+            .sink
+            .emit(reply_error(id, "the search is not running"));
+    }
+}
+
+async fn directory_stop(state: &Arc<State>, id: u64) {
+    if let Some(handle) = state.directory.lock().await.take() {
+        handle.task.abort();
+    }
+    state.sink.emit(reply_ok(id, json!({ "searching": false })));
+}
+
+async fn space_hierarchy(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match roomlist::space_hierarchy(&client, &room_id).await {
+        Ok(data) => state.sink.emit(reply_ok(id, data)),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn room_check_recipients(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::unverified_recipients(&client, &room_id).await {
+        Ok(users) => state
+            .sink
+            .emit(reply_ok(id, json!({ "roomId": room_id, "users": users }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Folds the room's stored events into its index before anybody searches it.
+async fn search_index(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match search::index_room(&client, &room_id).await {
+        // The count goes back in the reply; the journal line is the bridge's,
+        // like every other one in this app.
+        Ok(count) => state.sink.emit(reply_ok(id, json!({ "count": count }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// One page of search results, in the reply rather than as an event: a late
+/// answer to an abandoned search then cannot overwrite a newer one.
+async fn search_room(
+    state: &Arc<State>,
+    id: u64,
+    room_id: String,
+    query: String,
+    offset: usize,
+    limit: usize,
+) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    // A limit of zero is the front end not saying; a limit of a thousand is
+    // the front end saying something unhelpful.
+    let limit = limit.clamp(1, SEARCH_PAGE_MAX);
+    match search::room(&client, &room_id, &query, limit, offset).await {
+        Ok((rows, hits)) => {
+            // Counted in hits: an unloadable hit is still a hit.
+            let more = hits >= limit;
+            state.sink.emit(reply_ok(
+                id,
+                json!({ "rows": rows, "offset": offset, "more": more }),
+            ));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// The message a send command turns into. Without a client the mentions are
+/// dropped rather than the message: a body still goes out.
+async fn mention_content(
+    state: &Arc<State>,
+    room_id: &str,
+    body: String,
+    mentions: &[String],
+) -> matrix_sdk::ruma::events::room::message::RoomMessageEventContent {
+    let client = state.client().await;
+    mention::text_content(client.as_ref(), room_id, body, mentions).await
+}
+
+async fn mention_candidates(state: &Arc<State>, id: u64, room_id: String, query: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match mention::candidates(&client, &room_id, &query).await {
+        // The query travels back: the picker has moved on by the time a stale
+        // answer lands, and it has no request id to tell them apart by.
+        Ok(rows) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "query": query, "candidates": rows }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn members_load(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::load(&client, &room_id).await {
+        Ok(rows) => {
+            let count = rows.len();
+            // One message per batch: every event is serialised, copied over the
+            // ABI and parsed again, and a large member list froze the screen.
+            const BATCH: usize = 200;
+            let mut chunks = rows.chunks(BATCH);
+            let first = chunks.next().unwrap_or(&[]);
+            state.sink.emit(event(
+                "members.diff",
+                json!({ "ops": [{ "op": "reset", "values": first }] }),
+            ));
+            for chunk in chunks {
+                state.sink.emit(event(
+                    "members.diff",
+                    json!({ "ops": [{ "op": "append", "values": chunk }] }),
+                ));
+            }
+            state.sink.emit(reply_ok(id, json!({ "count": count })));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn member_remove(state: &Arc<State>, id: u64, room_id: String, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::remove(&client, &room_id, &user_id).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "removed": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn member_profile(state: &Arc<State>, id: u64, room_id: String, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::profile(&client, &room_id, &user_id).await {
+        Ok(data) => state.sink.emit(reply_ok(id, data)),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn member_ban(state: &Arc<State>, id: u64, room_id: String, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::ban(&client, &room_id, &user_id).await {
+        Ok(()) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "userId": user_id }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn member_unban(state: &Arc<State>, id: u64, room_id: String, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::unban(&client, &room_id, &user_id).await {
+        Ok(()) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "userId": user_id }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn member_set_power(
+    state: &Arc<State>,
+    id: u64,
+    room_id: String,
+    user_id: String,
+    power: i64,
+) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::set_power(&client, &room_id, &user_id, power).await {
+        Ok(()) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "userId": user_id, "power": power }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn member_set_ignored(state: &Arc<State>, id: u64, user_id: String, ignored: bool) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::set_ignored(&client, &user_id, ignored).await {
+        Ok(()) => state.sink.emit(reply_ok(
+            id,
+            json!({ "userId": user_id, "ignored": ignored }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn room_reset_keys(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match timeline::discard_room_key(&client, &room_id).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "reset": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn account_ignored_users(state: &Arc<State>, id: u64) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::ignored(&client).await {
+        Ok(users) => state.sink.emit(reply_ok(id, json!({ "users": users }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn member_withdraw_verification(state: &Arc<State>, id: u64, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match members::withdraw_verification(&client, &user_id).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "userId": user_id }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn encryption_status(state: &Arc<State>, id: u64) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    let status = recovery::status(&client).await;
+    state.sink.emit(reply_ok(id, status));
+}
+
+/// The connector, started on demand. One per process; the handle stays.
+async fn push_handle(state: &Arc<State>) -> () {
+    let mut slot = state.push.lock().await;
+    if slot.is_none() {
+        *slot = Some(crate::push::start(
+            state.paths.push_file.clone(),
+            state.sink.clone(),
+        ));
+    }
+}
+
+/// What UnifiedPush looks like here. Answered as a `push.state` event: the
+/// connector lives on its own thread, two channels away.
+async fn push_status(state: &Arc<State>, id: u64) {
+    push_handle(state).await;
+    if let Some(handle) = state.push.lock().await.as_ref() {
+        handle.status();
+    }
+    state.sink.emit(reply_ok(id, json!({ "asked": true })));
+}
+
+/// Registers with a distributor; the endpoint follows as `push.endpoint`. The
+/// gateway is a setting, not the core's to remember.
+async fn push_enable(state: &Arc<State>, id: u64, gateway: String, distributor: Option<String>) {
+    if !crate::push::gateway_is_sound(&gateway) {
+        state.sink.emit(reply_error(
+            id,
+            "the push gateway has to be an https address",
+        ));
+        return;
+    }
+    if gateway.trim().is_empty() {
+        state
+            .sink
+            .emit(reply_error(id, "no push gateway configured"));
+        return;
+    }
+    push_handle(state).await;
+    if let Some(handle) = state.push.lock().await.as_ref() {
+        handle.enable(distributor.filter(|name| !name.trim().is_empty()));
+    }
+    state.sink.emit(reply_ok(id, json!({ "enabled": true })));
+}
+
+/// Shipwright: hands the subscription's push account to Shoal Push, then points
+/// the homeserver's pusher at the bundle's gateway. The token stays out of
+/// every reply and log line (`hosted::redact`).
+async fn push_configure_hosted(
+    state: &Arc<State>,
+    id: u64,
+    bundle: crate::protocol::Secret,
+    endpoint: String,
+    p256dh: String,
+    auth: String,
+) {
+    let push = match crate::hosted::parse_bundle(bundle.as_str()) {
+        Ok(push) => push,
+        Err(error) => {
+            state.sink.emit(reply_error(id, error));
+            return;
+        }
+    };
+    // The bridge bots, if the whole bundle was pasted: not secret, kept by the
+    // front end for the bridges page.
+    let bots = serde_json::from_str::<Value>(bundle.as_str().trim())
+        .map(|whole| bridges::bots_from_bundle(&whole))
+        .unwrap_or_default();
+    drop(bundle);
+    let moved = match crate::hosted::configure(push.clone()).await {
+        Ok(moved) => moved,
+        Err(error) => {
+            state.sink.emit(reply_error(id, error));
+            return;
+        }
+    };
+    let mut pusher = "pending";
+    match crate::push::after_configure(&endpoint, moved) {
+        crate::push::PusherStep::Wait => {}
+        crate::push::PusherStep::Register => {
+            if let Some(client) = state.client().await {
+                match crate::push::set_pusher(&client, &endpoint, &p256dh, &auth, &push.gateway)
+                    .await
+                {
+                    Ok(()) => pusher = "registered",
+                    Err(error) => {
+                        state
+                            .sink
+                            .emit(reply_error(id, crate::hosted::redact(&error, &push)));
+                        return;
+                    }
+                }
+            }
+        }
+        crate::push::PusherStep::DropStale => {
+            if let Some(client) = state.client().await {
+                // Not fatal: the new endpoint gets its pusher either way, and
+                // the gateway refuses the stale one. The sign-out path removes
+                // every pusher of this app by app id.
+                let _ = crate::push::clear_pusher(&client, &endpoint).await;
+            }
+        }
+    }
+    state.sink.emit(reply_ok(
+        id,
+        json!({ "gateway": push.gateway, "moved": moved, "pusher": pusher, "bridges": bots }),
+    ));
+}
+
+/// Gives the registration back and deletes the pusher. Both: a pusher left
+/// behind keeps pointing at an endpoint that no longer exists.
+async fn push_disable(state: &Arc<State>, id: u64, endpoint: String) {
+    // By app id, not by the endpoint: that is never persisted, and a pusher
+    // nobody can name keeps the server posting for ever.
+    {
+        if let Some(client) = state.client().await {
+            if !endpoint.is_empty() {
+                let _ = crate::push::clear_pusher(&client, &endpoint).await;
+            }
+            if let Err(error) = crate::push::clear_own_pushers(&client).await {
+                // Said, not fatal: the registration goes either way, and a
+                // pusher that outlives it only wastes the server's attempts.
+                state.sink.emit(event(
+                    "push.state",
+                    json!({ "state": "off", "error": error }),
+                ));
+            }
+        }
+    }
+    push_handle(state).await;
+    if let Some(handle) = state.push.lock().await.as_ref() {
+        handle.disable();
+    }
+    state.sink.emit(reply_ok(id, json!({ "enabled": false })));
+}
+
+/// Turns a push into a banner. Answers with an error where the push rules say
+/// not to show it: silence is the right outcome then.
+async fn push_notify(state: &Arc<State>, id: u64, room_id: String, event_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    // The running sync service where there is one - the woken process has none,
+    // and there it really is the only process.
+    let sync = state
+        .rooms
+        .lock()
+        .await
+        .as_ref()
+        .map(|handle| handle.sync.clone());
+    match crate::push::notification_for(&client, &room_id, &event_id, sync).await {
+        Ok(data) => state.sink.emit(reply_ok(id, data)),
+        Err(error) => state.sink.emit(reply_error(id, error)),
+    }
+}
+
+/// The second half of turning it on: the endpoint goes to the homeserver.
+async fn push_pusher(
+    state: &Arc<State>,
+    id: u64,
+    endpoint: String,
+    p256dh: String,
+    auth: String,
+    gateway: String,
+) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match crate::push::set_pusher(&client, &endpoint, &p256dh, &auth, &gateway).await {
+        Ok(()) => {
+            state
+                .sink
+                .emit(event("push.state", json!({ "state": "on" })));
+            state.sink.emit(reply_ok(id, json!({ "registered": true })));
+        }
+        Err(error) => {
+            state.sink.emit(event(
+                "push.state",
+                json!({ "state": "error", "error": error.clone() }),
+            ));
+            state.sink.emit(reply_error(id, error));
+        }
+    }
+}
+
+fn storage_status(state: &Arc<State>, id: u64) {
+    let key = state.store_key();
+    let storage = session::storage_state(&state.paths, key.as_ref());
+    state.sink.emit(reply_ok(
+        id,
+        json!({
+            "encrypted": storage.fully_encrypted(),
+            "storeEncrypted": storage.store_encrypted,
+            "sessionPresent": storage.session_present,
+            "sessionEncrypted": storage.session_encrypted,
+            "keyAvailable": storage.key_available,
+            // True where the stores could be encrypted but are not and a key exists - the
+            // only case in which offering it is honest. A sign-out away, not a switch.
+            "canEncrypt": storage.key_available && !storage.store_encrypted,
+        }),
+    ));
+}
+
+/// Walks every row of two SQLite files, so off the runtime's workers: there are
+/// two of them, and a large crypto store takes long enough to be noticed.
+async fn scrub_stores(
+    state: &Arc<State>,
+    scope: storehealth::Scope,
+) -> Result<storehealth::Report, String> {
+    let paths = state.paths.clone();
+    let key = state.store_key();
+    tokio::task::spawn_blocking(move || storehealth::scrub(&paths, key.as_ref(), scope))
+        .await
+        .map_err(|error| format!("the repair did not run: {error}"))?
+}
+
+/// Drops what the stores can no longer decode and lets the sync go on. Runs
+/// with the client open: the rows it removes are rows nothing could read.
+async fn repair_storage(state: &Arc<State>, id: u64) {
+    // The store the latched line named, not both: the wide sweep let a defect in
+    // room data reach the room keys.
+    let report = match scrub_stores(state, storehealth::damage_scope()).await {
+        Ok(report) => report,
+        Err(error) => {
+            state
+                .sink
+                .emit(reply_error(id, crate::text::scrub_ids(&error)));
+            return;
+        }
+    };
+
+    // Only where something actually went: clearing the latch on a repair that
+    // found nothing puts the sync straight back into the loop it ended.
+    if report.dropped() > 0 {
+        storehealth::clear();
+        if let Some(handle) = state.rooms.lock().await.as_ref() {
+            handle.sync.start().await;
+        }
+    }
+    log(
+        state,
+        "warn",
+        format!(
+            "repair: {} of {} stored rows could not be decoded ({} room(s), {} room key(s), {} of them with no backup) \
+             and were put aside into the quarantine",
+            report.dropped(),
+            report.checked,
+            report.rooms,
+            report.room_keys,
+            report.room_keys_unsaved
+        ),
+    );
+
+    state.sink.emit(reply_ok(
+        id,
+        json!({
+            "checked": report.checked,
+            "dropped": report.dropped(),
+            "rooms": report.rooms,
+            "roomKeys": report.room_keys,
+            // What the key backup had no copy of - the only part of this a user
+            // can lose, and what the journal alone used to carry.
+            "roomKeysUnsaved": report.room_keys_unsaved,
+            "kept": report.kept,
+        }),
+    ));
+}
+
+async fn encryption_recover(state: &Arc<State>, id: u64, key: Secret) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match recovery::recover(&client, key.as_str()).await {
+        Ok(()) => {
+            let status = recovery::status(&client).await;
+            state.sink.emit(reply_ok(id, status.clone()));
+            state.sink.emit(event("encryption.changed", status));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn encryption_enable_backup(state: &Arc<State>, id: u64) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match recovery::enable(&client).await {
+        Ok(key) => {
+            // The recovery key is shown once and never stored: writing it down
+            // is the user's job, and keeping a copy here would defeat it.
+            state.sink.emit(reply_ok(id, json!({ "recoveryKey": key })));
+            let status = recovery::status(&client).await;
+            state.sink.emit(event("encryption.changed", status));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn fetch_room_keys(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match recovery::fetch_room_keys(&client, &room_id).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "fetched": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn request_verification(state: &Arc<State>, id: u64, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    // An empty user means "my own other devices".
+    let target = if user_id.trim().is_empty() {
+        match client.user_id() {
+            Some(own) => own.as_str().to_owned(),
+            None => {
+                state.sink.emit(reply_error(id, "own user is unknown"));
+                return;
+            }
+        }
+    } else {
+        user_id.trim().to_owned()
+    };
+
+    // A stale flow has to be taken down before a new one is asked for, or the
+    // SDK cancels both and the retry is dead on arrival.
+    verification::cancel_active(&state.verification).await;
+
+    match verification::request(
+        &client,
+        state.sink.clone(),
+        state.verification.clone(),
+        &target,
+    )
+    .await
+    {
+        Ok(room_id) => {
+            // Verifying another user runs in the direct chat, and an unsubscribed room
+            // delivers one event per sync - the acceptance would look like a stall.
+            if let Some(room_id) = room_id {
+                state
+                    .subscribe(move |rooms| rooms.verification = Some(room_id))
+                    .await;
+            }
+            state.sink.emit(reply_ok(id, json!({ "requested": true })));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// The three things the user can do with a verification on screen.
+enum Step {
+    Accept,
+    Confirm,
+    Cancel,
+    Mismatch,
+}
+
+async fn verification_step(state: &Arc<State>, id: u64, step: Step) {
+    let active = state.verification.lock().await.clone();
+    let Some(active) = active else {
+        state
+            .sink
+            .emit(reply_error(id, "no verification is in progress"));
+        return;
+    };
+
+    let outcome = match step {
+        Step::Accept => active.accept().await,
+        Step::Confirm => active.confirm().await,
+        Step::Cancel => active.cancel().await,
+        Step::Mismatch => active.mismatch().await,
+    };
+
+    match outcome {
+        Ok(()) => state
+            .sink
+            .emit(reply_ok(id, json!({ "flowId": active.flow_id() }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn open_timeline(
+    state: &Arc<State>,
+    id: u64,
+    room_id: String,
+    focus: String,
+    receipts: bool,
+    token: String,
+    rebuild: bool,
+) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    // One open at a time: leaving a room and stepping back in puts a close and an
+    // open in flight together. Its own lock, so timeline commands stay free.
+    let _opening = state.opening.lock().await;
+
+    // Opening another room replaces the timeline. The guard is bound to a name:
+    // as an `if let` temporary it lives to the end of the body and deadlocks.
+    let (marker, fallback_marker) = timeline::own_read_marker(&client, &room_id).await;
+    // Permissions and the two-party peer, read before the timeline lock: store
+    // reads under that lock froze every room switch once.
+    let (permissions, direct_peer) = match matrix_sdk::ruma::RoomId::parse(&room_id)
+        .ok()
+        .and_then(|parsed| client.get_room(&parsed))
+    {
+        Some(room) => (
+            members::room_permissions(&client, &room).await,
+            members::direct_peer(&client, &room).await,
+        ),
+        None => (json!({}), None),
+    };
+
+    {
+        let mut open = state.timeline.lock().await;
+        if let Some(previous) = open.take() {
+            // The receipt setting is chosen when the timeline is built, so a
+            // changed one has to rebuild even for the room already open.
+            if previous.room_id() == room_id
+                && focus.is_empty()
+                && !rebuild
+                && previous.is_live()
+                && previous.tracks_receipts() == receipts
+            {
+                open.replace(previous);
+                state.sink.emit(reply_ok(
+                    id,
+                    json!({
+                        "open": true,
+                        "readMarker": marker,
+                        "readReceipt": fallback_marker,
+                        "rebuilt": false,
+                        "can": permissions,
+                        "directWith": direct_peer,
+                    }),
+                ));
+                return;
+            }
+            previous.close().await;
+        }
+    }
+
+    // Past the early return, so re-entering a room keeps its thread - a stream
+    // left running would emit `thread.diff` for the room just left.
+    if let Some(handle) = state.thread.lock().await.take() {
+        handle.close().await;
+    }
+
+    // Sliding sync sends one event per response for rooms in the list. A room
+    // being read has to be subscribed, or newer messages never arrive.
+    if let Ok(parsed) = matrix_sdk::ruma::RoomId::parse(&room_id) {
+        state
+            .subscribe(move |rooms| rooms.open = Some(parsed))
+            .await;
+    }
+
+    match timeline::open(
+        &client,
+        &room_id,
+        &focus,
+        receipts,
+        &token,
+        state.sink.clone(),
+    )
+    .await
+    {
+        Ok(handle) => {
+            *state.timeline.lock().await = Some(Arc::new(handle));
+            // Rebuilt, so the view starts from nothing and may open where
+            // reading stopped; the branch above kept the rows it had.
+            state.sink.emit(reply_ok(
+                id,
+                json!({
+                    "open": true,
+                    "readMarker": marker,
+                    // The branch that matters: a room opened for the first time rebuilds, and
+                    // only a re-entered one took the branch that already carried this.
+                    "readReceipt": fallback_marker,
+                    "rebuilt": true,
+                    "can": permissions,
+                    "directWith": direct_peer,
+                }),
+            ));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// A tapped Matrix link: which room is meant, and are we in it.
+async fn resolve_room(state: &Arc<State>, id: u64, address: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match roomlist::resolve(&client, &address).await {
+        Ok(mut data) => {
+            if let Some(object) = data.as_object_mut() {
+                object.insert("address".to_owned(), json!(address));
+            }
+            state.sink.emit(reply_ok(id, data));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// The chat list's "mark as read": no timeline is opened for it, so it cannot
+/// go through the open handle the way the room's own does.
+async fn mark_room_read(state: &Arc<State>, id: u64, room_id: String, receipt: bool) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    match roomlist::mark_read(&client, &room_id, receipt).await {
+        Ok(marked) => state
+            .sink
+            .emit(reply_ok(id, json!({ "roomId": room_id, "marked": marked }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Shipwright: the cover's "mark all read".
+async fn mark_all_read(state: &Arc<State>, id: u64, receipt: bool) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+    let summary = readall::mark_all(&client, receipt).await;
+    state.sink.emit(reply_ok(
+        id,
+        json!({ "marked": summary.marked, "skipped": summary.skipped, "failed": summary.failed }),
+    ));
+}
+
+/// Shipwright: the bot's direct chat for `bridge`, made if needed and
+/// subscribed, with the bot in it.
+async fn bridge_room(
+    state: &Arc<State>,
+    bridge: &str,
+    bot: String,
+) -> Result<(bridges::Network, bridges::Endpoint, matrix_sdk::Room), String> {
+    let network = bridges::Network::parse(bridge).ok_or_else(|| "unknown bridge".to_owned())?;
+    let client = state
+        .client()
+        .await
+        .ok_or_else(|| "not signed in".to_owned())?;
+    let own = client
+        .user_id()
+        .ok_or_else(|| "not signed in".to_owned())?
+        .to_owned();
+    let bot = match bot.trim() {
+        "" => bridges::default_bot(network, own.as_str())
+            .ok_or_else(|| "no bridge is known for this account".to_owned())?,
+        named => named.to_owned(),
+    };
+    let bot_id = matrix_sdk::ruma::UserId::parse(bot.as_str())
+        .map_err(|_| "the bridge bot's address is not valid".to_owned())?;
+
+    // The room of this run, while it is still joined; else the direct chat
+    // with the bot, found or made like any other.
+    let known = state
+        .bridges
+        .endpoint(network)
+        .filter(|endpoint| endpoint.bot == bot)
+        .and_then(|endpoint| RoomId::parse(endpoint.room_id.as_str()).ok())
+        .and_then(|room_id| client.get_room(&room_id))
+        .filter(|room| room.state() == matrix_sdk::RoomState::Joined);
+    let room = match known {
+        Some(room) => room,
+        None => {
+            let room_id = {
+                let _serial = state.opening_direct.lock().await;
+                timeline::direct_chat(&client, &bot).await?
+            };
+            let parsed =
+                RoomId::parse(room_id.as_str()).map_err(|_| "not a room identifier".to_owned())?;
+            client
+                .get_room(&parsed)
+                .ok_or_else(|| "the bridge chat is not known yet".to_owned())?
+        }
+    };
+    let room_id = room.room_id().to_owned();
+    state
+        .subscribe(move |rooms| {
+            if !rooms.bridges.contains(&room_id) {
+                rooms.bridges.push(room_id);
+            }
+        })
+        .await;
+    bridges::wait_for_join(&room, &bot_id, network).await?;
+    let endpoint = bridges::Endpoint {
+        room_id: room.room_id().as_str().to_owned(),
+        bot,
+    };
+    Ok((network, endpoint, room))
+}
+
+/// Shipwright: asks the bot for the logins and answers with the bridge state.
+async fn bridges_status(state: &Arc<State>, id: u64, bridge: String, bot: String) {
+    let (network, endpoint, room) = match bridge_room(state, &bridge, bot).await {
+        Ok(found) => found,
+        Err(message) => {
+            state.sink.emit(reply_error(id, message));
+            return;
+        }
+    };
+    let nonce = matrix_sdk::ruma::TransactionId::new().to_string();
+    let prepared = match state
+        .bridges
+        .prepare(network, endpoint, &bridges::Request::Status, nonce)
+    {
+        Ok(prepared) => prepared,
+        Err(message) => {
+            state.sink.emit(reply_error(id, message));
+            return;
+        }
+    };
+    // Registered before sending: the answer can beat the send's own reply.
+    let answered = state.bridges.wait_for_status(network);
+    if let Err(message) = bridges::transmit(&room, &prepared).await {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+    let timeout = std::time::Duration::from_secs(bridges::STATUS_TIMEOUT_SECS);
+    match tokio::time::timeout(timeout, answered).await {
+        Ok(Ok(())) => state
+            .sink
+            .emit(reply_ok(id, state.bridges.snapshot(network))),
+        _ => state.sink.emit(reply_error(
+            id,
+            "the bridge did not answer in time; try again later",
+        )),
+    }
+}
+
+/// Shipwright: one step of linking or unlinking. Answered once the command is
+/// sent; what the bot makes of it arrives as `bridge.state` events.
+async fn bridges_request(
+    state: &Arc<State>,
+    id: u64,
+    bridge: String,
+    bot: String,
+    request: bridges::Request,
+) {
+    let outcome = match bridge_room(state, &bridge, bot).await {
+        Ok((network, endpoint, room)) => {
+            bridges::send(&state.bridges, &room, network, endpoint, &request)
+                .await
+                .map(|()| network)
+        }
+        Err(message) => Err(message),
+    };
+    drop(request);
+    match outcome {
+        Ok(network) => {
+            let snapshot = state.bridges.snapshot(network);
+            state.sink.emit(event("bridge.state", snapshot.clone()));
+            state.sink.emit(reply_ok(id, snapshot));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn close_timeline(state: &Arc<State>, id: u64, room_id: String) {
+    // The lock the open takes: leaving one room and entering another puts both
+    // in flight, and the close used to take the fresh handle away.
+    let _opening = state.opening.lock().await;
+    if !room_id.is_empty() {
+        let open_room = state
+            .timeline
+            .lock()
+            .await
+            .as_ref()
+            .map(|handle| handle.room_id.clone());
+        if let Some(open_room) = open_room {
+            if open_room != room_id {
+                state.sink.emit(reply_ok(id, json!({ "open": true })));
+                return;
+            }
+        }
+    }
+    if let Some(handle) = state.timeline.lock().await.take() {
+        handle.close().await;
+    }
+    // A thread never outlives its room's view.
+    if let Some(handle) = state.thread.lock().await.take() {
+        handle.close().await;
+    }
+    state.sink.emit(reply_ok(id, json!({ "open": false })));
+}
+
+async fn open_thread(
+    state: &Arc<State>,
+    id: u64,
+    room_id: String,
+    root_event_id: String,
+    token: String,
+) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    let _opening = state.opening_thread.lock().await;
+
+    if let Some(previous) = state.thread.lock().await.take() {
+        previous.close().await;
+    }
+
+    match timeline::open_thread(
+        &client,
+        &room_id,
+        &root_event_id,
+        &token,
+        state.sink.clone(),
+    )
+    .await
+    {
+        Ok(handle) => {
+            *state.thread.lock().await = Some(Arc::new(handle));
+            state.sink.emit(reply_ok(id, json!({ "open": true })));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Closes the open thread. A close naming another thread is ignored: commands
+/// are independent tasks and can arrive in either order.
+async fn close_thread(state: &Arc<State>, id: u64, root_event_id: String) {
+    let mut open = state.thread.lock().await;
+    let matches = open
+        .as_ref()
+        .map(|handle| root_event_id.is_empty() || handle.thread_root() == root_event_id)
+        .unwrap_or(false);
+    if matches {
+        if let Some(handle) = open.take() {
+            handle.close().await;
+        }
+    }
+    drop(open);
+    state.sink.emit(reply_ok(id, json!({ "open": false })));
+}
+
+async fn send_thread_message(state: &Arc<State>, id: u64, body: String, mentions: Vec<String>) {
+    if body.trim().is_empty() {
+        state.sink.emit(reply_error(id, "nothing to send"));
+        return;
+    }
+
+    let outcome = match state.thread().await {
+        Some(handle) => {
+            let content = mention_content(state, handle.room_id(), body, &mentions).await;
+            handle.send_content(content).await
+        }
+        None => Err("no thread is open".to_owned()),
+    };
+
+    match outcome {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "sent": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn paginate_thread(state: &Arc<State>, id: u64) {
+    let outcome = match state.thread().await {
+        Some(handle) => handle.paginate().await,
+        None => Err("no thread is open".to_owned()),
+    };
+
+    match outcome {
+        Ok(paginated) => state.sink.emit(reply_ok(
+            id,
+            json!({ "reachedStart": matches!(paginated, timeline::Paginated::Start) }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn paginate_timeline(state: &Arc<State>, id: u64, room_id: String) {
+    // Room and handle from the same guard: a switch while this was in flight
+    // otherwise paginated the room the user had just moved to, on behalf of the
+    // one they left - one uninvited history request per switch, against a server
+    // that may be rate-limiting.
+    let open = state
+        .timeline()
+        .await
+        .map(|handle| (handle.room_id.clone(), handle));
+    let outcome = match open {
+        Some((open_room, _)) if !room_id.is_empty() && open_room != room_id => {
+            Err("the room this was asked for is no longer open".to_owned())
+        }
+        Some((_, handle)) => handle.paginate().await,
+        None => Err("no timeline is open".to_owned()),
+    };
+
+    match outcome {
+        Ok(paginated) => state.sink.emit(reply_ok(
+            id,
+            json!({
+                "reachedStart": matches!(paginated, timeline::Paginated::Start),
+            }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn send_message(state: &Arc<State>, id: u64, body: String, mentions: Vec<String>) {
+    if body.trim().is_empty() {
+        state.sink.emit(reply_error(id, "nothing to send"));
+        return;
+    }
+
+    let outcome = match state.sendable_timeline().await {
+        Ok(handle) => {
+            let content = mention_content(state, handle.room_id(), body, &mentions).await;
+            handle.send_content(content).await
+        }
+        Err(message) => Err(message),
+    };
+
+    match outcome {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "sent": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn reply_message(
+    state: &Arc<State>,
+    id: u64,
+    event_id: String,
+    body: String,
+    mentions: Vec<String>,
+) {
+    if body.trim().is_empty() {
+        state.sink.emit(reply_error(id, "a reply cannot be empty"));
+        return;
+    }
+
+    let outcome = match state.sendable_timeline().await {
+        Ok(handle) => {
+            let content = mention_content(state, handle.room_id(), body, &mentions).await;
+            handle.reply_content(&event_id, content).await
+        }
+        Err(message) => Err(message),
+    };
+
+    match outcome {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "sent": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn edit_message(state: &Arc<State>, id: u64, event_id: String, body: String) {
+    if body.trim().is_empty() {
+        state.sink.emit(reply_error(id, "an edit cannot be empty"));
+        return;
+    }
+
+    let outcome = match state.timeline().await {
+        Some(handle) => handle.edit(&event_id, body).await,
+        None => Err("no timeline is open".to_owned()),
+    };
+
+    match outcome {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "edited": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn react(state: &Arc<State>, id: u64, event_id: String, key: String) {
+    let outcome = match state.timeline().await {
+        Some(handle) => handle.toggle_reaction(&event_id, &key).await,
+        None => Err("no timeline is open".to_owned()),
+    };
+    match outcome {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "reacted": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn redact_message(state: &Arc<State>, id: u64, event_id: String, txn_id: String) {
+    let outcome = match state.timeline().await {
+        Some(handle) => handle.redact(&event_id, &txn_id).await,
+        None => Err("no timeline is open".to_owned()),
+    };
+
+    match outcome {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "deleted": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Zero means "not measured". A half-known pair is no measurement either: a
+/// client told a width and no height lays out worse than one told nothing.
+fn dimensions(width: u64, height: u64) -> Option<(u64, u64)> {
+    if width > 0 && height > 0 {
+        Some((width, height))
+    } else {
+        None
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn send_media(
+    state: &Arc<State>,
+    id: u64,
+    path: String,
+    mime_type: String,
+    caption: String,
+    reply_to: String,
+    voice: bool,
+    duration: u64,
+    width: u64,
+    height: u64,
+    still: MediaStill,
+    room_id: String,
+) {
+    // Cloned out of the guard: the attachment upload takes a while and must
+    // not hold the lock. The room is read from the same handle, under the same
+    // guard, so the check below and the send cannot be about two rooms.
+    let (open_room, timeline) = match state.sendable_timeline().await {
+        Ok(handle) => (handle.room_id.clone(), handle.timeline()),
+        Err(message) => {
+            state.sink.emit(reply_error(id, message));
+            return;
+        }
+    };
+
+    // A video's still is decoded before the command is sent, which takes long
+    // enough for the user to be in another room by then. Sending into whatever
+    // is open would put a private video in the wrong conversation, and nothing
+    // takes that back - so this refuses rather than guesses.
+    if !room_id.is_empty() && room_id != open_room {
+        state.sink.emit(reply_error(
+            id,
+            "the room this attachment was meant for is no longer open",
+        ));
+        return;
+    }
+
+    // One field, two lengths: a recording of one's own is a voice message, a
+    // video is a video. Which one it is the type says, not the number.
+    let length = if duration > 0 { Some(duration) } else { None };
+    let voice = if voice { Some(duration) } else { None };
+    let dimensions = dimensions(width, height);
+    let outgoing = media::Outgoing {
+        path: &path,
+        mime_type: &mime_type,
+        caption: &caption,
+        reply_to: &reply_to,
+        voice,
+        dimensions,
+        duration: length,
+        still: &still,
+    };
+    match media::send(&timeline, &outgoing).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "sent": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// What `room.forward` carries.
+struct Forward {
+    room_id: String,
+    body: String,
+    path: String,
+    mime_type: String,
+    width: u64,
+    height: u64,
+    still: MediaStill,
+}
+
+/// Forwards either a picture or a piece of text to another room, without
+/// disturbing the timeline that is currently open.
+async fn forward(state: &Arc<State>, id: u64, request: Forward) {
+    let Forward {
+        room_id,
+        body,
+        path,
+        mime_type,
+        width,
+        height,
+        still,
+    } = request;
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    let outcome = if !path.is_empty() {
+        let mime = if mime_type.is_empty() {
+            "application/octet-stream".to_owned()
+        } else {
+            mime_type
+        };
+        media::forward_file(
+            &client,
+            &room_id,
+            &path,
+            &mime,
+            dimensions(width, height),
+            None,
+            &still,
+        )
+        .await
+    } else if !body.trim().is_empty() {
+        media::forward_text(&client, &room_id, body).await
+    } else {
+        Err("nothing to forward".to_owned())
+    };
+
+    match outcome {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "forwarded": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn fetch_media(
+    state: &Arc<State>,
+    id: u64,
+    source: Value,
+    thumbnail: bool,
+    size: u64,
+    limit: u64,
+) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match media::fetch(
+        &client,
+        &state.paths.media_cache,
+        source,
+        thumbnail,
+        size,
+        limit,
+    )
+    .await
+    {
+        Ok(path) => state.sink.emit(reply_ok(id, json!({ "path": path }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn mark_read(state: &Arc<State>, id: u64, receipt: bool) {
+    // The room goes back with the answer: a receipt does not reliably return as a
+    // diff, and the badge may only be cleared for the room this marked.
+    let handle = state.timeline().await;
+    let room_id = handle
+        .as_ref()
+        .map(|handle| handle.room_id().to_owned())
+        .unwrap_or_default();
+    let outcome = match handle {
+        Some(handle) => handle.mark_read(receipt).await,
+        None => Err("no timeline is open".to_owned()),
+    };
+
+    match outcome {
+        Ok(read) => state
+            .sink
+            .emit(reply_ok(id, json!({ "read": read, "roomId": room_id }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Keeps the room of a call in the subscription set. Only the outgoing side
+/// and answering pass here; an idle invitation is read unsubscribed.
+async fn set_call_room(state: &Arc<State>, room_id: Option<&str>) {
+    let parsed = room_id.and_then(|room| RoomId::parse(room).ok());
+    if room_id.is_some() && parsed.is_none() {
+        return;
+    }
+    state.subscribe(move |rooms| rooms.call = parsed).await;
+}
+
+async fn call_step<F, Fut>(state: &Arc<State>, id: u64, action: F)
+where
+    F: FnOnce(Client) -> Fut,
+    Fut: std::future::Future<Output = Result<(), String>>,
+{
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match action(client).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "sent": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn turn_servers(state: &Arc<State>, id: u64) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match call::turn_servers(&client).await {
+        Ok(servers) => state.sink.emit(reply_ok(id, servers)),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn direct_chat(state: &Arc<State>, id: u64, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    let _serial = state.opening_direct.lock().await;
+    match timeline::direct_chat(&client, &user_id).await {
+        Ok(room_id) => state.sink.emit(reply_ok(id, json!({ "roomId": room_id }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn join_by_alias(state: &Arc<State>, id: u64, alias: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match timeline::join_by_alias(&client, &alias).await {
+        Ok(room_id) => state
+            .sink
+            .emit(reply_ok(id, json!({ "joined": true, "roomId": room_id }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn join_room(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match timeline::join(&client, &room_id).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "joined": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Answers with everything the room-info page shows.
+async fn room_info(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match timeline::room_info(&client, &room_id).await {
+        Ok(info) => state.sink.emit(reply_ok(id, info)),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Joins the room a tombstoned one points at, and answers with its id so the
+/// front end can open it.
+async fn follow_successor(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match timeline::follow_successor(&client, &room_id).await {
+        Ok(new_room_id) => state
+            .sink
+            .emit(reply_ok(id, json!({ "roomId": new_room_id }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// The room list's sync service, started if needed: which page runs first is
+/// the user's start-page choice. The lock stops two racing starts.
+async fn ensure_room_list(
+    state: &Arc<State>,
+) -> Result<std::sync::Arc<matrix_sdk_ui::room_list_service::RoomListService>, String> {
+    let mut rooms = state.rooms.lock().await;
+    if rooms.is_none() {
+        let client = state
+            .client()
+            .await
+            .ok_or_else(|| "not signed in".to_owned())?;
+        // A store from before the connection was ours to choose may hold a position
+        // that outlived a rebuild; it moves on once, here.
+        if let Err(error) = session::migrate_sync_connection(&state.paths) {
+            log(
+                state,
+                "warn",
+                format!("could not record the sync connection: {error}"),
+            );
+        }
+        let connection_id = session::sync_connection_id(&state.paths);
+        let handle = roomlist::start(&client, state.sink.clone(), connection_id).await?;
+        *rooms = Some(handle);
+    }
+    Ok(rooms.as_ref().expect("just ensured").service())
+}
+
+async fn start_room_list(state: &Arc<State>, id: u64) {
+    match ensure_room_list(state).await {
+        Ok(_) => {
+            // The chat list draws a room's space over its picture, so the map
+            // must not wait for the space page to be opened.
+            emit_space_children_soon(state);
+            state.sink.emit(reply_ok(id, json!({ "running": true })));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn filter_room_list(state: &Arc<State>, id: u64, pattern: String) {
+    let applied = match &*state.rooms.lock().await {
+        Some(handle) => handle.set_filter(pattern),
+        None => false,
+    };
+
+    if applied {
+        state.sink.emit(reply_ok(id, json!({ "filtered": true })));
+    } else {
+        state
+            .sink
+            .emit(reply_error(id, "the room list is not running"));
+    }
+}
+
+/// One more page of rooms. The dynamic adapter holds one page and grows only
+/// when told; asking again once everything is loaded does nothing.
+async fn load_more_rooms(state: &Arc<State>, id: u64) {
+    let asked = match &*state.rooms.lock().await {
+        Some(handle) => handle.load_more(),
+        None => false,
+    };
+
+    if asked {
+        state.sink.emit(reply_ok(id, json!({ "asked": true })));
+    } else {
+        state
+            .sink
+            .emit(reply_error(id, "the room list is not running"));
+    }
+}
+
+async fn stop_room_list(state: &Arc<State>, id: u64) {
+    // The space streams borrow the same room list service, so they go first.
+    if let Some(task) = state.open_space.lock().await.take() {
+        task.abort();
+    }
+    if let Some(task) = state.spaces.lock().await.take() {
+        task.abort();
+    }
+    if let Some(handle) = state.rooms.lock().await.take() {
+        handle.stop().await;
+    }
+    state.sink.emit(reply_ok(id, json!({ "running": false })));
+}
+
+async fn start_spaces(state: &Arc<State>, id: u64) {
+    if state.spaces.lock().await.is_some() {
+        state.sink.emit(reply_ok(id, json!({ "running": true })));
+        return;
+    }
+
+    let service = match ensure_room_list(state).await {
+        Ok(service) => service,
+        Err(message) => {
+            state.sink.emit(reply_error(id, message));
+            return;
+        }
+    };
+
+    match roomlist::spawn_spaces(service, state.sink.clone()).await {
+        Ok(task) => {
+            *state.spaces.lock().await = Some(task);
+            state.sink.emit(reply_ok(id, json!({ "running": true })));
+            emit_space_children(state).await;
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// Emits the space child structure now and once more shortly after: a state
+/// event written with `send_state_event` lands locally on the next sync.
+fn emit_space_children_soon(state: &Arc<State>) {
+    let state = state.clone();
+    tokio::spawn(async move {
+        emit_space_children(&state).await;
+        tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+        emit_space_children(&state).await;
+    });
+}
+
+async fn stop_spaces(state: &Arc<State>, id: u64) {
+    if let Some(task) = state.spaces.lock().await.take() {
+        task.abort();
+    }
+    state.sink.emit(reply_ok(id, json!({ "running": false })));
+}
+
+/// Recomputes the per-space child structure for the badges. Called whenever it
+/// can have changed - list started, space created, child added or removed.
+async fn emit_space_children(state: &Arc<State>) {
+    if let Some(client) = state.client().await {
+        let data = roomlist::space_children_map(&client).await;
+        state.sink.emit(event("spaces.children", data));
+    }
+}
+
+async fn open_space(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    let service = match ensure_room_list(state).await {
+        Ok(service) => service,
+        Err(message) => {
+            state.sink.emit(reply_error(id, message));
+            return;
+        }
+    };
+
+    // Opening a different space replaces the previous one: the UI shows one
+    // space's rooms at a time, mirroring how the timeline is handled.
+    if let Some(task) = state.open_space.lock().await.take() {
+        task.abort();
+    }
+
+    match roomlist::spawn_space_children(&client, &room_id, service, state.sink.clone()).await {
+        Ok(task) => {
+            *state.open_space.lock().await = Some(task);
+            state.sink.emit(reply_ok(id, json!({ "open": true })));
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn close_space(state: &Arc<State>, id: u64) {
+    if let Some(task) = state.open_space.lock().await.take() {
+        task.abort();
+    }
+    state.sink.emit(reply_ok(id, json!({ "open": false })));
+}
+
+async fn create_space(state: &Arc<State>, id: u64, name: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    // The new space arrives in the overview through the running sync, so the
+    // reply only has to report the id.
+    match roomlist::create_space(&client, &name).await {
+        Ok(room_id) => {
+            state.sink.emit(reply_ok(id, json!({ "roomId": room_id })));
+            emit_space_children(state).await;
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn create_room(state: &Arc<State>, id: u64, room: roomlist::NewRoom) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    // Kept for the reply: the request is consumed by the call below, and the
+    // front end opens the room under this name before the first diff arrives.
+    let name = room.name.trim().to_owned();
+    let encrypted = room.encrypted;
+
+    // The room reaches the list through the sync. The reply carries name and
+    // encryption so the front end can open it before the first diff.
+    match roomlist::create_room(&client, room).await {
+        Ok(room_id) => state.sink.emit(reply_ok(
+            id,
+            json!({ "roomId": room_id, "name": name, "encrypted": encrypted }),
+        )),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn leave_room(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    // The row disappears on its own: leaving turns the state to Left, which the
+    // filter drops on the next diff. The holding space loses a child.
+    match roomlist::leave_room(&client, &room_id).await {
+        Ok(()) => {
+            state
+                .sink
+                .emit(reply_ok(id, json!({ "left": true, "roomId": room_id })));
+            emit_space_children_soon(state);
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn invite_to_room(state: &Arc<State>, id: u64, room_id: String, user_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match timeline::invite_user(&client, &room_id, &user_id).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "invited": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn enable_room_encryption(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match timeline::enable_encryption(&client, &room_id).await {
+        Ok(()) => state.sink.emit(reply_ok(id, json!({ "encrypted": true }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn leave_space(state: &Arc<State>, id: u64, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    // The space list updates on its own: leaving turns the room's state to
+    // Left, which the "non left" filter drops on the next diff.
+    match roomlist::leave_space(&client, &room_id).await {
+        Ok(()) => {
+            state.sink.emit(reply_ok(id, json!({ "left": true })));
+            emit_space_children_soon(state);
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn add_space_child(state: &Arc<State>, id: u64, space_id: String, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match roomlist::add_child(&client, &space_id, &room_id).await {
+        Ok(()) => {
+            state.sink.emit(reply_ok(id, json!({ "added": true })));
+            emit_space_children_soon(state);
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn remove_space_child(state: &Arc<State>, id: u64, space_id: String, room_id: String) {
+    let Some(client) = state.client().await else {
+        state.sink.emit(reply_error(id, "not signed in"));
+        return;
+    };
+
+    match roomlist::remove_child(&client, &space_id, &room_id).await {
+        Ok(()) => {
+            state.sink.emit(reply_ok(id, json!({ "removed": true })));
+            emit_space_children_soon(state);
+        }
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+/// A line of this core's own into the app's error log, scrubbed like the SDK's.
+fn log(state: &Arc<State>, level: &str, message: String) {
+    state.sink.emit(event(
+        "core.log",
+        json!({
+            "level": level,
+            "target": "shoal-messages",
+            "message": crate::text::scrub_ids(&message),
+        }),
+    ));
+}
+
+async fn restore_session(state: &Arc<State>, id: u64, store_key: Option<String>) {
+    let _restoring = state.restoring.lock().await;
+    // Lost the race to a successful restore: that client stays.
+    if state.client.lock().await.is_some() {
+        if let Some(mut key) = store_key {
+            use zeroize::Zeroize;
+            key.zeroize();
+        }
+        state.sink.emit(reply_ok(id, state.session_data().await));
+        return;
+    }
+    restore_stored_session(state, id, store_key, true).await
+}
+
+/// `repair` is spent on the first try: a store that is still unreadable after
+/// its damaged rows went is not a store one more round of deleting helps.
+async fn restore_stored_session(
+    state: &Arc<State>,
+    id: u64,
+    store_key: Option<String>,
+    repair: bool,
+) {
+    // A key handed in with the command replaces the one from start - but only a
+    // well-formed one: a garbled key must not become "no key".
+    if let Some(mut encoded) = store_key {
+        use zeroize::Zeroize;
+        let decoded = session::decode_key(&encoded);
+        encoded.zeroize();
+        if decoded.is_some() {
+            *state
+                .store_key
+                .write()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()) = decoded;
+        }
+    }
+    let key = state.store_key();
+
+    let stored = match session::load(&state.paths.session_file, key.as_ref()) {
+        session::LoadOutcome::Session(stored) => stored,
+        session::LoadOutcome::None => {
+            state.sink.emit(reply_ok(id, json!({ "state": "none" })));
+            return;
+        }
+        // Session there, key not: a state of its own, never "no session". The UI
+        // retries, and no login may reset the store while the file is on disk.
+        session::LoadOutcome::Locked => {
+            let data = json!({ "state": "locked" });
+            state.sink.emit(reply_ok(id, data.clone()));
+            state.sink.emit(event("session.changed", data));
+            return;
+        }
+        // Unknown format, not a wrong key: no reset offered.
+        session::LoadOutcome::Newer => {
+            let data = json!({ "state": "newer" });
+            state.sink.emit(reply_ok(id, data.clone()));
+            state.sink.emit(event("session.changed", data));
+            return;
+        }
+    };
+
+    let homeserver = stored.homeserver().to_owned();
+    let homeserver_url = stored.homeserver_url().map(str::to_owned);
+
+    // An encrypted store without its key is the same locked state — opening
+    // it anyway would surface as decryption garbage three layers further down.
+    if session::store_marked_encrypted(&state.paths) && key.is_none() {
+        let data = json!({ "state": "locked" });
+        state.sink.emit(reply_ok(id, data.clone()));
+        state.sink.emit(event("session.changed", data));
+        return;
+    }
+
+    // Kept address: no network. Older files: discovery once.
+    let target = match &homeserver_url {
+        Some(url) => session::Target::Resolved(url),
+        None => session::Target::Discover(&homeserver),
+    };
+    let client = match session::build_client_at(target, &state.paths, key.as_ref()).await {
+        Ok(client) => client,
+        // Never an error: the front end would show the login page.
+        Err(session::BuildFailure::Unreachable(reason)) => {
+            let data = json!({ "state": "offline", "reason": reason });
+            state.sink.emit(reply_ok(id, data.clone()));
+            state.sink.emit(event("session.changed", data));
+            return;
+        }
+        Err(failure @ session::BuildFailure::Store(_)) => {
+            let data = json!({ "state": "unreadable", "reason": failure.to_string() });
+            state.sink.emit(reply_ok(id, data.clone()));
+            state.sink.emit(event("session.changed", data));
+            return;
+        }
+        Err(session::BuildFailure::Refused(reason)) => {
+            state.sink.emit(reply_error(id, reason));
+            return;
+        }
+    };
+
+    // Before the token reaches the client: https only.
+    if let Err(message) = require_https(&client) {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    if let Err(error) = client
+        .restore_session_with(stored.into_auth_session(), RoomLoadSettings::default())
+        .await
+    {
+        // A store that cannot be read back is not an ended session: account and
+        // crypto store are fine, and a login over them would cost the device.
+        if matches!(error, matrix_sdk::Error::StateStore(_)) {
+            // One row is not the store. The client goes first, because the retry
+            // builds a second one over the same directory, then the rows nothing
+            // can decode go, then the restore gets its one second try.
+            drop(client);
+            if repair {
+                // `Error::StateStore` is what got here; the crypto store is not
+                // implicated and is not walked.
+                match scrub_stores(state, storehealth::Scope::State).await {
+                    Ok(report) if report.dropped() > 0 => {
+                        log(
+                            state,
+                            "warn",
+                            format!(
+                                "dropped {} unreadable row(s) of {} from the local data",
+                                report.dropped(),
+                                report.checked
+                            ),
+                        );
+                        Box::pin(restore_stored_session(state, id, None, false)).await;
+                        return;
+                    }
+                    Ok(_) => {}
+                    Err(error) => log(
+                        state,
+                        "warn",
+                        format!("the local data was not repaired: {error}"),
+                    ),
+                }
+            }
+            let data = json!({
+                "state": "unreadable",
+                "reason": crate::text::scrub_ids(&error.to_string()),
+            });
+            state.sink.emit(reply_ok(id, data.clone()));
+            state.sink.emit(event("session.changed", data));
+            return;
+        }
+        // Local failure: the data, not the session.
+        let data = json!({
+            "state": "unreadable",
+            "reason": crate::text::scrub_ids(&error.to_string()),
+        });
+        state.sink.emit(reply_ok(id, data.clone()));
+        state.sink.emit(event("session.changed", data));
+        return;
+    }
+
+    verification::install(&client, state.sink.clone(), state.verification.clone());
+    call::install(&client, state.sink.clone());
+    bridges::install(&client, state.bridges.clone(), state.sink.clone());
+    // The backup unlocks itself once a verification hands the key over, and only
+    // this stream says so. Kept, because it holds a client clone.
+    let recovery_task = recovery::watch(&client, state.sink.clone());
+    // Rewritten once per restore, so a plaintext session file becomes encrypted
+    // now - a classic session has no refresh to do it eventually.
+    persist(state, &client, homeserver.clone()).await;
+    let session_task = watch_session(state, &client, homeserver);
+    state
+        .observers
+        .lock()
+        .await
+        .extend([recovery_task, session_task]);
+
+    *state.client.lock().await = Some(client);
+    let data = state.session_data().await;
+    state.sink.emit(reply_ok(id, data.clone()));
+    state.sink.emit(event("session.changed", data));
+}
+
+/// The way out of `unreadable`: drops what the next sync rebuilds, restores
+/// again. Refused while a client holds the store.
+async fn rebuild_store(state: &Arc<State>, id: u64) {
+    {
+        // Released before the restore below.
+        let _restoring = state.restoring.lock().await;
+        if state.client.lock().await.is_some() {
+            state.sink.emit(reply_error(id, "the local data is in use"));
+            return;
+        }
+        if let Err(error) = session::rebuild_store(&state.paths) {
+            state.sink.emit(reply_error(
+                id,
+                crate::text::scrub_ids(&format!("the local data could not be rebuilt: {error}")),
+            ));
+            return;
+        }
+    }
+    // The damage was in what this just deleted. Left standing, the latch stops
+    // the sync over a store that no longer exists - and this is the way out the
+    // page offers, so it has to be one.
+    storehealth::clear();
+    restore_session(state, id, None).await;
+}
+
+/// Clears the ground for a login that starts a new device. The cached client
+/// is dropped *before* the reset: resetting under an open store shreds it.
+async fn prepare_fresh_login(state: &Arc<State>) -> Result<(), String> {
+    match session::load(&state.paths.session_file, state.store_key().as_ref()) {
+        session::LoadOutcome::None => {
+            drop(state.client.lock().await.take());
+            session::reset_store(&state.paths)
+                .map_err(|error| format!("could not clear old data: {error}"))?;
+            storehealth::clear();
+        }
+        session::LoadOutcome::Session(_) => {}
+        // A locked session is a session. Logging in over it resets the store its key
+        // still protects; the way out of a lost key is an explicit sign-out.
+        session::LoadOutcome::Locked => {
+            return Err(
+                "a session is stored but its key is not available; unlock or sign out first"
+                    .to_owned(),
+            );
+        }
+        session::LoadOutcome::Newer => {
+            return Err("a session is stored by a newer version of the app".to_owned());
+        }
+    }
+    state
+        .paths
+        .prepare()
+        .map_err(|error| format!("could not prepare storage: {error}"))
+}
+
+/// Refuses a homeserver not reached over https. Asked of the client, since
+/// `.well-known` may name an http URL and the SDK then goes insecure.
+fn require_https(client: &Client) -> Result<(), String> {
+    if client.homeserver().scheme() == "https" {
+        return Ok(());
+    }
+    Err("this homeserver is not reached over https".to_owned())
+}
+
+async fn start_login(state: &Arc<State>, id: u64, homeserver: String) {
+    if let Err(message) = prepare_fresh_login(state).await {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    let client =
+        match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await {
+            Ok(client) => client,
+            Err(error) => {
+                state.sink.emit(reply_error(id, error));
+                return;
+            }
+        };
+
+    if let Err(message) = require_https(&client) {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    // Which sign-in does this server speak? Only the affirmative `NotSupported`
+    // offers the password form - a transport error is never a downgrade.
+    match client.oauth().server_metadata().await {
+        Ok(_) => {}
+        Err(OAuthDiscoveryError::NotSupported) => {
+            let flows = login::login_flows(&client).await;
+            match flows
+                .as_ref()
+                .map(|list| list.iter().any(|flow| flow == "password"))
+            {
+                Ok(true) => {
+                    // No scheme check: anything but https was refused above. The client is kept
+                    // so `login.password` reuses this discovery instead of trusting the UI.
+                    *state.client.lock().await = Some(client);
+                    state
+                        .sink
+                        .emit(reply_ok(id, json!({ "passwordLogin": true })));
+                }
+                // Naming the method the server wants is the point: told only "sign-in
+                // failed", a user retypes a password that was never wrong.
+                Ok(false) => {
+                    let sso = flows
+                        .as_ref()
+                        .map(|list| list.iter().any(|flow| flow == "sso"))
+                        .unwrap_or(false);
+                    state.sink.emit(reply_error(
+                        id,
+                        if sso {
+                            "this server signs in through its own web page (SSO), which this app cannot do yet"
+                        } else {
+                            "this server offers no sign-in method this app supports"
+                        },
+                    ));
+                }
+                Err(_) => state.sink.emit(reply_error(
+                    id,
+                    flows
+                        .err()
+                        .unwrap_or_else(|| "sign-in methods unknown".to_owned()),
+                )),
+            }
+            return;
+        }
+        Err(error) => {
+            state.sink.emit(reply_error(
+                id,
+                format!(
+                    "sign-in discovery failed: {}",
+                    crate::text::scrub_ids(&error.to_string())
+                ),
+            ));
+            return;
+        }
+    }
+
+    let pending = match login::start(&client, homeserver).await {
+        Ok(pending) => pending,
+        Err(message) => {
+            state.sink.emit(reply_error(id, message));
+            return;
+        }
+    };
+
+    let url = pending.url.to_string();
+    *state.client.lock().await = Some(client.clone());
+    *state.pending.lock().await = Some(PendingLogin {
+        shutdown: pending.redirect.shutdown_handle(),
+        state: pending.state,
+    });
+
+    // The URL goes back right away; the flow itself finishes whenever the user
+    // is done in the browser.
+    state.sink.emit(reply_ok(id, json!({ "url": url })));
+
+    let waiter = state.clone();
+    let homeserver = pending.homeserver;
+    tokio::spawn(async move {
+        let outcome = login::finish(&client, pending.redirect).await;
+        waiter.pending.lock().await.take();
+
+        match outcome {
+            Ok(true) => {
+                verification::install(&client, waiter.sink.clone(), waiter.verification.clone());
+                call::install(&client, waiter.sink.clone());
+                bridges::install(&client, waiter.bridges.clone(), waiter.sink.clone());
+                let recovery_task = recovery::watch(&client, waiter.sink.clone());
+                persist(&waiter, &client, homeserver.clone()).await;
+                let session_task = watch_session(&waiter, &client, homeserver);
+                waiter
+                    .observers
+                    .lock()
+                    .await
+                    .extend([recovery_task, session_task]);
+                let data = waiter.session_data().await;
+                waiter.sink.emit(event("session.changed", data));
+            }
+            Ok(false) => {
+                waiter
+                    .sink
+                    .emit(event("login.aborted", json!({ "state": "none" })));
+            }
+            Err(message) => {
+                waiter.sink.emit(event(
+                    "login.failed",
+                    json!({ "message": crate::text::scrub_ids(&message) }),
+                ));
+            }
+        }
+    });
+}
+
+/// Signs in with `m.login.password`; the reply is the whole outcome. The
+/// checks that put the form on screen are repeated here, not trusted.
+async fn password_login(
+    state: &Arc<State>,
+    id: u64,
+    homeserver: String,
+    user: String,
+    password: Secret,
+) {
+    // Reuse the client `login.start` built and vetted. The reset belongs to
+    // whoever builds the client - running it again deleted the open files.
+    let cached = state.client.lock().await.clone();
+    let client = match cached {
+        Some(client) => client,
+        None => {
+            if let Err(message) = prepare_fresh_login(state).await {
+                state.sink.emit(reply_error(id, message));
+                return;
+            }
+            match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await
+            {
+                Ok(client) => client,
+                Err(error) => {
+                    state.sink.emit(reply_error(id, error));
+                    return;
+                }
+            }
+        }
+    };
+
+    if let Err(message) = require_https(&client) {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    match client.oauth().server_metadata().await {
+        Err(OAuthDiscoveryError::NotSupported) => {}
+        Ok(_) => {
+            state.sink.emit(reply_error(
+                id,
+                "this server signs in through its own page, not with a password here",
+            ));
+            return;
+        }
+        Err(error) => {
+            state.sink.emit(reply_error(
+                id,
+                format!(
+                    "sign-in discovery failed: {}",
+                    crate::text::scrub_ids(&error.to_string())
+                ),
+            ));
+            return;
+        }
+    }
+
+    if let Err(message) = login::password(&client, &user, password.as_str()).await {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    verification::install(&client, state.sink.clone(), state.verification.clone());
+    call::install(&client, state.sink.clone());
+    bridges::install(&client, state.bridges.clone(), state.sink.clone());
+    let recovery_task = recovery::watch(&client, state.sink.clone());
+    persist(state, &client, homeserver.clone()).await;
+    let session_task = watch_session(state, &client, homeserver);
+    state
+        .observers
+        .lock()
+        .await
+        .extend([recovery_task, session_task]);
+    *state.client.lock().await = Some(client);
+
+    let data = state.session_data().await;
+    state.sink.emit(reply_ok(id, data.clone()));
+    state.sink.emit(event("session.changed", data));
+}
+
+/// Begins the device-code login: the reply carries a short URL and a code, and
+/// the approval happens on some other device.
+async fn start_device_login(state: &Arc<State>, id: u64, homeserver: String) {
+    if let Err(message) = prepare_fresh_login(state).await {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    let client =
+        match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await {
+            Ok(client) => client,
+            Err(error) => {
+                state.sink.emit(reply_error(id, error));
+                return;
+            }
+        };
+
+    if let Err(message) = require_https(&client) {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    let pending = match login::start_device(&client).await {
+        Ok(pending) => pending,
+        Err(message) => {
+            state.sink.emit(reply_error(id, message));
+            return;
+        }
+    };
+
+    *state.client.lock().await = Some(client.clone());
+
+    // URL and code go back right away; the polling task finishes whenever the
+    // user approves on the other device.
+    state.sink.emit(reply_ok(
+        id,
+        json!({
+            "verificationUri": pending.verification_uri,
+            "verificationUriComplete": pending.verification_uri_complete,
+            "userCode": pending.user_code,
+        }),
+    ));
+
+    let waiter = state.clone();
+    let task = tokio::spawn(async move {
+        let outcome = login::finish_device(&client, pending).await;
+        waiter.pending_device.lock().await.take();
+
+        match outcome {
+            Ok(()) => {
+                verification::install(&client, waiter.sink.clone(), waiter.verification.clone());
+                call::install(&client, waiter.sink.clone());
+                bridges::install(&client, waiter.bridges.clone(), waiter.sink.clone());
+                let recovery_task = recovery::watch(&client, waiter.sink.clone());
+                persist(&waiter, &client, homeserver.clone()).await;
+                let session_task = watch_session(&waiter, &client, homeserver);
+                waiter
+                    .observers
+                    .lock()
+                    .await
+                    .extend([recovery_task, session_task]);
+                let data = waiter.session_data().await;
+                waiter.sink.emit(event("session.changed", data));
+            }
+            Err(message) => {
+                waiter.sink.emit(event(
+                    "login.failed",
+                    json!({ "message": crate::text::scrub_ids(&message) }),
+                ));
+            }
+        }
+    });
+    *state.pending_device.lock().await = Some(task);
+}
+
+/// Writes the session to disk. A failure costs the restart, not the running
+/// session, so it is an event rather than an aborted login.
+async fn persist(state: &Arc<State>, client: &Client, homeserver: String) {
+    // Whichever auth API owns the session: OAuth for browser and device code, the
+    // Matrix API for the password login. Only tokens are stored.
+    let _persisting = state.persisting.lock().await;
+    let url = client.homeserver().to_string();
+    let stored = if let Some(oauth_session) = client.oauth().full_session() {
+        StoredSession::from_oauth(homeserver, url, &oauth_session)
+    } else if let Some(matrix_session) = client.matrix_auth().session() {
+        StoredSession::from_matrix(homeserver, url, matrix_session)
+    } else {
+        state.sink.emit(event(
+            "session.warning",
+            json!({ "message": "session could not be persisted" }),
+        ));
+        return;
+    };
+    if let Err(error) = session::store(
+        &stored,
+        &state.paths.session_file,
+        state.store_key().as_ref(),
+    ) {
+        state.sink.emit(event(
+            "session.warning",
+            json!({ "message": crate::text::scrub_ids(&format!("session could not be saved: {error}")) }),
+        ));
+    }
+}
+
+/// Keeps `session.json` in step with rotating tokens: persisting only at login
+/// leaves a spent refresh token and every start looks like a forced re-login.
+fn watch_session(
+    state: &Arc<State>,
+    client: &Client,
+    homeserver: String,
+) -> tokio::task::JoinHandle<()> {
+    let state = state.clone();
+    let client = client.clone();
+    let mut changes = client.subscribe_to_session_changes();
+    tokio::spawn(async move {
+        loop {
+            match changes.recv().await {
+                Ok(SessionChange::TokensRefreshed) => {
+                    // Said out loud: a refresh is invisible, and a request in flight across one
+                    // comes back as "token is not active", which reads as an ended session.
+                    state.sink.emit(event("session.refreshed", json!({})));
+                    persist(&state, &client, homeserver.clone()).await;
+                }
+                Ok(SessionChange::UnknownToken(_)) => {
+                    if !session_ended(&client).await {
+                        log(
+                            &state,
+                            "warn",
+                            "a token refresh failed; the session is kept".to_owned(),
+                        );
+                        continue;
+                    }
+                    // Gone for good. Own task: the teardown aborts every observer, this one too.
+                    let teardown = state.clone();
+                    tokio::spawn(async move {
+                        session_expired(&teardown).await;
+                        teardown.sink.emit(event(
+                            "session.expired",
+                            json!({ "message": "the session has expired, please sign in again" }),
+                        ));
+                    });
+                    // Nothing more can arrive on this subscription, and this task's clone is the
+                    // last thing keeping the old client alive.
+                    break;
+                }
+                // Missing a refresh notification only costs a redundant write
+                // next time; keep listening.
+                Err(RecvError::Lagged(_)) => continue,
+                Err(RecvError::Closed) => break,
+            }
+        }
+    })
+}
+
+/// Whether `UnknownToken` ended the session. The SDK reports every failed
+/// password-login refresh as one, so it asks once more.
+async fn session_ended(client: &Client) -> bool {
+    if client.oauth().full_session().is_some() {
+        return true;
+    }
+    match client.refresh_access_token().await {
+        Ok(()) => false,
+        // No refresh token: the access token was the session.
+        Err(matrix_sdk::RefreshTokenError::RefreshTokenRequired) => true,
+        Err(matrix_sdk::RefreshTokenError::MatrixAuth(error)) => matches!(
+            error.client_api_error_kind(),
+            Some(matrix_sdk::ruma::api::error::ErrorKind::UnknownToken(_))
+        ),
+        Err(_) => false,
+    }
+}
+
+async fn registration_url(state: &Arc<State>, id: u64, homeserver: String) {
+    if let Err(error) = state.paths.prepare() {
+        state.sink.emit(reply_error(
+            id,
+            format!("could not prepare storage: {error}"),
+        ));
+        return;
+    }
+
+    let client =
+        match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await {
+            Ok(client) => client,
+            Err(error) => {
+                state.sink.emit(reply_error(id, error));
+                return;
+            }
+        };
+
+    if let Err(message) = require_https(&client) {
+        state.sink.emit(reply_error(id, message));
+        return;
+    }
+
+    match login::registration_url(&client).await {
+        Ok(url) => state.sink.emit(reply_ok(id, json!({ "url": url }))),
+        Err(message) => state.sink.emit(reply_error(id, message)),
+    }
+}
+
+async fn abort_login(state: &Arc<State>, id: u64) {
+    if let Some(pending) = state.pending.lock().await.take() {
+        pending.shutdown.shutdown();
+        if let Some(client) = &*state.client.lock().await {
+            client.oauth().abort_login(&pending.state).await;
+        }
+    }
+    // A device-code login is just a polling task; dropping it is the abort.
+    if let Some(task) = state.pending_device.lock().await.take() {
+        task.abort();
+    }
+    state.sink.emit(reply_ok(id, json!({ "state": "none" })));
+}
+
+/// Stops the observers that hold a client clone. Called before the client is
+/// dropped, by both the deliberate sign-out and an expired session.
+async fn stop_observers(state: &Arc<State>) {
+    for task in state.observers.lock().await.drain(..) {
+        task.abort();
+    }
+    // Shipwright: nothing about the account outlives it.
+    state.bridges.clear();
+    contacts::clear();
+}
+
+/// The teardown of a sign-out, minus telling the server and minus the stores:
+/// the account is unchanged. The session file goes, or the next start fails.
+async fn session_expired(state: &Arc<State>) {
+    stop_observers(state).await;
+    if let Some(handle) = state.timeline.lock().await.take() {
+        handle.close().await;
+    }
+    if let Some(handle) = state.thread.lock().await.take() {
+        handle.close().await;
+    }
+    // Same as in `logout`: the verification request holds a client.
+    verification::cancel_active(&state.verification).await;
+    drop(state.verification.lock().await.take());
+    if let Some(handle) = state.directory.lock().await.take() {
+        handle.task.abort();
+    }
+    if let Some(task) = state.open_space.lock().await.take() {
+        task.abort();
+    }
+    if let Some(task) = state.spaces.lock().await.take() {
+        task.abort();
+    }
+    if let Some(handle) = state.rooms.lock().await.take() {
+        handle.stop().await;
+    }
+    state.client.lock().await.take();
+    session::forget(&state.paths.session_file);
+}
+
+async fn logout(state: &Arc<State>, id: u64) {
+    // A restore would build a client over the deleted store.
+    let _restoring = state.restoring.lock().await;
+    // First, because everything below assumes nothing else is holding the
+    // client - the store is deleted at the end of this function.
+    stop_observers(state).await;
+    if let Some(handle) = state.timeline.lock().await.take() {
+        handle.close().await;
+    }
+    // A thread handle holds the timeline, and through it the client and the open
+    // pool - `reset_store` below would delete the directory under it.
+    if let Some(handle) = state.thread.lock().await.take() {
+        handle.close().await;
+    }
+    // A verification in progress holds a `Client` of its own: signing out during
+    // one left the store open under `reset_store`.
+    verification::cancel_active(&state.verification).await;
+    drop(state.verification.lock().await.take());
+    if let Some(handle) = state.directory.lock().await.take() {
+        handle.task.abort();
+    }
+    if let Some(task) = state.open_space.lock().await.take() {
+        task.abort();
+    }
+    if let Some(task) = state.spaces.lock().await.take() {
+        task.abort();
+    }
+    if let Some(handle) = state.rooms.lock().await.take() {
+        handle.stop().await;
+    }
+    // The handles above are ours to close, the command tasks are not - they get a
+    // moment before the store goes. Bounded, see `drain_commands`.
+    state
+        .drain_commands(std::time::Duration::from_secs(2))
+        .await;
+    let client = state.client.lock().await.take();
+    if let Some(client) = client {
+        // Before the session, or the homeserver keeps posting to an endpoint
+        // nothing can name. Bounded and best effort, like the sign-out.
+        let _ = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            crate::push::clear_own_pushers(&client),
+        )
+        .await;
+        // Best effort and bounded: the local session must go even where the server
+        // cannot be reached, and an unanswered logout used to hold up the whole wipe.
+        let _ = tokio::time::timeout(std::time::Duration::from_secs(10), client.logout()).await;
+        // Explicit: `reset_store` below must not run while a client still has
+        // the store directory open.
+        drop(client);
+    }
+    // And the registration itself, so the distributor stops pushing to a device
+    // that no longer has an account. The file goes with `reset_store` below.
+    if let Some(handle) = state.push.lock().await.as_ref() {
+        handle.disable();
+    }
+    session::forget(&state.paths.session_file);
+    // The lists that name people belong to the account that is leaving.
+    session::forget(&state.paths.private_file);
+    // Same for what is only in memory: remembered display names, the call
+    // policy with its allow list, and who rang when.
+    timeline::forget_senders();
+    linkpreview::forget();
+    poll::forget();
+    roomlist::forget_name_requests();
+    members::forget_asked();
+    call::forget_state();
+    // The latch outlived the store it was about: it stops the sync, and the
+    // store the next sign-in builds is not the one that was damaged.
+    storehealth::clear();
+    if let Err(error) = session::reset_store(&state.paths) {
+        state.sink.emit(event(
+            "session.warning",
+            json!({ "message": crate::text::scrub_ids(&format!("local data could not be cleared: {error}")) }),
+        ));
+    }
+
+    state.sink.emit(reply_ok(id, json!({ "state": "none" })));
+    state
+        .sink
+        .emit(event("session.changed", json!({ "state": "none" })));
+}

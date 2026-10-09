@@ -1,0 +1,106 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; Sailfish UI rules pass; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+
+// Which build is this? The package version is baked in by the spec file, the
+// core reports its own; both shown here so a bug report can name them.
+Page {
+    id: page
+
+    allowedOrientations: Orientation.All
+
+    SilicaFlickable {
+        anchors.fill: parent
+        contentHeight: column.height + Theme.paddingLarge
+
+        Column {
+            id: column
+
+            width: page.width
+            spacing: Theme.paddingMedium
+
+            PageHeader {
+                title: qsTr("About Shoal Messages")
+            }
+
+            Image {
+                anchors.horizontalCenter: parent.horizontalCenter
+                source: "/usr/share/icons/hicolor/128x128/apps/shipwright-shoal-messages.png"
+                width: Theme.iconSizeExtraLarge
+                height: Theme.iconSizeExtraLarge
+            }
+
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Shoal Messages"
+                font.pixelSize: Theme.fontSizeLarge
+                color: Theme.highlightColor
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WrapAnywhere
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Version %1").arg(appVersion)
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WrapAnywhere
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: matrix.coreVersion
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingLarge
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.highlightColor
+                text: qsTr("A native Matrix client for Sailfish OS: encrypted rooms, spaces, voice and video calls.")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("License: Apache 2.0")
+            }
+
+            // Attribution required by the fork policy (Apache-2.0 section 4): the
+            // upstream project is named here and nowhere else as a brand.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Based on %1 by %2, Apache-2.0").arg("xmatic").arg("JimKnopfIoT")
+            }
+
+            WrapButton {
+                anchors.horizontalCenter: parent.horizontalCenter
+                label: qsTr("Upstream project")
+                onClicked: Qt.openUrlExternally("https://github.com/JimKnopfIoT/harbour-xmatic")
+            }
+        }
+
+        VerticalScrollDecorator { }
+    }
+}

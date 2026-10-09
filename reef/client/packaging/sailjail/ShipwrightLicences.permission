@@ -1,0 +1,18 @@
+# -*- mode: sh -*-
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Sailjail permission for the Reef licence hand-off, installed by the Reef
+# client package as /etc/sailjail/permissions/ShipwrightLicences.permission.
+# A paid Shipwright app lists `ShipwrightLicences` in its desktop file's
+# [X-Sailjail] Permissions= to ask Reef for its licence token
+# (GetLicence on org.shipwright.Reef.Licences1, see
+# reef/licence/src/handoff.rs) instead of the user pasting it.
+#
+# Only talking to the service's own bus name is allowed. The service is
+# D-Bus activated (shipwright-reef-licenced) and exits when idle.
+
+# x-sailjail-description = Shipwright licences
+# x-sailjail-long-description = Read this app's licence from the Reef store
+
+dbus-user.talk org.shipwright.Reef.Licences

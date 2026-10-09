@@ -1,0 +1,1188 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: CC-BY-4.0
+#
+# Reef developer portal API (reef/devportal/src/api.rs). Keep in step with
+# the router; validated with openapi-spec-validator (see
+# reef/devportal/README.md, "Build and test").
+openapi: 3.1.0
+info:
+  title: Reef developer portal API
+  version: 0.1.0
+  summary: Accounts, app registration, RPM upload and review, the platform fee.
+  description: |
+    Developer calls authenticate with an API key (`Authorization: Bearer swdp_…`).
+    Review and finance calls use staff tokens with the `review` or `finance`
+    role. `POST /v1/sales-events` is called by the licence service only and is
+    authenticated with an HMAC signature.
+
+    Errors are JSON objects with an `error` message and, for some errors,
+    extra fields (`missing`, `open`, `categories`, `terms_version`).
+
+    Money is always an integer number of the currency's minor unit ("cents").
+
+    Two deployments serve this API (ADR-0017): the self-hosted portal and the
+    Cloudflare Worker. On the Worker the automated review runs behind a queue,
+    so uploads answer `202` with an upload to poll (`GET /v1/uploads/{id}`),
+    and large RPMs go up in parts (`POST /v1/apps/{app}/uploads`). The
+    self-hosted portal does not serve the `/v1/uploads` paths.
+  license:
+    name: CC-BY-4.0
+    identifier: CC-BY-4.0
+servers:
+  - url: https://dev.reefstore.app
+    description: Production developer portal
+tags:
+  - name: accounts
+  - name: apps
+  - name: builds
+  - name: review
+  - name: revenue
+  - name: internal
+security:
+  - apiKey: []
+paths:
+  /healthz:
+    get:
+      tags: [internal]
+      security: []
+      summary: Liveness
+      responses:
+        '200':
+          description: ok
+          content:
+            text/plain:
+              schema: { type: string, const: ok }
+  /v1/accounts:
+    post:
+      tags: [accounts]
+      security: []
+      summary: Sign up
+      description: |
+        Sends a single-use verification token (24 hours) by e-mail. The answer
+        is the same whether or not the address already has an account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, name, accept_terms]
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+                name: { type: string, minLength: 1, maxLength: 100 }
+                accept_terms:
+                  type: string
+                  description: The current developer terms version, e.g. `draft-2026-09`.
+      responses:
+        '202':
+          description: Verification mail sent (or nothing to do)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: verification_sent }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/accounts/verify:
+    post:
+      tags: [accounts]
+      security: []
+      summary: Verify the e-mail address and receive the first API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token: { type: string, pattern: '^swve_[0-9a-f]{64}$' }
+      responses:
+        '201':
+          description: Verified. The key is shown only in this response.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [developer_id, api_key]
+                properties:
+                  developer_id: { type: string }
+                  api_key: { $ref: '#/components/schemas/NewApiKey' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /v1/me:
+    get:
+      tags: [accounts]
+      summary: The authenticated developer
+      responses:
+        '200':
+          description: Developer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Developer' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/me/billing:
+    put:
+      tags: [accounts]
+      summary: Set billing details, which Reef invoices its platform fee to
+      description: |
+        Required before a paid price. The text is trimmed; the country and
+        VAT id are stored upper case, the VAT id without spaces. An empty
+        `vat_id` is none.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Billing' }
+      responses:
+        '200':
+          description: Saved, as stored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Billing' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/me/api-keys:
+    get:
+      tags: [accounts]
+      summary: List API keys (never the secrets)
+      responses:
+        '200':
+          description: Keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items: { $ref: '#/components/schemas/ApiKey' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [accounts]
+      summary: Create an API key
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                label: { type: string, minLength: 1, maxLength: 64 }
+      responses:
+        '201':
+          description: The key, shown only in this response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NewApiKey' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/me/api-keys/{id}:
+    delete:
+      tags: [accounts]
+      summary: Revoke an API key
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/me/signing-keys:
+    get:
+      tags: [accounts]
+      summary: List active RPM signing keys
+      responses:
+        '200':
+          description: Keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        rpm_key_id: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [accounts]
+      summary: Register an OpenPGP public key used to sign uploads
+      description: At most 5 active keys. RSA is recommended (device rpm version).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [armored]
+              properties:
+                armored:
+                  type: string
+                  maxLength: 16384
+                  description: One ASCII-armored public key block.
+      responses:
+        '201':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  rpm_key_id: { type: string, description: rpm's short key id }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/me/signing-keys/{id}:
+    delete:
+      tags: [accounts]
+      summary: Revoke a signing key
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/apps:
+    get:
+      tags: [apps]
+      summary: The developer's apps
+      responses:
+        '200':
+          description: Apps
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apps:
+                    type: array
+                    items: { $ref: '#/components/schemas/App' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [apps]
+      summary: Register an app id
+      description: |
+        The app id is the RPM name, binary name, desktop file name and licence
+        `app` claim. `harbour-` and Shipwright/platform prefixes are refused
+        (docs/developers/store-rules.md).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [id, title, category]
+              properties:
+                id: { $ref: '#/components/schemas/AppId' }
+                title: { type: string, minLength: 1, maxLength: 60 }
+                category: { $ref: '#/components/schemas/Category' }
+                homepage: { $ref: '#/components/schemas/HttpsUrl' }
+                source: { $ref: '#/components/schemas/HttpsUrl' }
+      responses:
+        '201':
+          description: Registered (free until priced)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/App' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/apps/{app}:
+    parameters:
+      - $ref: '#/components/parameters/AppPath'
+    get:
+      tags: [apps]
+      summary: One of the developer's apps
+      responses:
+        '200':
+          description: App
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/App' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/apps/{app}/price:
+    parameters:
+      - $ref: '#/components/parameters/AppPath'
+    put:
+      tags: [apps]
+      summary: Set the price
+      description: |
+        The developer is the seller: a paid price needs `purchase_url`, the
+        developer's own https checkout link at their merchant of record, and
+        billing details (`PUT /v1/me/billing`, else 409). Prices exclude VAT;
+        the merchant of record adds it at checkout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Price' }
+      responses:
+        '200':
+          description: Updated app
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/App' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/apps/{app}/builds:
+    parameters:
+      - $ref: '#/components/parameters/AppPath'
+    get:
+      tags: [builds]
+      summary: All builds of an app, oldest first
+      responses:
+        '200':
+          description: Builds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  builds:
+                    type: array
+                    items: { $ref: '#/components/schemas/Build' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [builds]
+      summary: Upload a developer-signed RPM for one release and architecture
+      description: |
+        The body is the raw RPM. The automated review runs before the response
+        (seconds to a minute). `201` means it passed and waits for a reviewer;
+        `422` with a `build` means it was rejected and only the report is kept.
+      parameters:
+        - name: release
+          in: query
+          required: true
+          description: Sailfish release the build is published for.
+          schema: { $ref: '#/components/schemas/Release' }
+        - name: arch
+          in: query
+          required: true
+          schema: { type: string, enum: [aarch64, armv7hl] }
+        - name: tested_on
+          in: query
+          required: false
+          description: Comma-separated releases the developer tested this build on (default the release). At most 20.
+          schema: { type: string, examples: ['5.2.0.17,5.2.0.18'] }
+      requestBody:
+        required: true
+        content:
+          application/x-rpm:
+            schema: { type: string, contentMediaType: application/x-rpm }
+          application/octet-stream:
+            schema: { type: string, contentMediaType: application/octet-stream }
+      responses:
+        '201':
+          description: Passed the automated review; pending manual review
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [build]
+                properties:
+                  build: { $ref: '#/components/schemas/Build' }
+        '202':
+          description: |
+            Cloudflare Worker deployment: received and queued for the automated
+            review. Poll `GET /v1/uploads/{id}`. Bodies above the zone's request
+            limit (100 MB on Free and Pro plans) need the multipart upload.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [upload]
+                properties:
+                  upload: { $ref: '#/components/schemas/Upload' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422':
+          description: Rejected by the automated review, or bad query parameters (then without `build`)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error: { type: string }
+                  build: { $ref: '#/components/schemas/Build' }
+  /v1/apps/{app}/uploads:
+    parameters:
+      - $ref: '#/components/parameters/AppPath'
+    post:
+      tags: [builds]
+      summary: Start a multipart upload (Cloudflare Worker deployment)
+      description: |
+        Reserves an upload slot (counted with builds awaiting review) and starts
+        an upload in parts. Upload each part with `PUT` to its URL: presigned
+        URLs go straight to object storage and take no `Authorization` header;
+        URLs on this API (`/v1/uploads/{id}/parts/{n}`) take the API key. Keep
+        each answer's `ETag`, then complete the upload. Every part but the last
+        is exactly `part_size` bytes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [release, arch, size]
+              properties:
+                release: { $ref: '#/components/schemas/Release' }
+                arch: { type: string, enum: [aarch64, armv7hl] }
+                tested_on: { type: string, description: 'Comma-separated releases (default the release). At most 20.' }
+                size: { type: integer, minimum: 1, description: 'Bytes of the RPM; at most the upload limit (100 MiB).' }
+      responses:
+        '201':
+          description: Upload started
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [upload]
+                properties:
+                  upload:
+                    type: object
+                    required: [build_id, state, part_size, parts, presigned, complete_url, expires_at]
+                    properties:
+                      build_id: { type: string }
+                      state: { type: string, const: uploading }
+                      part_size: { type: integer }
+                      parts:
+                        type: array
+                        items:
+                          type: object
+                          required: [part_number, method, url]
+                          properties:
+                            part_number: { type: integer }
+                            method: { type: string, const: PUT }
+                            url: { type: string, format: uri }
+                      presigned: { type: boolean }
+                      complete_url: { type: string, format: uri }
+                      expires_at: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/uploads/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [builds]
+      summary: An upload's state, and its build once reviewed (Cloudflare Worker deployment)
+      responses:
+        '200':
+          description: The upload; `build` once `state` is `done`
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [upload]
+                properties:
+                  upload: { $ref: '#/components/schemas/Upload' }
+                  build:
+                    oneOf:
+                      - { $ref: '#/components/schemas/Build' }
+                      - { type: 'null' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/uploads/{id}/parts/{n}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - { name: n, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 10000 } }
+    put:
+      tags: [builds]
+      summary: Upload one part through the API (when part URLs are not presigned)
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, contentMediaType: application/octet-stream }
+      responses:
+        '200':
+          description: Stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [part_number, etag]
+                properties:
+                  part_number: { type: integer }
+                  etag: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+  /v1/uploads/{id}/complete:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [builds]
+      summary: Complete a multipart upload and queue its review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [parts]
+              properties:
+                parts:
+                  type: array
+                  minItems: 1
+                  maxItems: 10000
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [part_number, etag]
+                    properties:
+                      part_number: { type: integer }
+                      etag: { type: string }
+      responses:
+        '202':
+          description: Queued for the automated review; poll the upload
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [upload]
+                properties:
+                  upload: { $ref: '#/components/schemas/Upload' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+  /v1/builds/{id}:
+    get:
+      tags: [builds]
+      summary: One build with its review report
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Build
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  build: { $ref: '#/components/schemas/Build' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/me/ledger:
+    get:
+      tags: [revenue]
+      summary: Ledger entries, optionally for one month
+      parameters:
+        - $ref: '#/components/parameters/PeriodQuery'
+      responses:
+        '200':
+          description: Entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items: { $ref: '#/components/schemas/LedgerEntry' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/me/statements:
+    get:
+      tags: [revenue]
+      summary: Monthly statements of the platform fee owed, optionally for one month
+      parameters:
+        - $ref: '#/components/parameters/PeriodQuery'
+      responses:
+        '200':
+          description: Statements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statements:
+                    type: array
+                    items: { $ref: '#/components/schemas/Statement' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/review/queue:
+    get:
+      tags: [review]
+      security: [{ staffToken: [] }]
+      summary: Builds waiting for review (role review)
+      responses:
+        '200':
+          description: Builds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  builds:
+                    type: array
+                    items: { $ref: '#/components/schemas/Build' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/review/builds/{id}:
+    get:
+      tags: [review]
+      security: [{ staffToken: [] }]
+      summary: A build and its app (role review)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Build and app
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  build: { $ref: '#/components/schemas/Build' }
+                  app: { $ref: '#/components/schemas/App' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/review/builds/{id}/approve:
+    post:
+      tags: [review]
+      security: [{ staffToken: [] }]
+      summary: Approve and publish into the staging tree (role review)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                acknowledge:
+                  type: array
+                  description: Every id in the report's `manual` list.
+                  items: { type: string }
+                tested_on:
+                  type: array
+                  description: Replaces the developer's list (for example, narrowed to what the reviewer tested).
+                  items: { $ref: '#/components/schemas/Release' }
+                note: { type: string, maxLength: 2000 }
+      responses:
+        '200':
+          description: Published
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  build: { $ref: '#/components/schemas/Build' }
+                  staged: { type: string, description: Path inside the staging tree }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/review/builds/{id}/reject:
+    post:
+      tags: [review]
+      security: [{ staffToken: [] }]
+      summary: Reject a pending build (role review)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody: { $ref: '#/components/requestBodies/Reason' }
+      responses:
+        '200': { $ref: '#/components/responses/BuildResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/review/builds/{id}/withdraw:
+    post:
+      tags: [review]
+      security: [{ staffToken: [] }]
+      summary: Withdraw a published build from staging (role review)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody: { $ref: '#/components/requestBodies/Reason' }
+      responses:
+        '200': { $ref: '#/components/responses/BuildResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/sales-events:
+    post:
+      tags: [internal]
+      security: [{ salesSignature: [] }]
+      summary: Sales event from the licence service
+      description: |
+        Header `Shipwright-Event-Signature: t=<unix>,v1=<hex>`, HMAC-SHA256 over
+        `<t>.<raw body>` with a shared secret; ±300 s tolerance; several `v1`
+        values allowed while rotating. Idempotent by `event_id`. The sender
+        retries on 409, 5xx and network errors with back-off; 422 needs a human.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SalesEvent' }
+      responses:
+        '200':
+          description: Duplicate of an event already recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  duplicate: { type: boolean, const: true }
+                  entry: { $ref: '#/components/schemas/LedgerEntry' }
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ledger_id: { type: integer }
+                  entry: { $ref: '#/components/schemas/LedgerEntry' }
+        '202':
+          description: Not a developer-programme app (first-party); not recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ignored: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+  /v1/admin/periods/{period}/close:
+    post:
+      tags: [revenue]
+      security: [{ staffToken: [] }]
+      summary: Close a finished month and generate its statements (role finance)
+      parameters:
+        - $ref: '#/components/parameters/PeriodPath'
+      responses:
+        '201':
+          description: Closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period: { type: string }
+                  statements:
+                    type: array
+                    items: { $ref: '#/components/schemas/Statement' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /v1/admin/statements/{period}:
+    get:
+      tags: [revenue]
+      security: [{ staffToken: [] }]
+      summary: All statements of a month (role finance)
+      parameters:
+        - $ref: '#/components/parameters/PeriodPath'
+      responses:
+        '200':
+          description: Statements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statements:
+                    type: array
+                    items: { $ref: '#/components/schemas/Statement' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/admin/invoices/{period}.csv:
+    get:
+      tags: [revenue]
+      security: [{ staffToken: [] }]
+      summary: Invoice CSV of a closed month (role finance)
+      description: |
+        RFC 4180, CRLF line ends, one row per developer and currency with
+        `invoiced_cents > 0` (the platform fee Reef invoices), amounts in
+        integer minor units; billing columns are empty for a developer
+        without billing details. Text cells that would start a spreadsheet
+        formula are prefixed with `'`.
+      parameters:
+        - $ref: '#/components/parameters/PeriodPath'
+      responses:
+        '200':
+          description: CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+                examples:
+                  - "period,developer_id,developer_name,email,billing_name,billing_email,vat_id,country,currency,opening_owed_cents,net_cents,platform_fee_cents,closing_owed_cents,invoiced_cents\r\n"
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: Developer API key `swdp_<64 hex>`.
+    staffToken:
+      type: http
+      scheme: bearer
+      description: Reviewer or finance token from the reviewers file.
+    salesSignature:
+      type: apiKey
+      in: header
+      name: Shipwright-Event-Signature
+  parameters:
+    AppPath:
+      name: app
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/AppId' }
+    PeriodPath:
+      name: period
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Period' }
+    PeriodQuery:
+      name: period
+      in: query
+      required: false
+      schema: { $ref: '#/components/schemas/Period' }
+  requestBodies:
+    Reason:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [reason]
+            properties:
+              reason: { type: string, minLength: 1, maxLength: 2000 }
+  responses:
+    BuildResult:
+      description: Updated build
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              build: { $ref: '#/components/schemas/Build' }
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: The token lacks the needed role
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not found (or not yours)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicts with the current state (or, for sales events, retry later)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: Well-formed but refused
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TooLarge:
+      description: The upload exceeds the size limit
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+      additionalProperties: true
+    AppId:
+      type: string
+      minLength: 3
+      maxLength: 64
+      pattern: '^[a-z](?:[a-z0-9]|-(?=[a-z0-9]))*$'
+      description: Reserved prefixes and names are refused; see store rules.
+    Release:
+      type: string
+      pattern: '^[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}$'
+      examples: ['5.2.0.17']
+    Period:
+      type: string
+      pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+      examples: ['2027-07']
+    HttpsUrl:
+      type: string
+      pattern: '^https://\S+$'
+      maxLength: 512
+    Category:
+      type: string
+      enum: [Audio, Communication, Development, Education, Entertainment, Finance, Games, Graphics, Health, Maps, News, Office, Photography, Productivity, Security, Social, Sports, System, Travel, Utilities, Video, Weather, Other]
+    Currency:
+      type: string
+      enum: [EUR, USD, GBP, CHF, SEK, NOK, DKK, PLN, CZK]
+    Upload:
+      type: object
+      required: [build_id, app_id, release, arch, state, created_at, updated_at]
+      properties:
+        build_id: { type: string }
+        app_id: { $ref: '#/components/schemas/AppId' }
+        release: { $ref: '#/components/schemas/Release' }
+        arch: { type: string }
+        state: { type: string, enum: [uploading, reviewing, done, failed] }
+        size: { type: [integer, 'null'] }
+        sha256: { type: [string, 'null'] }
+        error: { type: [string, 'null'] }
+        created_at: { type: integer }
+        updated_at: { type: integer }
+    Developer:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+        verified: { type: boolean }
+        billing:
+          oneOf:
+            - { $ref: '#/components/schemas/Billing' }
+            - { type: 'null' }
+        created_at: { type: integer, description: Unix seconds }
+    Billing:
+      type: object
+      additionalProperties: false
+      required: [name, email, country]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        email: { type: string }
+        vat_id:
+          description: VAT number with its country prefix (EU reverse charge), such as IE1234567T.
+          type: [string, 'null']
+        country: { type: string, pattern: '^[A-Za-z]{2}$', description: ISO 3166-1 alpha-2 }
+    ApiKey:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        created_at: { type: integer }
+        last_used_at: { type: [integer, 'null'] }
+        revoked: { type: boolean }
+    NewApiKey:
+      type: object
+      required: [id, key]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        key: { type: string, pattern: '^swdp_[0-9a-f]{64}$' }
+    Price:
+      type: object
+      additionalProperties: false
+      required: [model]
+      properties:
+        model: { type: string, enum: [free, one_off, subscription] }
+        amount_cents:
+          type: integer
+          description: 0 for free; 99 to 99999 otherwise. Excludes VAT.
+        currency:
+          oneOf:
+            - { $ref: '#/components/schemas/Currency' }
+            - { type: 'null' }
+        interval:
+          description: Subscriptions only.
+          oneOf:
+            - { type: string, enum: [month, year] }
+            - { type: 'null' }
+        purchase_url:
+          description: The developer's own checkout link at their merchant of record; required for a paid price, absent for a free one.
+          oneOf:
+            - { type: string, pattern: '^https://', maxLength: 512 }
+            - { type: 'null' }
+    App:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/AppId' }
+        developer_id: { type: string }
+        title: { type: string }
+        category: { $ref: '#/components/schemas/Category' }
+        homepage: { type: [string, 'null'] }
+        source: { type: [string, 'null'] }
+        price: { $ref: '#/components/schemas/Price' }
+        created_at: { type: integer }
+    Check:
+      type: object
+      required: [id, status, message]
+      properties:
+        id:
+          type: string
+          examples: [size, rpm.header, signature, rpm.metadata, rpm.conflicts, scriptlets, payload, sailjail, sailjail.sandboxing_disabled, sailjail.sensitive_permissions, keel_compat, malware]
+        status: { type: string, enum: [pass, warn, manual, fail, skipped] }
+        message: { type: string }
+        details:
+          type: array
+          items: { type: string }
+    Report:
+      type: object
+      properties:
+        checks:
+          type: array
+          items: { $ref: '#/components/schemas/Check' }
+        manual:
+          type: array
+          description: Check ids a reviewer must acknowledge.
+          items: { type: string }
+        rpm:
+          type: [object, 'null']
+          properties:
+            name: { type: string }
+            version: { type: string }
+            release: { type: string }
+            arch: { type: string }
+            summary: { type: string }
+            description: { type: string }
+            license: { type: string }
+            url: { type: string }
+            installed_size: { type: integer }
+            requires:
+              type: array
+              items: { type: string }
+        permissions:
+          type: array
+          items: { type: string }
+        sandboxed: { type: boolean }
+        compat:
+          type: [object, 'null']
+          properties:
+            tool_version: { type: string }
+            qml_files: { type: integer }
+            score: { type: [integer, 'null'] }
+            tier: { type: string, enum: [B, A, none, not-applicable] }
+            tier_status: { type: string, enum: ['', reached, planned] }
+            tiers:
+              type: object
+              additionalProperties: { type: string }
+            blockers:
+              type: array
+              items: { type: string }
+    Build:
+      type: object
+      properties:
+        id: { type: string }
+        app_id: { type: string }
+        release: { $ref: '#/components/schemas/Release' }
+        arch: { type: string }
+        version: { type: string }
+        rpm_release: { type: string }
+        rpm_arch: { type: string }
+        status: { type: string, enum: [rejected, pending_review, published, superseded, withdrawn] }
+        sha256: { type: string }
+        size: { type: integer }
+        report: { $ref: '#/components/schemas/Report' }
+        tested_on:
+          type: array
+          items: { $ref: '#/components/schemas/Release' }
+        uploaded_at: { type: integer }
+        reviewed_by: { type: [string, 'null'] }
+        reviewed_at: { type: [integer, 'null'] }
+        review_note: { type: [string, 'null'] }
+        published_at: { type: [integer, 'null'] }
+    SalesEvent:
+      type: object
+      additionalProperties: false
+      required: [schema, event_id, type, occurred_at, mor, txn_id, app_id, plan, currency, net_amount, tax_amount]
+      properties:
+        schema: { type: integer, const: 1 }
+        event_id:
+          type: string
+          description: '`<mor>:<txn_id>:sale` for a sale, `<mor>:<adjustment_id>:<type>` otherwise.'
+        type: { type: string, enum: [sale, refund, chargeback, chargeback_reversal] }
+        occurred_at: { type: integer, description: Unix seconds, when the MoR completed it }
+        mor: { type: string, pattern: '^[A-Za-z0-9._-]{1,128}$' }
+        txn_id: { type: string, description: The payment; for adjustments, the payment adjusted }
+        adjustment_id: { type: string, description: Required unless type is sale }
+        app_id: { type: string }
+        licence_id: { type: string }
+        plan: { type: string, enum: [one_off, subscription] }
+        subscription_ref: { type: string, description: Required for subscription sales }
+        period_end: { type: integer, description: Required for subscription sales }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        net_amount: { type: integer, minimum: 0, maximum: 10000000000, description: After discounts, excluding VAT; a magnitude }
+        tax_amount: { type: integer, minimum: 0, maximum: 10000000000 }
+        mor_fee: { type: integer, minimum: 0, maximum: 10000000000 }
+    LedgerEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        event_id: { type: string }
+        developer_id: { type: string }
+        app_id: { type: string }
+        type: { type: string, enum: [sale, refund, chargeback, chargeback_reversal] }
+        txn_id: { type: string }
+        adjustment_id: { type: [string, 'null'] }
+        occurred_at: { type: integer }
+        period: { $ref: '#/components/schemas/Period' }
+        currency: { type: string }
+        net_cents: { type: integer, description: Signed }
+        fee_bps: { type: integer }
+        fee_cents: { type: integer, description: Signed }
+        developer_cents: { type: integer, description: 'Signed; net minus fee, what the developer kept (information only)' }
+        tax_cents: { type: integer, description: Signed, informational }
+    Statement:
+      type: object
+      description: |
+        The platform fee the developer owes Reef for a month, in one currency.
+        Positive balances are owed to Reef; a negative one is a credit.
+      properties:
+        developer_id: { type: string }
+        period: { $ref: '#/components/schemas/Period' }
+        currency: { type: string }
+        opening_owed_cents: { type: integer, description: Carried from the previous statement }
+        sales_net_cents: { type: integer }
+        reversals_net_cents: { type: integer }
+        net_cents: { type: integer }
+        platform_fee_cents: { type: integer, description: 'This month: sales add, refunds and chargebacks subtract' }
+        developer_share_cents: { type: integer, description: Net minus fee (information only; Reef pays nothing out) }
+        tax_cents: { type: integer }
+        mor_fee_cents: { type: integer }
+        closing_owed_cents: { type: integer, description: opening_owed_cents + platform_fee_cents }
+        invoiced_cents: { type: integer, description: What Reef invoices for the month }
+        carried_cents: { type: integer, description: Carried to the next month }
+        carry_reason: { type: string, enum: ['', below_minimum, credit] }
+        entries: { type: integer }

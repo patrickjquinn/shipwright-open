@@ -1,0 +1,481 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 20:47:19 +0000
+Subject: [PATCH] Prefer a powered Bluetooth adapter and allow pinning one
+
+Upstream 7f16e3c ("Add dynamic Bluetooth adapter detection") already
+enumerates adapters with GetManagedObjects, starts without an adapter and
+picks one up when BlueZ adds it. It selects the lowest object path,
+though, whether or not that adapter is powered, and offers no way to
+choose. On a machine where hci0 exists but is down and hci1 is the
+working controller, the daemon binds to the dead one.
+
+- Track each adapter's Powered state as reported by GetManagedObjects
+  and InterfacesAdded, and prefer a powered adapter at startup.
+- Follow every adapter's Powered state afterwards, through one match
+  rule for org.bluez.Adapter1 PropertiesChanged under /org/bluez.
+- When the selected adapter is unpowered and a powered adapter appears,
+  or another known adapter is powered on, switch to it.
+- Read the selected adapter's properties with one GetAll.
+- On removal of the selected adapter, prefer a powered replacement.
+- MAGICPODS_ADAPTER=hci1 (or a full /org/bluez/... path) pins the
+  adapter. Until the pinned adapter exists the daemon runs without one,
+  as it already does when there is no adapter at all.
+- Log when no usable adapter is available yet.
+
+The environment override and powered-first policy come from the
+adapter-discovery patch in SailfishOS-MagicPods by Alzareus
+(https://github.com/Alzareus/SailfishOS-MagicPods, GPL-3.0), written for
+the Jolla Phone (2026), which has no hci0 at all. That patch predates
+upstream's DBusBtAdapter; this is a re-implementation of its policy on
+top of the new class.
+
+Based-on-patch-by: Alzareus <https://github.com/Alzareus>
+---
+ src/dbus/DBusBtAdapter.cpp | 180 ++++++++++++++++++++++++++++++++-----
+ src/dbus/DBusBtAdapter.h   |  39 +++++++-
+ src/dbus/DBusService.cpp   |  50 ++++++++++-
+ src/dbus/DBusService.h     |   1 +
+ 4 files changed, 240 insertions(+), 30 deletions(-)
+
+diff --git a/src/dbus/DBusBtAdapter.cpp b/src/dbus/DBusBtAdapter.cpp
+index 722795f..11b7ec3 100644
+--- a/src/dbus/DBusBtAdapter.cpp
++++ b/src/dbus/DBusBtAdapter.cpp
+@@ -5,6 +5,7 @@
+ #include "DBusBtAdapter.h"
+ #include "Logger.h"
+ 
++#include <cstdlib>
+ #include <utility>
+ #include <vector>
+ 
+@@ -19,31 +20,142 @@ namespace MagicPodsCore {
+         }
+     }
+ 
++    DBusBtAdapter::DBusBtAdapter() {
++        // MAGICPODS_ADAPTER=hci1 or MAGICPODS_ADAPTER=/org/bluez/hci1 pins the
++        // adapter, for machines where the automatic choice is wrong.
++        if (const char* forced = std::getenv("MAGICPODS_ADAPTER"); forced != nullptr && *forced != '\0') {
++            std::string value{forced};
++            if (value.front() != '/') {
++                value = "/org/bluez/" + value;
++            }
++            _forcedAdapterPath = sdbus::ObjectPath{value};
++            Logger::Info("Bluetooth adapter pinned by MAGICPODS_ADAPTER: %s", _forcedAdapterPath.c_str());
++        }
++    }
++
+     DBusBtAdapter::~DBusBtAdapter() {
+         // Stop the signal callback before the fields used by it are destroyed.
+         _currentAdapterProxy.reset();
+     }
+ 
+-    void DBusBtAdapter::AddAdapter(const sdbus::ObjectPath& objectPath) {
+-        bool shouldSelect;
++    bool DBusBtAdapter::IsSelectable(const sdbus::ObjectPath& objectPath) const {
++        return _forcedAdapterPath.empty() || objectPath == _forcedAdapterPath;
++    }
++
++    sdbus::ObjectPath DBusBtAdapter::PickAdapterLocked() const {
++        sdbus::ObjectPath fallback{};
++        for (const auto& [path, powered] : _availableAdapters) {
++            if (!IsSelectable(path)) {
++                continue;
++            }
++            if (powered) {
++                return path;
++            }
++            if (fallback.empty()) {
++                fallback = path;
++            }
++        }
++        return fallback;
++    }
++
++    bool DBusBtAdapter::HasAdapter() const {
++        std::lock_guard lock{_mutex};
++        return !_currentAdapterPath.empty();
++    }
++
++    void DBusBtAdapter::AddAdapter(const sdbus::ObjectPath& objectPath, bool powered) {
++        bool shouldSelect = false;
++        bool shouldReplace = false;
++        sdbus::ObjectPath currentPath{};
+         {
+             std::lock_guard lock{_mutex};
+-            _availableAdapterPaths.emplace(objectPath);
+-            shouldSelect = _currentAdapterPath.empty();
++            _availableAdapters.insert_or_assign(objectPath, powered);
++
++            if (!IsSelectable(objectPath)) {
++                Logger::Info("Ignoring Bluetooth adapter %s: MAGICPODS_ADAPTER selects %s",
++                             objectPath.c_str(), _forcedAdapterPath.c_str());
++                return;
++            }
++
++            if (_currentAdapterPath.empty()) {
++                shouldSelect = true;
++            }
++            else {
++                shouldReplace = ShouldReplaceSelectionLocked(objectPath, powered, currentPath);
++            }
+         }
+ 
+-        if (shouldSelect) {
++        if (shouldReplace) {
++            SwitchAdapter(currentPath, objectPath);
++        }
++        else if (shouldSelect) {
+             SelectAdapter(objectPath);
+         }
+     }
+ 
++    bool DBusBtAdapter::ShouldReplaceSelectionLocked(const sdbus::ObjectPath& candidate, bool powered,
++                                                     sdbus::ObjectPath& currentPath) const {
++        // Prefer a powered adapter over an unpowered selection, e.g. when hci0
++        // exists but is down and hci1 is the working one.
++        if (!powered || _currentAdapterPath.empty() || _currentAdapterPath == candidate || !IsSelectable(candidate)) {
++            return false;
++        }
++        const auto current = _availableAdapters.find(_currentAdapterPath);
++        if (current == _availableAdapters.end() || current->second) {
++            return false;
++        }
++        currentPath = _currentAdapterPath;
++        return true;
++    }
++
++    void DBusBtAdapter::SwitchAdapter(const sdbus::ObjectPath& from, const sdbus::ObjectPath& to) {
++        Logger::Info("Switching from unpowered Bluetooth adapter %s to powered adapter %s", from.c_str(), to.c_str());
++        DeselectCurrentAdapter();
++        SelectAdapter(to);
++    }
++
++    void DBusBtAdapter::UpdateAdapterPowered(const sdbus::ObjectPath& objectPath, bool powered) {
++        sdbus::ObjectPath currentPath{};
++        {
++            std::lock_guard lock{_mutex};
++            const auto known = _availableAdapters.find(objectPath);
++            // The selected adapter is followed through its own proxy.
++            if (known == _availableAdapters.end() || objectPath == _currentAdapterPath) {
++                return;
++            }
++            known->second = powered;
++            if (!ShouldReplaceSelectionLocked(objectPath, powered, currentPath)) {
++                return;
++            }
++        }
++        SwitchAdapter(currentPath, objectPath);
++    }
++
++    void DBusBtAdapter::DeselectCurrentAdapter() {
++        std::shared_ptr<sdbus::IProxy> oldProxy;
++        {
++            std::lock_guard lock{_mutex};
++            if (_currentAdapterPath.empty()) {
++                return;
++            }
++            _currentAdapterPath.clear();
++            oldProxy = std::move(_currentAdapterProxy);
++        }
++
++        // Wait until callbacks from the old adapter have finished before
++        // publishing its final powered-off state.
++        oldProxy.reset();
++        std::lock_guard publishLock{_publishMutex};
++        _isPowered.SetValue(false);
++    }
++
+     void DBusBtAdapter::RemoveAdapter(const sdbus::ObjectPath& objectPath) {
+         std::shared_ptr<sdbus::IProxy> removedProxy;
+         sdbus::ObjectPath replacementPath;
+ 
+         {
+             std::lock_guard lock{_mutex};
+-            _availableAdapterPaths.erase(objectPath);
++            _availableAdapters.erase(objectPath);
+ 
+             if (_currentAdapterPath != objectPath) {
+                 return;
+@@ -51,10 +163,7 @@ namespace MagicPodsCore {
+ 
+             _currentAdapterPath.clear();
+             removedProxy = std::move(_currentAdapterProxy);
+-
+-            if (!_availableAdapterPaths.empty()) {
+-                replacementPath = *_availableAdapterPaths.begin();
+-            }
++            replacementPath = PickAdapterLocked();
+         }
+ 
+         Logger::Info("Bluetooth adapter removed: %s", objectPath.c_str());
+@@ -62,11 +171,17 @@ namespace MagicPodsCore {
+         // Wait until callbacks from the removed adapter have finished before
+         // publishing its final powered-off state.
+         removedProxy.reset();
+-        _isPowered.SetValue(false);
++        {
++            std::lock_guard publishLock{_publishMutex};
++            _isPowered.SetValue(false);
++        }
+ 
+         if (!replacementPath.empty()) {
+             SelectAdapter(replacementPath);
+         }
++        else {
++            Logger::Info("No Bluetooth adapter available; waiting for BlueZ to add one");
++        }
+     }
+ 
+     void DBusBtAdapter::SelectAdapter(const sdbus::ObjectPath& objectPath) {
+@@ -89,7 +204,7 @@ namespace MagicPodsCore {
+ 
+         {
+             std::lock_guard lock{_mutex};
+-            if (!_availableAdapterPaths.contains(objectPath) || !_currentAdapterPath.empty()) {
++            if (!_availableAdapters.contains(objectPath) || !_currentAdapterPath.empty()) {
+                 return;
+             }
+ 
+@@ -97,20 +212,35 @@ namespace MagicPodsCore {
+             _currentAdapterProxy = adapterProxy;
+         }
+ 
+-        bool powered = false;
++        // One GetAll: the adapter's properties as one consistent snapshot.
++        std::map<std::string, sdbus::Variant> properties{};
+         try {
+-            powered = adapterProxy->getProperty("Powered").onInterface(BLUEZ_ADAPTER_INTERFACE).get<bool>();
++            properties = adapterProxy->getAllProperties().onInterface(BLUEZ_ADAPTER_INTERFACE);
+         }
+         catch (const sdbus::Error& error) {
+-            Logger::Error("Failed to read Powered from Bluetooth adapter %s: %s", objectPath.c_str(), error.what());
++            Logger::Error("Failed to read the properties of Bluetooth adapter %s: %s", objectPath.c_str(), error.what());
++        }
++        bool powered = false;
++        if (const auto found = properties.find("Powered"); found != properties.end()) {
++            try {
++                powered = found->second.get<bool>();
++            }
++            catch (const sdbus::Error& error) {
++                Logger::Error("Bluetooth adapter %s reports Powered with the wrong type: %s", objectPath.c_str(), error.what());
++            }
+         }
+ 
+-        // The adapter may have disappeared while the D-Bus call was running.
+-        if (!IsCurrentAdapter(objectPath)) {
+-            return;
++        std::lock_guard publishLock{_publishMutex};
++        {
++            // The adapter may have disappeared while the D-Bus call was running.
++            std::lock_guard lock{_mutex};
++            if (_currentAdapterPath != objectPath) {
++                return;
++            }
++            _availableAdapters.insert_or_assign(objectPath, powered);
+         }
+ 
+-        Logger::Info("Using Bluetooth adapter: %s", objectPath.c_str());
++        Logger::Info("Using Bluetooth adapter: %s (%s)", objectPath.c_str(), powered ? "powered" : "not powered");
+         _isPowered.SetValue(powered);
+     }
+ 
+@@ -123,11 +253,17 @@ namespace MagicPodsCore {
+                 return;
+             }
+ 
+-            if (!IsCurrentAdapter(objectPath)) {
+-                return;
++            const bool powered = values.at("Powered").get<bool>();
++            std::lock_guard publishLock{_publishMutex};
++            {
++                std::lock_guard lock{_mutex};
++                if (_currentAdapterPath != objectPath) {
++                    return;
++                }
++                _availableAdapters.insert_or_assign(objectPath, powered);
+             }
+ 
+-            _isPowered.SetValue(values.at("Powered").get<bool>());
++            _isPowered.SetValue(powered);
+         }
+         catch (const std::exception& error) {
+             Logger::Error("Failed to handle adapter PropertiesChanged for %s: %s", objectPath.c_str(), error.what());
+diff --git a/src/dbus/DBusBtAdapter.h b/src/dbus/DBusBtAdapter.h
+index 789adf1..eb61dfb 100644
+--- a/src/dbus/DBusBtAdapter.h
++++ b/src/dbus/DBusBtAdapter.h
+@@ -17,21 +17,37 @@
+ namespace MagicPodsCore {
+ 
+     // Keeps track of BlueZ adapters and sends requests to the selected adapter.
+-    // The first available adapter stays selected until BlueZ removes it.
++    //
++    // Selection policy:
++    // - If MAGICPODS_ADAPTER is set (e.g. "hci1" or "/org/bluez/hci1"), only
++    //   that adapter is ever selected; until it appears, there is no adapter.
++    // - Otherwise a powered adapter is preferred over an unpowered one, and
++    //   the lowest object path wins among equals.
++    // - A selected adapter stays selected until BlueZ removes it, except that
++    //   an unpowered selection is replaced when a powered adapter appears or
++    //   another known adapter is powered on.
+     class DBusBtAdapter {
+     private:
+         // D-Bus signal callbacks and application requests run on different threads.
+         mutable std::mutex _mutex{};
++        // Serialises publishing the selected adapter's state, so that values
++        // read from an adapter cannot be published after it was deselected or
++        // removed. Never held while a proxy is destroyed.
++        std::mutex _publishMutex{};
+         ObservableVariable<bool> _isPowered{false};
+-        std::set<sdbus::ObjectPath> _availableAdapterPaths{};
++        // Available adapters and their last known Powered state, kept current
++        // through PropertiesChanged (UpdateAdapterPowered for the others).
++        std::map<sdbus::ObjectPath, bool> _availableAdapters{};
+         sdbus::ObjectPath _currentAdapterPath{};
++        // Adapter requested through MAGICPODS_ADAPTER, empty if not set.
++        sdbus::ObjectPath _forcedAdapterPath{};
+ 
+         // Shared ownership lets an in-progress request finish while BlueZ
+         // replaces the adapter.
+         std::shared_ptr<sdbus::IProxy> _currentAdapterProxy{};
+ 
+     public:
+-        DBusBtAdapter() = default;
++        DBusBtAdapter();
+         ~DBusBtAdapter();
+ 
+         DBusBtAdapter(const DBusBtAdapter&) = delete;
+@@ -39,8 +55,15 @@ namespace MagicPodsCore {
+         DBusBtAdapter& operator=(const DBusBtAdapter&) = delete;
+         DBusBtAdapter& operator=(DBusBtAdapter&&) noexcept = delete;
+ 
+-        void AddAdapter(const sdbus::ObjectPath& objectPath);
++        // powered: the adapter's Powered property as reported with the
++        // object (GetManagedObjects or InterfacesAdded), false if unknown.
++        void AddAdapter(const sdbus::ObjectPath& objectPath, bool powered);
+         void RemoveAdapter(const sdbus::ObjectPath& objectPath);
++        // A known adapter's Powered property changed (PropertiesChanged on
++        // any adapter, see DBusService).
++        void UpdateAdapterPowered(const sdbus::ObjectPath& objectPath, bool powered);
++
++        bool HasAdapter() const;
+ 
+         ObservableVariable<bool>& IsPowered() {
+             return _isPowered;
+@@ -62,6 +85,14 @@ namespace MagicPodsCore {
+         std::shared_ptr<sdbus::IProxy> GetCurrentAdapterProxy() const;
+         bool IsCurrentAdapter(const sdbus::ObjectPath& objectPath) const;
+         void SelectAdapter(const sdbus::ObjectPath& objectPath);
++        void DeselectCurrentAdapter();
++        bool IsSelectable(const sdbus::ObjectPath& objectPath) const;
++        sdbus::ObjectPath PickAdapterLocked() const;
++        // Whether a powered candidate should replace an unpowered selection;
++        // if so, currentPath receives the selection. Expects _mutex held.
++        bool ShouldReplaceSelectionLocked(const sdbus::ObjectPath& candidate, bool powered,
++                                          sdbus::ObjectPath& currentPath) const;
++        void SwitchAdapter(const sdbus::ObjectPath& from, const sdbus::ObjectPath& to);
+         void HandlePropertiesChanged(const sdbus::ObjectPath& objectPath,
+                                      const std::string& interfaceName,
+                                      const std::map<std::string, sdbus::Variant>& values);
+diff --git a/src/dbus/DBusService.cpp b/src/dbus/DBusService.cpp
+index 873e50e..00043e1 100644
+--- a/src/dbus/DBusService.cpp
++++ b/src/dbus/DBusService.cpp
+@@ -15,6 +15,17 @@ namespace MagicPodsCore {
+         constexpr auto BLUEZ_ADAPTER_INTERFACE = "org.bluez.Adapter1";
+         constexpr auto BLUEZ_DEVICE_INTERFACE = "org.bluez.Device1";
+         constexpr auto DBUS_OBJECT_MANAGER_INTERFACE = "org.freedesktop.DBus.ObjectManager";
++
++        bool IsAdapterPowered(const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces) {
++            try {
++                const auto& properties = interfaces.at(BLUEZ_ADAPTER_INTERFACE);
++                const auto powered = properties.find("Powered");
++                return powered != properties.end() && powered->second.get<bool>();
++            }
++            catch (const std::exception&) {
++                return false;
++            }
++        }
+     }
+ 
+     DBusService::DBusService() : _rootProxy{sdbus::createProxy("org.bluez", "/")} {
+@@ -25,6 +36,15 @@ namespace MagicPodsCore {
+         _rootProxy->uponSignal("InterfacesRemoved").onInterface(DBUS_OBJECT_MANAGER_INTERFACE).call([this](sdbus::ObjectPath objectPath, std::vector<std::string> interfaces) {
+             HandleInterfacesRemoved(objectPath, interfaces);
+         });
++        // Powered changes of every adapter, not only the selected one, so that
++        // an unpowered selection is replaced when another adapter is powered on.
++        _rootProxy->getConnection().addMatch(
++            "type='signal',sender='org.bluez',interface='org.freedesktop.DBus.Properties',"
++            "member='PropertiesChanged',arg0='org.bluez.Adapter1',path_namespace='/org/bluez'",
++            [this](sdbus::Message& message) {
++                HandleAdapterPropertiesChanged(message);
++            },
++            sdbus::floating_slot);
+         _rootProxy->finishRegistration();
+ 
+         FetchDevices();
+@@ -35,10 +55,25 @@ namespace MagicPodsCore {
+         _rootProxy.reset();
+     }
+ 
++    void DBusService::HandleAdapterPropertiesChanged(sdbus::Message& message) {
++        try {
++            std::string interfaceName{};
++            std::map<std::string, sdbus::Variant> values{};
++            message >> interfaceName >> values;
++            const auto powered = values.find("Powered");
++            if (interfaceName == BLUEZ_ADAPTER_INTERFACE && powered != values.end()) {
++                _bluetoothAdapter.UpdateAdapterPowered(sdbus::ObjectPath{message.getPath()}, powered->second.get<bool>());
++            }
++        }
++        catch (const std::exception& error) {
++            Logger::Error("Failed to handle adapter PropertiesChanged: %s", error.what());
++        }
++    }
++
+     void DBusService::HandleInterfacesAdded(const sdbus::ObjectPath& objectPath, const InterfaceMap& interfaces) {
+         try {
+             if (interfaces.contains(BLUEZ_ADAPTER_INTERFACE)) {
+-                _bluetoothAdapter.AddAdapter(objectPath);
++                _bluetoothAdapter.AddAdapter(objectPath, IsAdapterPowered(interfaces));
+             }
+             TryCreateDevice(objectPath, interfaces);
+             TryUpdateInterfaceAddedForDevice(objectPath, interfaces);
+@@ -128,11 +163,18 @@ namespace MagicPodsCore {
+         _pairedDevices.clear();
+ 
+         // Discover adapters first so device operations immediately have a target.
+-        for (const auto& [objectPath, interfaces] : managedObjects) {
+-            if (interfaces.contains(BLUEZ_ADAPTER_INTERFACE)) {
+-                _bluetoothAdapter.AddAdapter(objectPath);
++        // Powered adapters go first so an unpowered one is never selected
++        // only to be replaced a moment later.
++        for (const bool poweredPass : {true, false}) {
++            for (const auto& [objectPath, interfaces] : managedObjects) {
++                if (interfaces.contains(BLUEZ_ADAPTER_INTERFACE) && IsAdapterPowered(interfaces) == poweredPass) {
++                    _bluetoothAdapter.AddAdapter(objectPath, poweredPass);
++                }
+             }
+         }
++        if (!_bluetoothAdapter.HasAdapter()) {
++            Logger::Info("No usable Bluetooth adapter yet; waiting for BlueZ to add one");
++        }
+ 
+         for (const auto& [objectPath, interfaces] : managedObjects) {
+             TryCreateDevice(objectPath, interfaces);
+diff --git a/src/dbus/DBusService.h b/src/dbus/DBusService.h
+index 43c1938..20cb448 100644
+--- a/src/dbus/DBusService.h
++++ b/src/dbus/DBusService.h
+@@ -78,6 +78,7 @@ namespace MagicPodsCore {
+     private:
+         void FetchDevices();
+         void HandleInterfacesAdded(const sdbus::ObjectPath& objectPath, const InterfaceMap& interfaces);
++        void HandleAdapterPropertiesChanged(sdbus::Message& message);
+         void HandleInterfacesRemoved(const sdbus::ObjectPath& objectPath, const std::vector<std::string>& interfaces);
+ 
+         std::shared_ptr<DBusDeviceInfo> TryCreateDevice(const sdbus::ObjectPath& objectPath,

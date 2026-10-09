@@ -1,0 +1,89 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT
+#
+# Shipwright additions to the SDK's rpmlint configuration (rpmlint 2.0.0 from
+# the Sailfish SDK tooling, /etc/xdg/rpmlint/sailfish.toml). Passed with
+# `rpmlint -c`, so it is loaded after sailfish.toml: lists (Filters,
+# ValidLicenses) are appended to Sailfish's, scalars replace them.
+#
+# Used by tools/build/sdk/rpmlint-rpms.sh (CI: the sdk-rpms jobs).
+#
+# Rules for this file:
+# - Every filter names the package(s) and the exact message it silences, and
+#   says why. Nothing is disabled for every package.
+# - Sailfish's own conventions (no-documentation, no-manual-page-for-binary,
+#   no-signature, Group tags) are already filtered by sailfish.toml.
+# - Warnings that point at real work (unstripped binaries, PIE, missing URL
+#   tags) are left visible on purpose; only errors fail CI.
+
+# sailfish.toml sets this to true, which makes rpmlint exit 0 on errors.
+# CI gates on errors, so turn it back off.
+TreatErrorsAsWarnings = false
+
+# SPDX identifiers our specs use. Sailfish's list is Fedora's 2018 short
+# names and predates SPDX; these are licences, not exceptions.
+ValidLicenses = [
+    # Our own code (LICENSES/LicenseRef-Shipwright-Proprietary.txt).
+    "LicenseRef-Shipwright-Proprietary",
+    # MagicPodsCore (shoal/bridge-airpods daemon) and its bundled libraries.
+    "GPL-3.0-only",
+    "LGPL-2.1-or-later",
+    "Apache-2.0",
+    # Nemo QML plugins vendored by keel/nemo-compat, and mlite.
+    "LGPL-2.1-only",
+    "BSD-3-Clause",
+    # sailfish-components-webview's popups, pickers and controls
+    # (keel/platform, shipwright-keel-platform-webview).
+    "MPL-2.0",
+]
+
+Filters = [
+    # mlite's LGPL text (keel/nemo-compat/upstream-licenses) is upstream's own
+    # copy with the FSF's old postal address. Licence texts are shipped as
+    # received, never edited; this package and file only (%license puts it
+    # in a versioned directory with this rpm).
+    '^shipwright-keel-nemo-compat\.\S+: E: incorrect-fsf-address /usr/share/licenses/shipwright-keel-nemo-compat(-[0-9.]+)?/mlite\.license\.lgpl$',
+    # The Keel launcher library ships in the package its consumers already
+    # require (shipwright-keel-sailfishapp), not in a libkeel-sailfishapp1
+    # package. Renaming it is a Keel packaging change (recorded in
+    # keel/README.md's package table); this one package only.
+    '^shipwright-keel-sailfishapp\.\S+: E: shlib-policy-name-error ',
+    # Same for the Qt 6 builds of Sailfish's own client libraries in
+    # keel/platform (libsailfishsecrets-qt6, libsailfishcrypto-qt6,
+    # libaccounts-qt6, libsailfishpolicy-qt6): they ship in the module's
+    # package, as Sailfish ships libsailfishsecrets in sailfishsecrets,
+    # libsailfishpolicy in sailfish-policy and libaccounts-qt5 in its own
+    # package name rather than SUSE's soname-numbered one.
+    '^shipwright-keel-platform-(secrets|accounts|policy)\.\S+: E: shlib-policy-name-error ',
+    # shipwright-keel-platform is a meta-package (Requires only, no files but
+    # docs) in an arch-specific spec whose subpackages carry the binaries.
+    '^shipwright-keel-platform\.\S+: E: no-binary$',
+
+    # libcommhistory-qt5-tools is the tools subpackage of libcommhistory
+    # (commhistory-tool), not a library; Shoal Migrate's CLI calls the tool.
+    # rpmlint's check only looks at the "lib" prefix. Sailfish filters the
+    # same false positive for -utils packages.
+    '^shipwright-shoal-migrate-cli\.\S+: E: explicit-lib-dependency libcommhistory-qt5-tools$',
+
+    # Keel apps launch through keel-shell (shipwright-keel-shell), and the
+    # Qt 5 AirPods UI through sailfish-qml (libsailfishapp-launcher).
+    # rpmlint only looks for the Exec binary inside the same package.
+    '^shipwright-(reef|shoal-\S+)\.\S+: W: desktopfile-without-binary /usr/share/applications/\S+\.desktop (/usr/bin/keel-shell|sailfish-qml)$',
+
+    # "iCloud" is Apple's spelling of the product name.
+    '^shipwright-shoal-bridge-icloud\.\S+: W: summary-not-capitalized iCloud ',
+
+    # The Reef installer's %preun and the client's %postun remove the Reef
+    # signing key from the rpmdb (rpm -e gpg-pubkey-...), found with
+    # rpm -q --qf "%{NAME}...", in a step detached until the transaction
+    # ends; see reef/installer/README.md ("Removal"). Both the rpm
+    # call and the literal percent signs are intended.
+    '^shipwright-reef-installer\.noarch: W: (dangerous-command-in-%preun rpm|percent-in-%preun)$',
+    '^shipwright-reef\.\S+: W: (dangerous-command-in-%postun rpm|percent-in-%postun)$',
+
+    # The Reef client obsoletes and Conflicts: with the installer, as
+    # sailfishos-chum-gui does with its installer (reef/rpm/shipwright-reef.spec).
+    # Nothing requires the installer, and providing its name would make the
+    # client conflict with itself.
+    '^shipwright-reef\.\S+: W: obsolete-not-provided shipwright-reef-installer$',
+]

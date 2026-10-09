@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "shoal-keys-core"
+description = "Shoal Keys: KeePass KDBX 4 vault, TOTP, generator, importers, Sailfish Secrets key wrapping"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "GPL-3.0-or-later"
+publish.workspace = true
+
+[features]
+default = ["sailfish-secrets", "reef-handoff"]
+# The real Sailfish Secrets backend (peer-to-peer D-Bus to sailfishsecretsd).
+# Off, only the in-memory and file-free test backends are built.
+sailfish-secrets = ["shoal-secrets/sailfish"]
+# Ask Reef for the licence token over the session bus at start-up
+# (reef_licence::handoff); pasting stays the fallback.
+reef-handoff = ["reef-licence/handoff-client"]
+
+[dependencies]
+# KDBX 4 read and write. 0.14 is the newest release whose MSRV (1.86) is not
+# above the workspace's 1.87; 0.15 needs 1.89.
+keepass = { version = "0.15", features = ["save_kdbx4"] }
+chacha20poly1305 = "0.11"
+hmac = "0.13"
+sha1 = "0.11"
+sha2 = "0.11"
+zeroize = { version = "1.8", features = ["derive"] }
+getrandom = "0.4"
+data-encoding = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+csv = "1.3"
+zip = { version = "8", default-features = false, features = ["deflate"] }
+thiserror = "2"
+# keepass 0.14's Argon2 and UUID types appear in its public API.
+argon2 = { package = "rust-argon2", version = "3" }
+uuid = "1"
+reef-licence = { path = "../../../reef/licence" }
+# The Sailfish Secrets client, shared with Shoal Mail.
+shoal-secrets = { path = "../../secrets", default-features = false }
+
+[dev-dependencies]
+shoal-secrets = { path = "../../secrets", features = ["test-harness"] }
+reef-licence = { path = "../../../reef/licence", features = ["sign"] }
+
+[build-dependencies]
+# Embeds SHIPWRIGHT_LICENCE_KEYS as EMBEDDED_KEYS (build.rs).
+reef-licence = { path = "../../../reef/licence", features = ["build"] }
+
+[lints]
+workspace = true

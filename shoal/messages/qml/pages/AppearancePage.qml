@@ -1,0 +1,404 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; the colour picker dimmed while the ambience colour applies; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+
+// The conversation's colours. The preview uses the very expressions the
+// conversation uses, and the reset is the way out of an unreadable palette.
+Page {
+    id: page
+
+    allowedOrientations: Orientation.All
+
+    // Where a TextSwitch puts its text: behind the toggle, not at the page margin.
+    // Notes under one belong in that column, or the block reads as two.
+    readonly property real noteX: Theme.horizontalPageMargin - Theme.paddingLarge
+                                  + Theme.itemSizeExtraSmall
+                                  + (Theme.colorScheme === Theme.DarkOnLight
+                                     ? Theme.paddingMedium : 0)
+
+    // What the spectrum is currently colouring.
+    readonly property var elementKeys: ["otherBubble", "ownBubble", "name",
+                                        "otherText", "ownText"]
+    property string element: "otherBubble"
+
+    // The stored value of the selected element, "" for "follow the ambience". A
+    // ternary chain rather than a lookup, so it stays reactive.
+    readonly property string storedValue:
+        element === "otherBubble" ? appearance.otherBubbleColor
+        : element === "ownBubble" ? appearance.ownBubbleColor
+        : element === "name" ? appearance.nameColor
+        : element === "otherText" ? appearance.otherTextColor
+        : appearance.ownTextColor
+
+    function ambienceFor(key) {
+        if (key === "otherBubble" || key === "ownBubble") {
+            return Theme.highlightBackgroundColor
+        }
+        return key === "name" ? Theme.highlightColor : Theme.primaryColor
+    }
+
+    function writeFor(key, colour) {
+        if (key === "otherBubble") {
+            appearance.otherBubbleColor = colour
+        } else if (key === "ownBubble") {
+            appearance.ownBubbleColor = colour
+        } else if (key === "name") {
+            appearance.nameColor = colour
+        } else if (key === "otherText") {
+            appearance.otherTextColor = colour
+        } else {
+            appearance.ownTextColor = colour
+        }
+    }
+
+    /// Points the spectrum at the selected element's current colour.
+    function syncField() {
+        colorField.setColor(storedValue !== "" ? storedValue
+                                               : String(ambienceFor(element)))
+        // The slider stops following its binding once dragged, so a change of element
+        // and a reset have to place it by hand.
+        if (opacitySlider) {
+            opacitySlider.value = element === "ownBubble" ? appearance.ownBubbleOpacity
+                                                          : appearance.otherBubbleOpacity
+        }
+    }
+
+    // The same fallbacks RoomPage applies, in one place for the preview.
+    readonly property color otherBubbleFill:
+        Theme.rgba(appearance.otherBubbleColor.length > 0
+                   ? appearance.otherBubbleColor : Theme.highlightBackgroundColor,
+                   appearance.otherBubbleOpacity)
+    readonly property color ownBubbleFill:
+        Theme.rgba(appearance.ownBubbleColor.length > 0
+                   ? appearance.ownBubbleColor : Theme.highlightBackgroundColor,
+                   appearance.ownBubbleOpacity)
+    readonly property color nameInk: appearance.nameColor.length > 0
+                                     ? appearance.nameColor : Theme.highlightColor
+    readonly property color otherInk: appearance.otherTextColor.length > 0
+                                      ? appearance.otherTextColor : Theme.primaryColor
+    readonly property color ownInk: appearance.ownTextColor.length > 0
+                                    ? appearance.ownTextColor : Theme.primaryColor
+
+    Component.onCompleted: syncField()
+
+    SilicaFlickable {
+        anchors.fill: parent
+        contentHeight: content.height
+
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Reset to defaults")
+                onClicked: page.resetAll()
+            }
+        }
+
+        Column {
+            id: content
+
+            // One direction, and here the other one: a wrapping button takes its width as
+            // given, so deriving it from the children collapses every button on the page.
+            readonly property real buttonWidth: Math.min(
+                    Theme.buttonWidthLarge,
+                    width - 2 * Theme.horizontalPageMargin)
+
+            width: parent.width
+            spacing: Theme.paddingSmall
+
+            PageHeader {
+                title: qsTr("Appearance")
+            }
+
+            // ---- preview ------------------------------------------------
+
+            Rectangle {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                height: previewColumn.height + 2 * Theme.paddingMedium
+                radius: Theme.paddingSmall
+                color: page.otherBubbleFill
+
+                Column {
+                    id: previewColumn
+
+                    anchors {
+                        left: parent.left
+                        top: parent.top
+                        margins: Theme.paddingMedium
+                    }
+                    spacing: Theme.paddingSmall / 2
+
+                    Label {
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: page.nameInk
+                        text: qsTr("Somebody", "sample sender on the appearance page")
+                    }
+
+                    Label {
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: page.otherInk
+                        text: qsTr("A received message looks like this.")
+                    }
+                }
+            }
+
+            Rectangle {
+                anchors.right: parent.right
+                anchors.rightMargin: Theme.horizontalPageMargin
+                width: ownPreview.implicitWidth + 2 * Theme.paddingMedium
+                height: ownPreview.height + 2 * Theme.paddingMedium
+                radius: Theme.paddingSmall
+                color: page.ownBubbleFill
+
+                Label {
+                    id: ownPreview
+
+                    anchors.centerIn: parent
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: page.ownInk
+                    text: qsTr("And one of my own like this.")
+                }
+            }
+
+            // ---- what the spectrum colours ------------------------------
+
+            ComboBox {
+                label: qsTr("Colouring")
+                currentIndex: page.elementKeys.indexOf(page.element)
+
+                menu: ContextMenu {
+                    MenuItem { text: qsTr("Their bubble") }
+                    MenuItem { text: qsTr("My bubble") }
+                    MenuItem { text: qsTr("Sender name") }
+                    MenuItem { text: qsTr("Their text") }
+                    MenuItem { text: qsTr("My text") }
+                }
+
+                onCurrentIndexChanged: {
+                    // The guard covers creation order: this fires once while
+                    // the spectrum below does not exist yet.
+                    if (currentIndex >= 0 && colorField) {
+                        page.element = page.elementKeys[currentIndex]
+                        page.syncField()
+                    }
+                }
+            }
+
+            TextSwitch {
+                text: qsTr("Follow the ambience")
+                description: qsTr("Off, the colour below applies. Picking one turns this off.")
+                checked: page.storedValue === ""
+                automaticCheck: false
+                onClicked: {
+                    if (page.storedValue === "") {
+                        // Pins what the spectrum shows right now.
+                        page.writeFor(page.element, colorField.chosen)
+                    } else {
+                        page.writeFor(page.element, "")
+                        page.syncField()
+                    }
+                }
+            }
+
+            ColorField {
+                id: colorField
+
+                // Dimmed while it does not apply; picking a colour still
+                // works and switches the automatic colour off.
+                opacity: page.storedValue === "" ? Theme.opacityLow : 1.0
+                Behavior on opacity { FadeAnimation { } }
+
+                onEdited: page.writeFor(page.element, colour)
+            }
+
+            Slider {
+                id: opacitySlider
+
+                width: parent.width
+                visible: page.element === "otherBubble" || page.element === "ownBubble"
+                label: qsTr("Bubble opacity")
+                minimumValue: 0.05
+                maximumValue: 1.0
+                value: page.element === "ownBubble" ? appearance.ownBubbleOpacity
+                                                    : appearance.otherBubbleOpacity
+                onSliderValueChanged: {
+                    if (page.element === "ownBubble") {
+                        appearance.ownBubbleOpacity = sliderValue
+                    } else {
+                        appearance.otherBubbleOpacity = sliderValue
+                    }
+                }
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingLarge
+            }
+
+            // The way back, in plain sight: every colour to the ambience. The pull-down
+            // has the same entry, but a reset that has to be found is not a safety net.
+            WrapButton {
+                id: resetColoursButton
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: content.buttonWidth
+                label: qsTr("Reset colours to defaults")
+                onClicked: page.resetAll()
+            }
+
+            // The line itself is not a setting - it costs nothing and appears only where
+            // something is unread. What differs is where the room opens.
+            TextSwitch {
+                text: qsTr("Open a room where you stopped reading")
+                description: qsTr("On: a room opens at your last read message, with new ones below it, or where you left off if you were reading older messages. Off: a room opens at its newest message, and you scroll up to find where you stopped.")
+                checked: settings.jumpToReadMarker
+                automaticCheck: false
+                onClicked: settings.jumpToReadMarker = !settings.jumpToReadMarker
+            }
+
+            // Where a room is in no space nothing is drawn, so this only
+            // matters to somebody who sorts rooms into spaces.
+            TextSwitch {
+                text: qsTr("Mark the space on the picture")
+                description: qsTr("On, the chat list draws the initial of a room's space over its picture, in that space's colour. The colour is set in the space list, by holding the space.")
+                checked: settings.spaceInitials
+                automaticCheck: false
+                onClicked: settings.spaceInitials = !settings.spaceInitials
+            }
+
+            TextSwitch {
+                text: qsTr("Send with the return key")
+                description: qsTr("On, the return key sends the message; the arrow beside the field keeps working. A line break then comes from holding that arrow, or from shift and the return key on a hardware keyboard. Off, the return key makes a line break and only the arrow sends.")
+                checked: settings.sendByEnter
+                automaticCheck: false
+                onClicked: settings.sendByEnter = !settings.sendByEnter
+            }
+
+            TextSwitch {
+                text: qsTr("Hide the keyboard after sending")
+                description: qsTr("On, the keyboard closes once a message is out and the conversation is back in full. Off, it stays up for the next one.")
+                checked: settings.hideKeyboardOnSend
+                automaticCheck: false
+                onClicked: settings.hideKeyboardOnSend = !settings.hideKeyboardOnSend
+            }
+
+            TextSwitch {
+                text: qsTr("Reactions as pictures (emoji)")
+                // The path and the warning belong where the choice is made,
+                // not in a manual nobody has.
+                description: qsTr("Off, a reaction is drawn as the character it is - always right and free. On, Shoal Messages looks for a picture of your own for it in %1, named after its code points (1f44d.svg). Nothing is shipped and nothing is downloaded. Weigh it up: a picture file is opened by an image decoder, which is where an app of this kind is most exposed.").arg(matrix.emojiDirectory)
+                checked: settings.emojiImages
+                automaticCheck: false
+                onClicked: settings.emojiImages = !settings.emojiImages
+            }
+
+            // What the switch above does not say: which folder, and that the app
+            // keeps its own copy. Asked for from the field.
+            Label {
+                x: page.noteX
+                width: parent.width - page.noteX - Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Unpack the pack anywhere in your own folders - Downloads or Public, say. This opens at your home folder; tap through to the pack, and the folder holding the pictures is read in as soon as you tap it. They have to lie directly in it, not in subfolders. Reading runs in the background and copies them into Shoal Messages' own storage, so your folder is not needed afterwards.")
+            }
+
+            // Reading a set in rather than copying files by hand: what it buys is the
+            // checking - name, size, one decode here, and a checksum verified afterwards.
+            WrapButton {
+                id: choosePicturesButton
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: content.buttonWidth
+                enabled: !emojiSet.busy
+                label: qsTr("Read in an emoji pack")
+                onClicked: pageStack.push(folderPicker)
+            }
+
+            // The state the page never admitted: switched on with nothing read in
+            // draws characters, and the field reported exactly that as a fault.
+            Label {
+                x: page.noteX
+                width: parent.width - page.noteX - Theme.horizontalPageMargin
+                visible: !emojiSet.busy && !emojiSet.verified
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.highlightColor
+                text: qsTr("No pictures read in yet - emoji stay the characters they are, in black and white.")
+            }
+
+            Label {
+                x: page.noteX
+                width: parent.width - page.noteX - Theme.horizontalPageMargin
+                visible: !emojiSet.busy && emojiSet.verified
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.highlightColor
+                text: qsTr("Pictures ready: %1").arg(emojiSet.count)
+            }
+
+            Label {
+                x: page.noteX
+                width: parent.width - page.noteX - Theme.horizontalPageMargin
+                visible: emojiSet.busy
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Reading the pictures…")
+            }
+
+            Label {
+                x: page.noteX
+                width: parent.width - page.noteX - Theme.horizontalPageMargin
+                visible: !emojiSet.busy && (emojiSet.lastImported > 0 || emojiSet.lastRejected > 0)
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("%1 taken over, %2 refused")
+                          .arg(emojiSet.lastImported).arg(emojiSet.lastRejected)
+            }
+
+            Label {
+                x: page.noteX
+                width: parent.width - page.noteX - Theme.horizontalPageMargin
+                visible: emojiSet.tampered
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.errorColor
+                text: qsTr("The pictures have changed since they were read in and are not shown.")
+            }
+
+            WrapButton {
+                id: removePicturesButton
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: content.buttonWidth
+                visible: emojiSet.verified && !emojiSet.busy
+                label: qsTr("Remove the emoji pack")
+                onClicked: emojiSet.removeAll()
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingLarge
+            }
+        }
+
+        VerticalScrollDecorator { }
+    }
+
+    // Our own browser rather than the platform's picker: that one starts on a
+    // partition list and its accept action is labelled with a blank space.
+    Component {
+        id: folderPicker
+
+        EmojiFolderPage { }
+    }
+
+    function resetAll() {
+        appearance.resetAll()
+        // Both the colour and the two sliders: the reset is a change from
+        // outside, and nothing in this page follows one on its own.
+        syncField()
+        colorField.placeSliders()
+    }
+}

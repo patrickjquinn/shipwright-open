@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Runs the Reef background check daily (the setting picks daily or weekly
+# from there); Persistent catches up after the phone was off.
+[Unit]
+Description=Daily Reef update check
+
+[Timer]
+OnBootSec=15min
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

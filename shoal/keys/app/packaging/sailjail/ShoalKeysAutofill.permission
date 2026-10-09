@@ -1,0 +1,19 @@
+# -*- mode: sh -*-
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Sailjail permission for apps that fill logins from Shoal Keys (Pacific),
+# installed by the Shoal Keys package as
+# /etc/sailjail/permissions/ShoalKeysAutofill.permission. An app lists
+# `ShoalKeysAutofill` in its desktop file's [X-Sailjail] Permissions= to call
+# org.shipwright.Keys.Autofill1 (app/src/autofill.rs): titles and user names
+# of the logins for a site while the vault is open, and a user name and
+# password only after the person picks a login in Keys.
+#
+# Only talking to that one bus name is allowed. Keys is D-Bus activated
+# (org.shipwright.shoal-keys.Autofill.service) when it is not running.
+
+# x-sailjail-description = Shoal Keys logins
+# x-sailjail-long-description = Ask Shoal Keys to fill and save logins
+
+dbus-user.talk org.shipwright.shoal-keys.Autofill

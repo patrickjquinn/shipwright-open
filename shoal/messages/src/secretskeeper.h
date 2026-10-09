@@ -1,0 +1,67 @@
+#pragma once
+
+#include <QString>
+
+/// How the attempt at the store key ended. One empty string for four
+/// situations is why a factory-fresh device silently got a plaintext store.
+enum class StoreKeyState {
+    /// The key is in hand.
+    Available,
+    /// Encrypted data exists on disk and the key could not be read. Never mint
+    /// a new one here: the session is locked, and the user retries.
+    Locked,
+    /// The secrets daemon is not installed on this system. No amount of
+    /// retrying helps; the user has to install a package.
+    NoDaemon,
+    /// The daemon is there and still would not deliver a key — a locked
+    /// collection, a dismissed dialog, a missing plugin. Retriable.
+    Unavailable,
+};
+
+/// The outcome of `obtainStoreKey`, with the daemon's own words for the reason.
+struct StoreKeyResult {
+    StoreKeyState state = StoreKeyState::Unavailable;
+    /// Base64, ready for the core's config. Only set for `Available`, and the
+    /// caller wipes it once the core has taken its copy.
+    QString key;
+    /// secretsd's error code and message, carrying no secret material. Empty
+    /// where nothing failed.
+    int errorCode = 0;
+    QString errorMessage;
+};
+
+/// What the secrets service says about itself. -1 everywhere it could not be
+/// asked; corrupted is not locked, and no unlocking heals it.
+struct SecretsDiagnosis {
+    /// `LockCodeRequest::LockStatus`: 0 unknown, 1 unsupported, 2 open, 3 locked.
+    int lockStatus = -1;
+    /// `HealthCheckRequest::Health`: 0 ok, 1 unknown, 2 corrupted, 3 other.
+    int masterlockHealth = -1;
+    int saltDataHealth = -1;
+    /// This app's collection: -1 unknown, 0 open, 1 locked, 2 absent.
+    int collection = -1;
+    /// The first request that failed.
+    int errorCode = 0;
+    QString errorMessage;
+};
+
+// Never interactive, unlike `obtainStoreKey`: it cannot hang on a dialog.
+SecretsDiagnosis inspectSecrets();
+
+// Fetches - or on first run creates - the 32-byte key, kept in the app's own
+// data directory (`store.key`, owner-only). A key from before 0.1.0-8 is read
+// from Sailfish Secrets, without interaction, and moved there. Blocking,
+// called at start.
+StoreKeyResult obtainStoreKey(const QString &dataDirectory);
+
+// True if the directory holds anything written under a key: the `.encrypted`
+// marker, or a session file in its envelope.
+bool encryptedDataPresent(const QString &dataDirectory);
+
+// True if there is a session or a store at all. The gate asks "would a new
+// store be created", and an install predating the key must keep working.
+bool localDataPresent(const QString &dataDirectory);
+
+// True if this system has the secrets daemon. Asked of the session bus:
+// inside Sailjail the app sees neither binary nor service file.
+bool secretsDaemonPresent();

@@ -1,0 +1,7 @@
+/target/
+*.rpm
+/RPMS/
+.mb2/
+/build/
+.qmlls.ini
+__pycache__/

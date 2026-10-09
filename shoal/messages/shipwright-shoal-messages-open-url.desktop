@@ -1,0 +1,43 @@
+# Modified by Shipwright, 2026: rebranded as Shoal Messages; ShoalPush and Contacts permissions; see CHANGES-FROM-UPSTREAM.md.
+[Desktop Entry]
+Type=Application
+# The link handler, in its own file so the launcher grid keeps one Shoal Messages.
+NoDisplay=true
+Name=Shoal Messages
+Icon=shipwright-shoal-messages
+# Same application type as the main file, and for the same reason: the Rust
+# core's runtime does not survive being dlopened from a preforked process.
+X-Nemo-Application-Type=generic
+# The link, as the caller passes it. The placeholder is what makes it possible
+# at all: SailJail matches argv against the Exec line of the profile it runs
+# under, so the main file - whose Exec takes none - refuses any start carrying
+# one. Measured on the device with `sailjail -D`: this file prints the full
+# firejail line ending in the link, the main file prints nothing.
+Exec=shipwright-shoal-messages %u
+# A Matrix link comes in two shapes, and only one has a scheme of its own.
+# `matrix:` is the specified one (MSC2312) and almost nobody sends it; what
+# people actually share is a matrix.to address, which is an ordinary https
+# link. There is no way to register for one host only - a desktop file knows
+# schemes, not hosts - so taking matrix.to means being offered for every web
+# address. Shoal Messages then appears in the "open with" list for links it has nothing
+# to do with, and drops them: see AppService::requestLink.
+MimeType=x-scheme-handler/matrix;x-scheme-handler/https;
+
+[X-Sailjail]
+# Without this block the start goes through a compatibility mode that runs the
+# app on default permissions, and the user is asked about it - seen on the
+# device. With it, a start through a link is sandboxed exactly like a start
+# through the icon.
+#
+# The pair below is the whole reason this works: Sailjail derives the data
+# directory from these two names, not from the file name, so the app opens on
+# the same store either way.
+OrganizationName=org.shipwright
+ApplicationName=ShoalMessages
+# The same list as the main file. A shorter one here would be a second, weaker
+# profile for the same application, and whichever one started it would decide
+# what it may do. See shipwright-shoal-messages.desktop for why each entry is needed.
+# Contacts (Shipwright): read the address book through qtcontacts-sqlite, only
+# while Privacy > "Match people with my contacts" is on (off by default),
+# to show names from it. Read-only; nothing from it leaves the phone.
+Permissions=Internet;Audio;Microphone;Camera;Pictures;Documents;Downloads;Music;Videos;PublicDir;RemovableMedia;MediaIndexing;Thumbnails;Sharing;Notifications;Secrets;UnifiedPush;ShoalPush;ShoalMessagesSpeech;Location;Contacts

@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Starts Shoal Keys (its window: the person unlocks and picks a login) when
+# an app asks for a login and Keys is not running (app/src/autofill.rs).
+[D-BUS Service]
+Name=org.shipwright.shoal-keys.Autofill
+Exec=/usr/bin/sailjail -p shipwright-shoal-keys.desktop /usr/bin/shipwright-shoal-keys

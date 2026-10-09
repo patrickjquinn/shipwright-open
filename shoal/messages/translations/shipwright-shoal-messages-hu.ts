@@ -1,0 +1,3964 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modified by Shipwright, 2026: rebranded as Shoal Messages; see CHANGES-FROM-UPSTREAM.md. -->
+<!DOCTYPE TS>
+<TS version="2.1" language="hu">
+<context>
+    <name>AboutPage</name>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Az Shoal Messages névjegye</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Verzió: %1</translation>
+    </message>
+    <message>
+        <source>A native Matrix client for Sailfish OS: encrypted rooms, spaces, voice and video calls.</source>
+        <translation>Natív Matrix-kliens Sailfish OS-re: titkosított szobák, terek, hang- és videohívások.</translation>
+    </message>
+    <message>
+        <source>License: Apache 2.0</source>
+        <translation>Licenc: Apache 2.0</translation>
+    </message>
+    <message>
+        <source>Source code</source>
+        <translation>Forráskód</translation>
+    </message>
+</context>
+<context>
+    <name>AccountPage</name>
+    <message>
+        <source>Signed in</source>
+        <translation>Bejelentkezve</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Fiók</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Eszköz</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Mag</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Display name</source>
+        <translation>Megjelenített név</translation>
+    </message>
+    <message>
+        <source>Save name</source>
+        <translation>Név mentése</translation>
+    </message>
+    <message>
+        <source>Change avatar</source>
+        <translation>Profilkép cseréje</translation>
+    </message>
+    <message>
+        <source>Set avatar</source>
+        <translation>Profilkép beállítása</translation>
+    </message>
+    <message>
+        <source>An avatar is set. Other people see it next to your name.</source>
+        <translation>Van beállított profilkép. A többiek a neved mellett látják.</translation>
+    </message>
+    <message>
+        <source>This app</source>
+        <translation>Ez az alkalmazás</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Megjelenés</translation>
+    </message>
+    <message>
+        <source>Ignored users</source>
+        <translation>Mellőzött felhasználók</translation>
+    </message>
+    <message>
+        <source>Reset send warnings</source>
+        <translation>Küldési figyelmeztetések visszaállítása</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n recipient(s) will warn again</source>
+        <translation>
+            <numerusform>%n címzett újra figyelmeztet</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No suppressed warnings</source>
+        <translation>Nincs elnyomott figyelmeztetés</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Kijelentkezés</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Titkosítás</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Nyelv</translation>
+    </message>
+    <message>
+        <source>Privacy</source>
+        <translation>Adatvédelem</translation>
+    </message>
+    <message>
+        <source>Session and message database lie on this device unencrypted. Tap to encrypt them.</source>
+        <translation>A munkamenet és az üzenet-adatbázis titkosítatlanul van ezen az eszközön. Koppints a titkosításhoz.</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Hibanapló</translation>
+    </message>
+    <message>
+        <source>Push notifications</source>
+        <translation>Push értesítések</translation>
+    </message>
+</context>
+<context>
+    <name>AddDirectoryServerDialog</name>
+    <message>
+        <source>Add</source>
+        <translation>Hozzáadás</translation>
+    </message>
+    <message>
+        <source>Directory server</source>
+        <translation>Címtárkiszolgáló</translation>
+    </message>
+    <message>
+        <source>For example matrix.org</source>
+        <translation>Például matrix.org</translation>
+    </message>
+</context>
+<context>
+    <name>AddToSpacePage</name>
+    <message>
+        <source>Add rooms</source>
+        <translation>Szobák hozzáadása</translation>
+    </message>
+    <message>
+        <source>Press and hold a room to add it to the space.</source>
+        <translation>Tartsd nyomva a szobát, hogy hozzáadd a térhez.</translation>
+    </message>
+    <message>
+        <source>Add to space</source>
+        <translation>Hozzáadás a térhez</translation>
+    </message>
+    <message>
+        <source>Adding to space</source>
+        <translation>Hozzáadás a térhez</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Nincsenek szobák</translation>
+    </message>
+    <message>
+        <source>Join or start a chat first, then add it to a space.</source>
+        <translation>Előbb csatlakozz egy beszélgetéshez vagy indíts egyet, azután add hozzá egy térhez.</translation>
+    </message>
+</context>
+<context>
+    <name>AppearancePage</name>
+    <message>
+        <source>Reset to defaults</source>
+        <translation>Alapértelmezések visszaállítása</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Megjelenés</translation>
+    </message>
+    <message>
+        <source>Somebody</source>
+        <comment>sample sender on the appearance page</comment>
+        <translation>Valaki</translation>
+    </message>
+    <message>
+        <source>A received message looks like this.</source>
+        <translation>Egy kapott üzenet így néz ki.</translation>
+    </message>
+    <message>
+        <source>And one of my own like this.</source>
+        <translation>A sajátom pedig így.</translation>
+    </message>
+    <message>
+        <source>Colouring</source>
+        <translation>Színek</translation>
+    </message>
+    <message>
+        <source>Their bubble</source>
+        <translation>Az ő buborékuk</translation>
+    </message>
+    <message>
+        <source>My bubble</source>
+        <translation>Az én buborékom</translation>
+    </message>
+    <message>
+        <source>Sender name</source>
+        <translation>A küldő neve</translation>
+    </message>
+    <message>
+        <source>Their text</source>
+        <translation>Az ő szövegük</translation>
+    </message>
+    <message>
+        <source>My text</source>
+        <translation>Az én szövegem</translation>
+    </message>
+    <message>
+        <source>Follow the ambience</source>
+        <translation>Kövesse a hangulatot</translation>
+    </message>
+    <message>
+        <source>Off, the colour below applies</source>
+        <translation>Kikapcsolva az alábbi szín érvényes</translation>
+    </message>
+    <message>
+        <source>Bubble opacity</source>
+        <translation>Buborékok átlátszósága</translation>
+    </message>
+    <message>
+        <source>Off, a reaction is drawn as the character it is - always right and free. On, Shoal Messages looks for a picture of your own for it in %1, named after its code points (1f44d.svg). Nothing is shipped and nothing is downloaded. Weigh it up: a picture file is opened by an image decoder, which is where an app of this kind is most exposed.</source>
+        <translation>Kikapcsolva a reakció úgy jelenik meg, ahogy a karakter szól — mindig helyesen és ingyen. Bekapcsolva az Shoal Messages saját képet keres hozzá itt: %1, a kódpontjai szerint elnevezve (1f44d.svg). Semmi sincs mellékelve és semmi sem töltődik le. Mérlegeld: egy képfájlt egy képdekódoló nyit meg, és ott a legsebezhetőbb egy ilyen alkalmazás.</translation>
+    </message>
+    <message>
+        <source>Reading the pictures…</source>
+        <translation>Képek beolvasása…</translation>
+    </message>
+    <message>
+        <source>%1 taken over, %2 refused</source>
+        <translation>%1 átvéve, %2 elutasítva</translation>
+    </message>
+    <message>
+        <source>The pictures have changed since they were read in and are not shown.</source>
+        <translation>A képek a beolvasás óta megváltoztak, ezért nem jelennek meg.</translation>
+    </message>
+    <message>
+        <source>Reset colours to defaults</source>
+        <translation>Színek visszaállítása</translation>
+    </message>
+    <message>
+        <source>Hide the keyboard after sending</source>
+        <translation>Billentyűzet elrejtése küldés után</translation>
+    </message>
+    <message>
+        <source>On, the keyboard closes once a message is out and the conversation is back in full. Off, it stays up for the next one.</source>
+        <translation>Bekapcsolva a billentyűzet bezárul, amint az üzenet elment, és megint az egész beszélgetés látszik. Kikapcsolva nyitva marad a következő üzenethez.</translation>
+    </message>
+    <message>
+        <source>Open a room where you stopped reading</source>
+        <translation>A szoba ott nyíljon meg, ahol abbahagytad az olvasást</translation>
+    </message>
+    <message>
+        <source>Read in an emoji pack</source>
+        <translation>Emodzsicsomag beolvasása</translation>
+    </message>
+    <message>
+        <source>Remove the emoji pack</source>
+        <translation>Emodzsicsomag eltávolítása</translation>
+    </message>
+    <message>
+        <source>No pictures read in yet - emoji stay the characters they are, in black and white.</source>
+        <translation>Még nincsenek beolvasott képek - az emodzsik maradnak azok a karakterek, amik, fekete-fehéren.</translation>
+    </message>
+    <message>
+        <source>Pictures ready: %1</source>
+        <translation>Kész képek: %1</translation>
+    </message>
+    <message>
+        <source>Unpack the pack anywhere in your own folders - Downloads or Public, say. This opens at your home folder; tap through to the pack, and the folder holding the pictures is read in as soon as you tap it. They have to lie directly in it, not in subfolders. Reading runs in the background and copies them into Shoal Messages' own storage, so your folder is not needed afterwards.</source>
+        <translation>Csomagold ki a csomagot bárhová a saját mappáidba - például a Downloads vagy a Public mappába. Ez a saját mappádban nyílik meg; koppints el a csomagig, és a képeket tartalmazó mappa beolvasásra kerül, amint rákoppintasz. A képeknek közvetlenül benne kell lenniük, nem almappákban. A beolvasás a háttérben fut, és a képeket az Shoal Messages saját tárolójába másolja, így a mappádra utána már nincs szükség.</translation>
+    </message>
+    <message>
+        <source>Reactions as pictures (emoji)</source>
+        <translation>Reakciók képként (emodzsik)</translation>
+    </message>
+    <message>
+        <source>Send with the return key</source>
+        <translation>Küldés az Enter billentyűvel</translation>
+    </message>
+    <message>
+        <source>On, the return key sends the message; the arrow beside the field keeps working. A line break then comes from holding that arrow, or from shift and the return key on a hardware keyboard. Off, the return key makes a line break and only the arrow sends.</source>
+        <translation>Bekapcsolva az Enter billentyű elküldi az üzenetet; a mező melletti nyíl továbbra is működik. Új sort ekkor a nyíl hosszú nyomva tartása ad, vagy hardveres billentyűzeten a Shift és az Enter. Kikapcsolva az Enter billentyű új sort kezd, és csak a nyíl küld.</translation>
+    </message>
+    <message>
+        <source>Mark the space on the picture</source>
+        <translation>A tér jelölése a képen</translation>
+    </message>
+    <message>
+        <source>On, the chat list draws the initial of a room&apos;s space over its picture, in that space&apos;s colour. The colour is set in the space list, by holding the space.</source>
+        <translation>Bekapcsolva a csevegéslista a szoba terének kezdőbetűjét rajzolja a képére, az adott tér színével. A szín a terek listájában állítható be, a tér nyomva tartásával.</translation>
+    </message>
+    <message>
+        <source>On, entering a room takes you to your last read message, with the new ones below it — and back to the place you were at if you left the room in the middle of its history. That place is kept until the app is closed. Off, the room opens at its newest message and the line marking where you stopped is found by scrolling up.</source>
+        <translation>Bekapcsolva: egy szobába belépve az utoljára olvasott üzenetednél kötsz ki, az újak alatta vannak — és oda, ahol jártál, ha a szobát az előzmények közepén hagytad el. Ez a hely az alkalmazás bezárásáig megmarad. Kikapcsolva: a szoba a legújabb üzenetnél nyílik meg, és az olvasás helyét jelölő vonalat felfelé görgetve találod meg.</translation>
+    </message>
+</context>
+<context>
+    <name>AttachmentPickerPage</name>
+    <message>
+        <source>All</source>
+        <translation>Mind</translation>
+    </message>
+    <message>
+        <source>Pictures</source>
+        <translation>Képek</translation>
+    </message>
+    <message>
+        <source>Downloads</source>
+        <translation>Letöltések</translation>
+    </message>
+    <message>
+        <source>%1 selected</source>
+        <translation>%1 kiválasztva</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Melléklet</translation>
+    </message>
+    <message>
+        <source>Gallery</source>
+        <translation>Galéria</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>Fájlok</translation>
+    </message>
+    <message>
+        <source>Home folder</source>
+        <translation>Saját mappa</translation>
+    </message>
+    <message>
+        <source>Other files</source>
+        <translation>Egyéb fájlok</translation>
+    </message>
+    <message>
+        <source>No pictures here</source>
+        <translation>Itt nincsenek képek</translation>
+    </message>
+    <message>
+        <source>Nothing here</source>
+        <translation>Itt nincs semmi</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Videók</translation>
+    </message>
+    <message>
+        <source>Send text as a file</source>
+        <translation>Szöveg küldése fájlként</translation>
+    </message>
+</context>
+<context>
+    <name>CallEngine</name>
+    <message>
+        <source>the camera did not start — continuing without video</source>
+        <translation>a kamera nem indult el — videó nélkül folytatjuk</translation>
+    </message>
+    <message>
+        <source>GStreamer could not be started: %1</source>
+        <translation>A GStreamert nem sikerült elindítani: %1</translation>
+    </message>
+    <message>
+        <source>This device has no WebRTC support.</source>
+        <translation>Ez az eszköz nem támogatja a WebRTC-t.</translation>
+    </message>
+    <message>
+        <source>ready</source>
+        <translation>kész</translation>
+    </message>
+    <message>
+        <source>pipeline failed: %1</source>
+        <translation>a pipeline meghiúsult: %1</translation>
+    </message>
+    <message>
+        <source>webrtcbin is missing</source>
+        <translation>hiányzik a webrtcbin</translation>
+    </message>
+    <message>
+        <source>no camera — placing a voice call</source>
+        <translation>nincs kamera — hanghívás indul</translation>
+    </message>
+    <message>
+        <source>the microphone could not be opened</source>
+        <translation>a mikrofont nem sikerült megnyitni</translation>
+    </message>
+    <message>
+        <source>the session description could not be read</source>
+        <translation>a munkamenet-leírást nem sikerült beolvasni</translation>
+    </message>
+    <message>
+        <source>the other side sent an unreadable session description</source>
+        <translation>a másik fél olvashatatlan munkamenet-leírást küldött</translation>
+    </message>
+    <message>
+        <source>the other side hung up</source>
+        <translation>a másik fél letette</translation>
+    </message>
+    <message>
+        <source>the connection was lost</source>
+        <translation>a kapcsolat megszakadt</translation>
+    </message>
+    <message>
+        <source>connected</source>
+        <translation>kapcsolódva</translation>
+    </message>
+    <message>
+        <source>the call could not be carried on</source>
+        <translation>a hívást nem lehetett folytatni</translation>
+    </message>
+    <message>
+        <source>answered on another device</source>
+        <translation>másik eszközön fogadva</translation>
+    </message>
+</context>
+<context>
+    <name>CallPage</name>
+    <message>
+        <source>Call</source>
+        <translation>Hívás</translation>
+    </message>
+    <message>
+        <source>Ringing…</source>
+        <translation>Kicseng…</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Bejövő hívás</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Kapcsolódás…</translation>
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation>Kapcsolódva</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Fogadás</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Elutasítás</translation>
+    </message>
+    <message>
+        <source>Hang up</source>
+        <translation>Bontás</translation>
+    </message>
+    <message>
+        <source>Accept without camera</source>
+        <translation>Fogadás kamera nélkül</translation>
+    </message>
+    <message>
+        <source>Accept with camera</source>
+        <translation>Fogadás kamerával</translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Bejövő videohívás</translation>
+    </message>
+    <message>
+        <source>Video calls are switched off in Privacy; this one is answered as a voice call.</source>
+        <translation>A videohívások ki vannak kapcsolva az Adatvédelemben; ezt hanghívásként fogadja.</translation>
+    </message>
+</context>
+<context>
+    <name>CameraCapturePage</name>
+    <message>
+        <source>The photo could not be saved.</source>
+        <translation>A fotót nem sikerült menteni.</translation>
+    </message>
+    <message>
+        <source>The photo could not be taken.</source>
+        <translation>A fotót nem sikerült elkészíteni.</translation>
+    </message>
+    <message>
+        <source>The camera is not available.</source>
+        <translation>A kamera nem érhető el.</translation>
+    </message>
+    <message>
+        <source>The camera is in use by the call.</source>
+        <translation>A kamerát a hívás használja.</translation>
+    </message>
+    <message>
+        <source>Keep in the gallery</source>
+        <translation>Megtartás a galériában</translation>
+    </message>
+    <message>
+        <source>Otherwise the photo is deleted once it is sent.</source>
+        <translation>Különben a fotó küldés után törlődik.</translation>
+    </message>
+    <message>
+        <source>Retake</source>
+        <translation>Újra</translation>
+    </message>
+    <message>
+        <source>Use</source>
+        <translation>Használat</translation>
+    </message>
+</context>
+<context>
+    <name>ColorField</name>
+    <message>
+        <source>Hex code</source>
+        <translation>Hexadecimális kód</translation>
+    </message>
+</context>
+<context>
+    <name>ConfirmDialog</name>
+    <message>
+        <source>Keep</source>
+        <translation>Megtartás</translation>
+    </message>
+</context>
+<context>
+    <name>CoverPage</name>
+    <message>
+        <source>signing in…</source>
+        <translation>bejelentkezés…</translation>
+    </message>
+    <message>
+        <source>not signed in</source>
+        <translation>nincs bejelentkezve</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Kapcsolat nélkül — várakozás a hálózatra</translation>
+    </message>
+    <message>
+        <source>no connection</source>
+        <translation>nincs kapcsolat</translation>
+    </message>
+</context>
+<context>
+    <name>CreatePollDialog</name>
+    <message>
+        <source>Create poll</source>
+        <translation>Szavazás létrehozása</translation>
+    </message>
+    <message>
+        <source>Question</source>
+        <translation>Kérdés</translation>
+    </message>
+    <message>
+        <source>What are you asking?</source>
+        <translation>Mit szeretnél kérdezni?</translation>
+    </message>
+    <message>
+        <source>Answer %1</source>
+        <translation>%1. válasz</translation>
+    </message>
+    <message>
+        <source>Add answer</source>
+        <translation>Válasz hozzáadása</translation>
+    </message>
+    <message>
+        <source>Allow several answers</source>
+        <translation>Több válasz engedélyezése</translation>
+    </message>
+    <message>
+        <source>Everyone can then pick more than one answer.</source>
+        <translation>Ekkor mindenki egynél több választ is megjelölhet.</translation>
+    </message>
+    <message>
+        <source>Hide results until the poll ends</source>
+        <translation>Eredmény elrejtése a szavazás végéig</translation>
+    </message>
+    <message>
+        <source>A poll is not a secret ballot: who voted for what stays readable in the room.</source>
+        <translation>A szavazás nem titkos: ki mire szavazott, olvasható marad a szobában.</translation>
+    </message>
+    <message>
+        <source>Clients keep the counts hidden until the poll ends, yours included. A convention every common client follows, not a lock.</source>
+        <translation>A kliensek a szavazás végéig rejtve tartják a számokat, a tiéd is. Ez a szokásos kliensek által követett megállapodás, nem zár.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateRoomDialog</name>
+    <message>
+        <source>Create room</source>
+        <translation>Szoba létrehozása</translation>
+    </message>
+    <message>
+        <source>Room name</source>
+        <translation>A szoba neve</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Téma</translation>
+    </message>
+    <message>
+        <source>What the room is about</source>
+        <translation>Miről szól a szoba</translation>
+    </message>
+    <message>
+        <source>Public room</source>
+        <translation>Nyilvános szoba</translation>
+    </message>
+    <message>
+        <source>Listed in your homeserver&apos;s room directory, and anyone who finds it can join. Off means invitation only.</source>
+        <translation>Megjelenik a kiszolgálód szobakatalógusában, és aki megtalálja, be tud lépni. Kikapcsolva csak meghívóval.</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Cím</translation>
+    </message>
+    <message>
+        <source>Reachable as %1</source>
+        <translation>Elérhető így: %1</translation>
+    </message>
+    <message>
+        <source>The name people can use to find the room, without # and without the server part. Optional.</source>
+        <translation>A név, amivel a szoba megtalálható, # nélkül és a kiszolgálórész nélkül. Nem kötelező.</translation>
+    </message>
+    <message>
+        <source>Readable history</source>
+        <translation>Olvasható előzmények</translation>
+    </message>
+    <message>
+        <source>Everyone, without joining</source>
+        <translation>Mindenki, belépés nélkül</translation>
+    </message>
+    <message>
+        <source>Members, including earlier messages</source>
+        <translation>Tagok, a korábbi üzenetekkel együtt</translation>
+    </message>
+    <message>
+        <source>Members, from their invitation</source>
+        <translation>Tagok, a meghívásuktól</translation>
+    </message>
+    <message>
+        <source>Members, from their join</source>
+        <translation>Tagok, a belépésüktől</translation>
+    </message>
+    <message>
+        <source>End-to-end encryption</source>
+        <translation>Végpontok közötti titkosítás</translation>
+    </message>
+    <message>
+        <source>Unusual for a public room: everyone joining later reads along from their join onwards, and nothing before it.</source>
+        <translation>Nyilvános szobánál szokatlan: aki később lép be, a belépésétől olvas, előtte semmit.</translation>
+    </message>
+    <message>
+        <source>Can only be decided now — encryption cannot be turned off again later.</source>
+        <translation>Csak most dönthető el — a titkosítás később már nem kapcsolható ki.</translation>
+    </message>
+    <message>
+        <source>Only moderators may write</source>
+        <translation>Csak moderátorok írhatnak</translation>
+    </message>
+    <message>
+        <source>For an announcement room. Everyone else can read, but not write and not react.</source>
+        <translation>Közleményszobához. A többiek olvashatnak, de nem írhatnak és nem reagálhatnak.</translation>
+    </message>
+    <message>
+        <source>Invited people get my rights</source>
+        <translation>A meghívottak megkapják a jogaimat</translation>
+    </message>
+    <message>
+        <source>Everyone invited below starts as an administrator. Later members do not.</source>
+        <translation>Az alább meghívottak mind adminisztrátorként kezdenek. A későbbi tagok nem.</translation>
+    </message>
+    <message>
+        <source>Keep on this server</source>
+        <translation>Maradjon ezen a kiszolgálón</translation>
+    </message>
+    <message>
+        <source>People on other servers cannot join, not even by invitation. Cannot be changed later.</source>
+        <translation>Más kiszolgálókról nem lehet belépni, meghívóval sem. Később nem módosítható.</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Meghívás</translation>
+    </message>
+    <message>
+        <source>Matrix addresses, separated by commas</source>
+        <translation>Matrix-címek vesszővel elválasztva</translation>
+    </message>
+    <message>
+        <source>Invited as the room is created. You can invite more people later from the room&apos;s pulldown menu.</source>
+        <translation>A szoba létrehozásakor kapnak meghívót. Később a szoba lehúzható menüjéből hívhatsz meg többeket.</translation>
+    </message>
+    <message>
+        <source>The room opens right away.</source>
+        <translation>A szoba azonnal megnyílik.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateSpaceDialog</name>
+    <message>
+        <source>Create space</source>
+        <translation>Tér létrehozása</translation>
+    </message>
+    <message>
+        <source>Space name</source>
+        <translation>A tér neve</translation>
+    </message>
+    <message>
+        <source>The space appears in the overview right away. It is private and holds no messages — it is a folder for rooms.</source>
+        <translation>A tér azonnal megjelenik az áttekintésben. Privát, és nem tartalmaz üzeneteket — ez egy mappa szobáknak.</translation>
+    </message>
+</context>
+<context>
+    <name>DirectoryPage</name>
+    <message>
+        <source>Remove this server</source>
+        <translation>Kiszolgáló eltávolítása</translation>
+    </message>
+    <message>
+        <source>Add directory server</source>
+        <translation>Címtárkiszolgáló hozzáadása</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Szobák felfedezése</translation>
+    </message>
+    <message>
+        <source>Directory</source>
+        <translation>Katalógus</translation>
+    </message>
+    <message>
+        <source>Search the room directory</source>
+        <translation>Keresés a szobakatalógusban</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n tag</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Belépés</translation>
+    </message>
+    <message>
+        <source>Join (invitation required)</source>
+        <translation>Belépés (meghívó szükséges)</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Belépés folyamatban</translation>
+    </message>
+    <message>
+        <source>No rooms found</source>
+        <translation>Nem található szoba</translation>
+    </message>
+    <message>
+        <source>Public rooms of the chosen directory show up here.</source>
+        <translation>A kiválasztott katalógus nyilvános szobái itt jelennek meg.</translation>
+    </message>
+</context>
+<context>
+    <name>EmojiFolderPage</name>
+    <message>
+        <source>Where is the pack?</source>
+        <translation>Hol van a csomag?</translation>
+    </message>
+    <message>
+        <source>Take this folder</source>
+        <translation>Ezt a mappát</translation>
+    </message>
+    <message>
+        <source>One level up</source>
+        <translation>Egy szinttel feljebb</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Itt nincsenek mappák</translation>
+    </message>
+    <message>
+        <source>The pull-down takes the folder you are in.</source>
+        <translation>A lehúzható menü azt a mappát veszi, amelyikben vagy.</translation>
+    </message>
+    <message>
+        <source>Pictures in here - tap to read them in</source>
+        <translation>Itt képek vannak - koppints a beolvasáshoz</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptStorageDialog</name>
+    <message>
+        <source>Sign out and encrypt</source>
+        <translation>Kijelentkezés és titkosítás</translation>
+    </message>
+    <message>
+        <source>Leave as it is</source>
+        <translation>Maradjon így</translation>
+    </message>
+    <message>
+        <source>An existing database cannot be encrypted in place. It has to be created anew: signing out deletes it, and the next sign-in creates it encrypted.</source>
+        <translation>Meglévő adatbázist nem lehet a helyén titkosítani. Újra kell létrehozni: a kijelentkezés törli, a következő bejelentkezés titkosítva hozza létre.</translation>
+    </message>
+    <message>
+        <source>You will need your recovery key afterwards to unlock the backup, and this device has to be verified again. Have the recovery key at hand before you continue.</source>
+        <translation>Utána szükséged lesz a helyreállítási kulcsodra a biztonsági mentés feloldásához, és ezt az eszközt újra ellenőrizni kell. Legyen kéznél a kulcs, mielőtt folytatod.</translation>
+    </message>
+    <message>
+        <source>Not possible yet: there is no key backup on the server. Signing out now would make every encrypted message on this device unreadable for good. Set up the backup first, then come back here.</source>
+        <translation>Még nem lehetséges: nincs kulcsmentés a kiszolgálón. Ha most kijelentkezel, az eszközön lévő minden titkosított üzenet végleg olvashatatlan lesz. Előbb állítsd be a mentést, aztán gyere vissza ide.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>Ebben a Sailfish-változatban a böngésző nem tudja befejezni a bejelentkezést. Gyere vissza a „Bejelentkezés másik eszközön” úton — az itt működik.</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptionPage</name>
+    <message>
+        <source>Encryption</source>
+        <translation>Titkosítás</translation>
+    </message>
+    <message>
+        <source>Encrypt local storage</source>
+        <translation>Helyi tárolás titkosítása</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Ellenőrzés</translation>
+    </message>
+    <message>
+        <source>Unlock backup</source>
+        <translation>Mentés feloldása</translation>
+    </message>
+    <message>
+        <source>Enter the recovery key from your other client. This device then fetches the room keys it is missing, and older messages become readable.</source>
+        <translation>Add meg a másik klienseden lévő helyreállítási kulcsot. Az eszköz ekkor lehívja a hiányzó szobakulcsokat, és a régebbi üzenetek olvashatóvá válnak.</translation>
+    </message>
+    <message>
+        <source>Recovery key</source>
+        <translation>Helyreállítási kulcs</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Feloldás</translation>
+    </message>
+    <message>
+        <source>Set up backup</source>
+        <translation>Mentés beállítása</translation>
+    </message>
+    <message>
+        <source>Creates a backup of your room keys on the server, encrypted with a recovery key that only you hold. Without it, reinstalling loses every encrypted message.</source>
+        <translation>Biztonsági mentést készít a szobakulcsaidról a kiszolgálón, egy csak nálad lévő helyreállítási kulccsal titkosítva. Nélküle az újratelepítés minden titkosított üzenetet elveszít.</translation>
+    </message>
+    <message>
+        <source>Your recovery key</source>
+        <translation>A helyreállítási kulcsod</translation>
+    </message>
+    <message>
+        <source>Write this down now. It is shown only once and is not stored on this device.</source>
+        <translation>Írd fel most. Csak egyszer jelenik meg, és nem tárolódik ezen az eszközön.</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Másolás</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Az eszköz igazolása</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Hét emodzsit hasonlít össze a másik eszközöddel. Szükséged van arra az eszközre magad előtt; ha mindkettő megerősítette, ez az eszköz olvashatja a megosztott szobakulcsokat.</translation>
+    </message>
+    <message>
+        <source>Trouble with the key storage?</source>
+        <translation>Gond van a kulcstárolóval?</translation>
+    </message>
+</context>
+<context>
+    <name>ErrorLogPage</name>
+    <message>
+        <source>Clear</source>
+        <translation>Ürítés</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>Összes másolása</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Hibanapló</translation>
+    </message>
+    <message>
+        <source>Nothing has failed in this run.</source>
+        <translation>Ebben a futásban semmi sem hiúsult meg.</translation>
+    </message>
+    <message>
+        <source>Newest first, and only this run — nothing is kept on disk. Identifiers are already removed, so this can be passed on as it stands.</source>
+        <translation>A legújabb elöl, és csak ez a futás — semmi sem marad a lemezen. Az azonosítók már el vannak távolítva, így ez így adható tovább.</translation>
+    </message>
+</context>
+<context>
+    <name>ForwardPage</name>
+    <message>
+        <source>Forward to</source>
+        <translation>Továbbítás ide</translation>
+    </message>
+</context>
+<context>
+    <name>IgnoredUsersPage</name>
+    <message>
+        <source>Ignored users</source>
+        <translation>Mellőzött felhasználók</translation>
+    </message>
+    <message>
+        <source>The list belongs to your account: the server stops delivering these people&apos;s messages, in every client. Tap somebody to stop ignoring them.</source>
+        <translation>A lista a fiókodhoz tartozik: a kiszolgáló minden kliensben leállítja ezeknek az embereknek az üzeneteit. Érints meg valakit, hogy ne mellőzd tovább.</translation>
+    </message>
+    <message>
+        <source>No longer ignoring</source>
+        <translation>Már nincs mellőzve</translation>
+    </message>
+    <message>
+        <source>Nobody is ignored</source>
+        <translation>Senki sincs mellőzve</translation>
+    </message>
+    <message>
+        <source>You can ignore somebody from their profile.</source>
+        <translation>Valakit a profiljából mellőzhetsz.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageViewPage</name>
+    <message>
+        <source>Forward</source>
+        <translation>Továbbítás</translation>
+    </message>
+    <message>
+        <source>Share</source>
+        <translation>Megosztás</translation>
+    </message>
+    <message>
+        <source>Save to gallery</source>
+        <translation>Mentés a galériába</translation>
+    </message>
+    <message>
+        <source>Share picture</source>
+        <translation>Kép megosztása</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Mentve a galériába</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nem sikerült menteni</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Ezt a mellékletet nem sikerült betölteni</translation>
+    </message>
+</context>
+<context>
+    <name>InviteToRoomDialog</name>
+    <message>
+        <source>Invite</source>
+        <translation>Meghívás</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Felhasználóazonosító</translation>
+    </message>
+    <message>
+        <source>They appear in the member list as invited until they accept.</source>
+        <translation>A taglistában meghívottként szerepelnek, amíg el nem fogadják.</translation>
+    </message>
+</context>
+<context>
+    <name>JoinRoomDialog</name>
+    <message>
+        <source>Join</source>
+        <translation>Belépés</translation>
+    </message>
+    <message>
+        <source>Room address</source>
+        <translation>Szoba címe</translation>
+    </message>
+    <message>
+        <source>The room appears in the list once the server has answered. Joining a large public room can take a moment.</source>
+        <translation>A szoba megjelenik a listában, amint a kiszolgáló válaszolt. Egy nagy nyilvános szobába belépni eltarthat egy ideig.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguagePage</name>
+    <message>
+        <source>Language</source>
+        <translation>Nyelv</translation>
+    </message>
+    <message>
+        <source>Takes effect the next time the app starts. Only the German translation has been checked by a native speaker; the others are machine translations, and English is always available here.</source>
+        <translation>A következő indításkor lép életbe. Csak a német fordítást ellenőrizte anyanyelvi beszélő; a többi gépi fordítás, az angol pedig itt mindig elérhető.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguageSettings</name>
+    <message>
+        <source>Follow the device</source>
+        <translation>Az eszközt követi</translation>
+    </message>
+</context>
+<context>
+    <name>LocationActions</name>
+    <message>
+        <source>Location is switched off or not allowed.</source>
+        <translation>A helymeghatározás ki van kapcsolva vagy nem engedélyezett.</translation>
+    </message>
+    <message>
+        <source>The position could not be determined.</source>
+        <translation>A pozíciót nem sikerült meghatározni.</translation>
+    </message>
+    <message>
+        <source>No position yet. Outdoors it usually comes faster.</source>
+        <translation>Még nincs pozíció. Szabadban általában gyorsabb.</translation>
+    </message>
+    <message>
+        <source>This device offers no positioning.</source>
+        <translation>Ez az eszköz nem kínál helymeghatározást.</translation>
+    </message>
+</context>
+<context>
+    <name>LocationBlock</name>
+    <message>
+        <source>Location</source>
+        <translation>Hely</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Élő hely</translation>
+    </message>
+    <message>
+        <source>Live location ended</source>
+        <translation>Az élő hely véget ért</translation>
+    </message>
+    <message>
+        <source>Waiting for the first position</source>
+        <translation>Várakozás az első pozícióra</translation>
+    </message>
+    <message>
+        <source>Updated %1, until %2</source>
+        <translation>Frissítve: %1, eddig: %2</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Megosztás leállítása</translation>
+    </message>
+</context>
+<context>
+    <name>LoginPage</name>
+    <message>
+        <source>Sign in</source>
+        <translation>Bejelentkezés</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix Sailfish OS-re</translation>
+    </message>
+    <message>
+        <source>Homeserver</source>
+        <translation>Otthoni kiszolgáló</translation>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Felhasználónév</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Jelszó</translation>
+    </message>
+    <message>
+        <source>Create account</source>
+        <translation>Fiók létrehozása</translation>
+    </message>
+    <message>
+        <source>Sign in on another device</source>
+        <translation>Bejelentkezés másik eszközön</translation>
+    </message>
+    <message>
+        <source>Finish signing in in the browser, then come back.</source>
+        <translation>Fejezd be a bejelentkezést a böngészőben, aztán gyere vissza.</translation>
+    </message>
+    <message>
+        <source>Open this address on any other device and sign in there:</source>
+        <translation>Nyisd meg ezt a címet bármely másik eszközön, és jelentkezz be ott:</translation>
+    </message>
+    <message>
+        <source>This page signs in by itself as soon as the login is approved there.</source>
+        <translation>Ez az oldal magától bejelentkezik, amint ott jóváhagyod.</translation>
+    </message>
+    <message>
+        <source>Your password is entered on the homeserver&apos;s own page and never reaches this app.</source>
+        <translation>A jelszavadat az otthoni kiszolgáló saját oldalán adod meg, és soha nem jut el ehhez az alkalmazáshoz.</translation>
+    </message>
+    <message>
+        <source>This server uses the classic password sign-in. The password is sent only to this server and is never saved on the device.</source>
+        <translation>Ez a kiszolgáló a klasszikus jelszavas bejelentkezést használja. A jelszó csak ehhez a kiszolgálóhoz kerül el, és soha nem mentődik az eszközre.</translation>
+    </message>
+    <message>
+        <source>Sign-in did not work</source>
+        <translation>A bejelentkezés nem sikerült</translation>
+    </message>
+    <message>
+        <source>This is the server&apos;s own web sign-in. Your password is not wrong — the app cannot use this method yet.</source>
+        <translation>Ez a kiszolgáló saját webes bejelentkezése. A jelszavad nem rossz — az alkalmazás még nem tudja használni ezt a módot.</translation>
+    </message>
+    <message>
+        <source>Check the server address and your connection.</source>
+        <translation>Ellenőrizd a kiszolgáló címét és a kapcsolatot.</translation>
+    </message>
+    <message>
+        <source>The server expects a sign-in this app does not implement.</source>
+        <translation>A kiszolgáló olyan bejelentkezést vár, amit ez az alkalmazás nem valósít meg.</translation>
+    </message>
+    <message>
+        <source>Cancel sign-in</source>
+        <translation>Bejelentkezés megszakítása</translation>
+    </message>
+    <message>
+        <source>This Sailfish version&apos;s browser cannot complete the sign-in of modern homeservers — it returns to the form. Use “Sign in on another device”: Shoal Messages shows an address and a code, you sign in with them on any other device, and this one signs in by itself.</source>
+        <translation>Ennek a Sailfish-változatnak a böngészője nem tudja befejezni a korszerű kiszolgálók bejelentkezését — visszaugrik az űrlapra. Használd a „Bejelentkezés másik eszközön” lehetőséget: az Shoal Messages mutat egy címet és egy kódot, azokkal bármely másik eszközön bejelentkezel, ez pedig magától belép.</translation>
+    </message>
+    <message>
+        <source>Sign in via browser</source>
+        <translation>Bejelentkezés böngészőn át</translation>
+    </message>
+</context>
+<context>
+    <name>LogoutDialog</name>
+    <message>
+        <source>Sign out</source>
+        <translation>Kijelentkezés</translation>
+    </message>
+    <message>
+        <source>Stay signed in</source>
+        <translation>Maradjak bejelentkezve</translation>
+    </message>
+    <message>
+        <source>Really sign out?</source>
+        <translation>Tényleg kijelentkezel?</translation>
+    </message>
+    <message>
+        <source>This device&apos;s keys are deleted along with the session. Encrypted messages stay readable only if they are in a key backup, and this device has to be verified again after signing in.</source>
+        <translation>Az eszköz kulcsai a munkamenettel együtt törlődnek. A titkosított üzenetek csak akkor maradnak olvashatók, ha kulcsmentésben vannak, és az eszközt bejelentkezés után újra ellenőrizni kell.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>Ebben a Sailfish-változatban a böngésző nem tudja befejezni a bejelentkezést. Gyere vissza a „Bejelentkezés másik eszközön” úton — az itt működik.</translation>
+    </message>
+</context>
+<context>
+    <name>MatrixBridge</name>
+    <message>
+        <source>The protocol core could not be started.</source>
+        <translation>A protokollmagot nem sikerült elindítani.</translation>
+    </message>
+    <message>
+        <source>The protocol core is not available.</source>
+        <translation>A protokollmag nem érhető el.</translation>
+    </message>
+    <message>
+        <source>Enter a homeserver first.</source>
+        <translation>Előbb adj meg egy otthoni kiszolgálót.</translation>
+    </message>
+    <message>
+        <source>Enter username and password first.</source>
+        <translation>Előbb add meg a felhasználónevet és a jelszót.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key first.</source>
+        <translation>Előbb add meg a helyreállítási kulcsodat.</translation>
+    </message>
+    <message>
+        <source>The file could not be saved.</source>
+        <translation>A fájlt nem sikerült menteni.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a login page.</source>
+        <translation>Az otthoni kiszolgáló nem adott vissza bejelentkezési oldalt.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a sign-in code.</source>
+        <translation>Az otthoni kiszolgáló nem adott vissza bejelentkezési kódot.</translation>
+    </message>
+    <message>
+        <source>The stored lists cannot be read right now.</source>
+        <translation>A tárolt listák most nem olvashatók.</translation>
+    </message>
+    <message>
+        <source>Your session has ended. Please sign in again.</source>
+        <translation>A munkameneted véget ért. Jelentkezz be újra.</translation>
+    </message>
+    <message>
+        <source>Enter a push gateway first.</source>
+        <translation>Adj meg előbb egy push átjárót.</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Új üzenet</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Kép</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Videó</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Hangüzenet</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Fájl</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Helyzet</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Titkosított üzenet</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Meghívó</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Szavazás</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Szavazás: %1</translation>
+    </message>
+</context>
+<context>
+    <name>MemberListPage</name>
+    <message>
+        <source>Members</source>
+        <translation>Tagok</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>meghívva</translation>
+    </message>
+    <message>
+        <source>Admin</source>
+        <translation>Adminisztrátor</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderátor</translation>
+    </message>
+    <message>
+        <source>No members yet</source>
+        <translation>Még nincsenek tagok</translation>
+    </message>
+    <message>
+        <source>The people in this room show up here.</source>
+        <translation>Ennek a szobának a tagjai itt jelennek meg.</translation>
+    </message>
+</context>
+<context>
+    <name>MemberProfilePage</name>
+    <message>
+        <source>Admin</source>
+        <translation>Adminisztrátor</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderátor</translation>
+    </message>
+    <message>
+        <source>Member</source>
+        <translation>Tag</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>meghívva</translation>
+    </message>
+    <message>
+        <source>banned</source>
+        <translation>kitiltva</translation>
+    </message>
+    <message>
+        <source>left the room</source>
+        <translation>elhagyta a szobát</translation>
+    </message>
+    <message>
+        <source>Reload</source>
+        <translation>Újratöltés</translation>
+    </message>
+    <message>
+        <source>Make moderator</source>
+        <translation>Legyen moderátor</translation>
+    </message>
+    <message>
+        <source>Make admin</source>
+        <translation>Legyen adminisztrátor</translation>
+    </message>
+    <message>
+        <source>Really make this member an admin?</source>
+        <translation>Tényleg adminisztrátor legyen ez a tag?</translation>
+    </message>
+    <message>
+        <source>This cannot be taken back: only they themselves can step down afterwards.</source>
+        <translation>Ez nem vonható vissza: később csak ő maga mondhat le róla.</translation>
+    </message>
+    <message>
+        <source>Demote to member</source>
+        <translation>Visszaminősítés taggá</translation>
+    </message>
+    <message>
+        <source>Revoke invitation</source>
+        <translation>Meghívó visszavonása</translation>
+    </message>
+    <message>
+        <source>Remove from room</source>
+        <translation>Eltávolítás a szobából</translation>
+    </message>
+    <message>
+        <source>Removing</source>
+        <translation>Eltávolítás</translation>
+    </message>
+    <message>
+        <source>Ban from room</source>
+        <translation>Kitiltás a szobából</translation>
+    </message>
+    <message>
+        <source>Really ban this member?</source>
+        <translation>Tényleg kitiltod ezt a tagot?</translation>
+    </message>
+    <message>
+        <source>%1 is removed from the room and cannot come back until the ban is lifted.</source>
+        <translation>%1 kikerül a szobából, és nem térhet vissza, amíg a tiltás fel nem oldódik.</translation>
+    </message>
+    <message>
+        <source>Ban</source>
+        <translation>Kitiltás</translation>
+    </message>
+    <message>
+        <source>Banning</source>
+        <translation>Kitiltás folyamatban</translation>
+    </message>
+    <message>
+        <source>Lift ban</source>
+        <translation>Tiltás feloldása</translation>
+    </message>
+    <message>
+        <source>Address copied</source>
+        <translation>Cím másolva</translation>
+    </message>
+    <message>
+        <source>Role</source>
+        <translation>Szerep</translation>
+    </message>
+    <message>
+        <source>Member since</source>
+        <translation>Tag ekkortól</translation>
+    </message>
+    <message>
+        <source>Invited by</source>
+        <translation>Meghívta</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>Eszközök</translation>
+    </message>
+    <message>
+        <source>Send direct message</source>
+        <translation>Közvetlen üzenet küldése</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Ellenőrzés</translation>
+    </message>
+    <message>
+        <source>Withdraw verification</source>
+        <translation>Ellenőrzés visszavonása</translation>
+    </message>
+    <message>
+        <source>Stop ignoring</source>
+        <translation>Mellőzés befejezése</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation>Mellőzés</translation>
+    </message>
+    <message>
+        <source>Ignoring</source>
+        <translation>Mellőzés folyamatban</translation>
+    </message>
+    <message>
+        <source>Shared rooms</source>
+        <translation>Közös szobák</translation>
+    </message>
+    <message>
+        <source>Forbid calls</source>
+        <translation>Hívások tiltása</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Hívások engedélyezése</translation>
+    </message>
+    <message>
+        <source>Identity</source>
+        <translation>Személyazonosság</translation>
+    </message>
+    <message>
+        <source>verified</source>
+        <translation>ellenőrizve</translation>
+    </message>
+    <message>
+        <source>changed since it was verified — verify again or withdraw</source>
+        <translation>az ellenőrzés óta megváltozott — ellenőrizd újra vagy vond vissza</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>nincs ellenőrizve</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>nincs</translation>
+    </message>
+    <message>
+        <source>Mention</source>
+        <translation>Említés</translation>
+    </message>
+</context>
+<context>
+    <name>MessageActionsPage</name>
+    <message>
+        <source>Message</source>
+        <translation>Üzenet</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Másolás</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Válasz</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Mentés</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Továbbítás</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Szerkesztés</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Kitűzés</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Törlés</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Elvetés</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Küldés újra</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reagálás</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Válasz a szálban</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Átalakítás szöveggé</translation>
+    </message>
+</context>
+<context>
+    <name>MoveToSpacePage</name>
+    <message>
+        <source>Move to space</source>
+        <translation>Áthelyezés térbe</translation>
+    </message>
+    <message>
+        <source>No other space</source>
+        <translation>Nincs másik tér</translation>
+    </message>
+    <message>
+        <source>Create another space first to move rooms between them.</source>
+        <translation>Előbb hozz létre egy másik teret, hogy szobákat mozgathass közöttük.</translation>
+    </message>
+</context>
+<context>
+    <name>NewChatDialog</name>
+    <message>
+        <source>Start chat</source>
+        <translation>Beszélgetés indítása</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Felhasználóazonosító</translation>
+    </message>
+    <message>
+        <source>The other side receives an invitation and the chat appears in your list right away. Messages are encrypted from the start.</source>
+        <translation>A másik fél meghívót kap, és a beszélgetés azonnal megjelenik a listádban. Az üzenetek kezdettől titkosítottak.</translation>
+    </message>
+</context>
+<context>
+    <name>PinnedMessagesPage</name>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Kitűzött üzenetek</translation>
+    </message>
+    <message>
+        <source>Show in conversation</source>
+        <translation>Megjelenítés a beszélgetésben</translation>
+    </message>
+    <message>
+        <source>Unpin</source>
+        <translation>Kitűzés megszüntetése</translation>
+    </message>
+    <message>
+        <source>Pinned messages unavailable</source>
+        <translation>A kitűzött üzenetek nem érhetők el</translation>
+    </message>
+    <message>
+        <source>No pinned messages</source>
+        <translation>Nincsenek kitűzött üzenetek</translation>
+    </message>
+    <message>
+        <source>The server does not hand out these messages. They are older than this server&apos;s copy of the room.</source>
+        <translation>A kiszolgáló nem adja ki ezeket az üzeneteket. Régebbiek, mint a szoba másolata ezen a kiszolgálón.</translation>
+    </message>
+    <message>
+        <source>Long-press a message in the conversation to pin it.</source>
+        <translation>Tartsd nyomva a beszélgetésben egy üzenetet, hogy kitűzd.</translation>
+    </message>
+</context>
+<context>
+    <name>PollBlock</name>
+    <message>
+        <source>The poll has ended.</source>
+        <translation>A szavazás véget ért.</translation>
+    </message>
+    <message>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>Results are shown once the poll ends</source>
+        <translation>Az eredmény a szavazás végén jelenik meg</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n vote(s)</source>
+        <translation>
+            <numerusform>%n szavazat</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Ended</source>
+        <translation>Lezárva</translation>
+    </message>
+    <message>
+        <source>Several answers</source>
+        <translation>Több válasz</translation>
+    </message>
+    <message>
+        <source>End poll</source>
+        <translation>Szavazás lezárása</translation>
+    </message>
+</context>
+<context>
+    <name>Preview</name>
+    <message>
+        <source>Picture</source>
+        <translation>Kép</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Videó</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Hangüzenet</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Fájl</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Helyzet</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Szavazás: %1</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Szavazás</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Titkosított üzenet</translation>
+    </message>
+</context>
+<context>
+    <name>PrivacyPage</name>
+    <message>
+        <source>Privacy</source>
+        <translation>Adatvédelem</translation>
+    </message>
+    <message>
+        <source>Who may call you</source>
+        <translation>Ki hívhat téged</translation>
+    </message>
+    <message>
+        <source>Everyone</source>
+        <translation>Mindenki</translation>
+    </message>
+    <message>
+        <source>People you have a direct chat with</source>
+        <translation>Akikkel közvetlen beszélgetésed van</translation>
+    </message>
+    <message>
+        <source>Only my list</source>
+        <translation>Csak a listám</translation>
+    </message>
+    <message>
+        <source>Calls from group rooms</source>
+        <translation>Hívások csoportszobákból</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Videohívások</translation>
+    </message>
+    <message>
+        <source>Send read receipts</source>
+        <translation>Olvasási visszaigazolások küldése</translation>
+    </message>
+    <message>
+        <source>Allowed callers</source>
+        <translation>Engedélyezett hívók</translation>
+    </message>
+    <message>
+        <source>Matrix address</source>
+        <translation>Matrix-cím</translation>
+    </message>
+    <message>
+        <source>@name:server</source>
+        <translation>@name:server</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Hívások engedélyezése</translation>
+    </message>
+    <message>
+        <source>Nobody yet.</source>
+        <translation>Még senki.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Eltávolítás</translation>
+    </message>
+    <message>
+        <source>A call rings past a muted room. Refused calls never ring, and the caller learns nothing.</source>
+        <translation>A hívás néma szobában is csörög. Az elutasítottak nem csörögnek, és a hívó semmit sem tud meg.</translation>
+    </message>
+    <message>
+        <source>In a group room everybody sees the call. The list does not override this.</source>
+        <translation>Csoportszobában a hívást mindenki látja. A lista ezt nem írja felül.</translation>
+    </message>
+    <message>
+        <source>They may always call. The list stays on this device.</source>
+        <translation>Mindig hívhatnak. A lista ezen a készüléken marad.</translation>
+    </message>
+    <message>
+        <source>On this device</source>
+        <translation>Ezen az eszközön</translation>
+    </message>
+    <message>
+        <source>What others learn</source>
+        <translation>Amit mások megtudnak</translation>
+    </message>
+    <message>
+        <source>Message text in notifications</source>
+        <translation>Üzenetszöveg az értesítésekben</translation>
+    </message>
+    <message>
+        <source>Off, a notification says only how many messages arrived. On, it shows the latest message — also on the lock screen.</source>
+        <translation>Kikapcsolva az értesítés csak azt mondja meg, hány üzenet érkezett. Bekapcsolva a legutóbbi üzenetet mutatja — a zárolt képernyőn is.</translation>
+    </message>
+    <message>
+        <source>Show others&apos; read status</source>
+        <translation>Mások olvasási állapotának mutatása</translation>
+    </message>
+    <message>
+        <source>Voice messages</source>
+        <translation>Hangüzenetek</translation>
+    </message>
+    <message>
+        <source>Tappable web links</source>
+        <translation>Megérinthető webes hivatkozások</translation>
+    </message>
+    <message>
+        <source>On, a link in a message opens the browser when tapped. Off, links stay plain text.</source>
+        <translation>Bekapcsolva az üzenetben lévő hivatkozás érintésre megnyitja a böngészőt. Kikapcsolva a hivatkozások sima szövegként maradnak.</translation>
+    </message>
+    <message>
+        <source>Delete media now</source>
+        <translation>Média törlése most</translation>
+    </message>
+    <message>
+        <source>Delete downloaded media</source>
+        <translation>Letöltött média törlése</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Soha</translation>
+    </message>
+    <message>
+        <source>When the app is closed</source>
+        <translation>Az alkalmazás bezárásakor</translation>
+    </message>
+    <message>
+        <source>As soon as the app is not in front</source>
+        <translation>Amint az alkalmazás nincs elöl</translation>
+    </message>
+    <message>
+        <source>By default they are deleted when you sign out, so save what you want to keep.</source>
+        <translation>Alapértelmezés szerint kijelentkezéskor törlődnek, ezért mentsd el, amit meg akarsz tartani.</translation>
+    </message>
+    <message>
+        <source>&quot;Never&quot; keeps them for good - convenient, and not recommended.</source>
+        <translation>A „Soha” örökre megtartja őket — kényelmes és nem ajánlott.</translation>
+    </message>
+    <message>
+        <source>Anything deleted is fetched again when you open it.</source>
+        <translation>A törölt tartalom megnyitáskor újra letöltődik.</translation>
+    </message>
+    <message>
+        <source>When you sign out</source>
+        <translation>Kijelentkezéskor</translation>
+    </message>
+    <message>
+        <source>Limit repeated calls</source>
+        <translation>Ismételt hívások korlátozása</translation>
+    </message>
+    <message>
+        <source>On, the same person can only ring again after a short pause. It also delays a second, genuine attempt.</source>
+        <translation>Be: ugyanaz a személy csak rövid szünet után hívhat újra. Ez egy második, valódi próbálkozást is késleltet.</translation>
+    </message>
+    <message>
+        <source>Messages and keys are stored encrypted.</source>
+        <translation>Az üzenetek és a kulcsok titkosítva vannak tárolva.</translation>
+    </message>
+    <message>
+        <source>Messages and keys lie on this device unencrypted - the encryption page says why and what can be done about it.</source>
+        <translation>Az üzenetek és a kulcsok titkosítatlanul vannak ezen az eszközön — a titkosítás oldala megmondja, miért és mit lehet tenni.</translation>
+    </message>
+    <message>
+        <source>Pictures, videos and documents you opened are not - they lie on the device like the ones in the gallery, readable to anybody who has it.</source>
+        <translation>A megnyitott képek, videók és dokumentumok nem — úgy hevernek az eszközön, mint a galéria képei, bárki elolvashatja, akinél az eszköz van.</translation>
+    </message>
+    <message>
+        <source>Off, an offer with video is answered as a voice call: your camera stays shut and no picture is shown. The other side may still send one, which this phone discards.</source>
+        <translation>Kikapcsolva: a videót kínáló hívást hanghívásként veszi fel — a kamerád zárva marad, és nem jelenik meg kép. A másik fél ettől még küldhet egyet, amit ez a telefon eldob.</translation>
+    </message>
+    <message>
+        <source>Off, nobody is told how far you have read. What others read is the setting below.</source>
+        <translation>Kikapcsolva: senki sem tudja meg, meddig olvastál. Hogy mások mit olvastak, az alábbi beállítás dönti el.</translation>
+    </message>
+    <message>
+        <source>The list is encrypted and its key is not available. It can be read again after the device has been unlocked and the app restarted.</source>
+        <translation>A lista titkosított, a kulcsa nem érhető el. Újra olvasható lesz, miután feloldottad az eszközt és újraindítottad az alkalmazást.</translation>
+    </message>
+    <message>
+        <source>Load pictures automatically</source>
+        <translation>Képek automatikus betöltése</translation>
+    </message>
+    <message>
+        <source>On, a picture or video loads as soon as its message appears. Off, it loads when you tap it — scrolling past one is a request to the sender&apos;s server.</source>
+        <translation>Be: a kép vagy videó azonnal betöltődik, amint az üzenet megjelenik. Ki: érintésre töltődik be — elgörgetni mellette kérés a küldő kiszolgálójához.</translation>
+    </message>
+    <message>
+        <source>Link previews</source>
+        <translation>Hivatkozás-előnézet</translation>
+    </message>
+    <message>
+        <source>Your homeserver fetches the page and shows its title. It learns every link it is asked about; in an encrypted room that is content it otherwise never sees.</source>
+        <translation>A saját kiszolgálód letölti az oldalt, és megmutatja a címét. Így minden hivatkozásról tud, amelyről megkérdezik; titkosított szobában ez olyan tartalom, amit egyébként soha nem lát.</translation>
+    </message>
+    <message>
+        <source>Only in unencrypted rooms</source>
+        <translation>Csak titkosítatlan szobákban</translation>
+    </message>
+    <message>
+        <source>Always</source>
+        <translation>Mindig</translation>
+    </message>
+    <message>
+        <source>Voice messages as text</source>
+        <translation>Hangüzenetek szövegként</translation>
+    </message>
+    <message>
+        <source>Convert voice messages to text</source>
+        <translation>Hangüzenetek átalakítása szöveggé</translation>
+    </message>
+    <message>
+        <source>On, a long press on a voice message offers to convert it. Nothing is converted unless you ask, and the recording never leaves this phone.</source>
+        <translation>Bekapcsolva egy hangüzenet hosszú megnyomása felajánlja az átalakítását. Semmi sem alakul át, amíg nem kéred, és a felvétel sosem hagyja el ezt a telefont.</translation>
+    </message>
+    <message>
+        <source>This needs a program this app does not bring, from OpenRepos, installed by you: &quot;Speech Note&quot; (about 40 MB to download, 104 MB installed), and in it the model &quot;Auto (WhisperCpp Small)&quot; (190 MB), which recognises the language of each message by itself. Only on 64-bit phones.</source>
+        <translation>Ehhez egy olyan program kell, amelyet ez az alkalmazás nem hoz magával, az OpenReposból, te telepíted: „Speech Note” (kb. 40 MB letöltés, 104 MB telepítve), és benne az „Auto (WhisperCpp Small)” modell (190 MB), amely magától felismeri minden üzenet nyelvét. Csak 64 bites telefonokon.</translation>
+    </message>
+    <message>
+        <source>Check</source>
+        <translation>Ellenőrzés</translation>
+    </message>
+    <message>
+        <source>Checking. The first time can take half a minute.</source>
+        <translation>Ellenőrzés folyamatban. Első alkalommal fél percig is eltarthat.</translation>
+    </message>
+    <message>
+        <source>On, a microphone sits next to the message field: hold it to record, let go to send - or tap it to record hands-free, and a second tap or seven seconds of silence sends. Off, it is not there.</source>
+        <translation>Bekapcsolva az üzenetmező mellett mikrofon van: tartsd nyomva a felvételhez, engedd el a küldéshez – vagy koppints rá a kéz nélküli felvételhez, és egy második koppintás vagy hét másodperc csend elküldi. Kikapcsolva nincs ott.</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Hely</translation>
+    </message>
+    <message>
+        <source>Share your location</source>
+        <translation>Helyed megosztása</translation>
+    </message>
+    <message>
+        <source>On, a room&apos;s pull-down menu offers to send your position, once or live for a while. Nothing is sent unless you choose it there.</source>
+        <translation>Bekapcsolva egy szoba lehúzható menüje felajánlja a pozíciód elküldését, egyszer vagy egy ideig élőben. Semmi sem megy el, hacsak ott nem választod.</translation>
+    </message>
+    <message>
+        <source>Maps for locations</source>
+        <translation>Térképek a helyekhez</translation>
+    </message>
+    <message>
+        <source>Map pieces come from OpenStreetMap. Its server learns your IP address and roughly where the location lies; in an encrypted room that is content it otherwise never sees. Without a map the coordinates are shown.</source>
+        <translation>A térképdarabok az OpenStreetMaptől jönnek. A szervere megtudja az IP-címedet és nagyjából azt, hol van a hely; titkosított szobában ez olyan tartalom, amelyet egyébként soha nem lát. Térkép nélkül a koordináták jelennek meg.</translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation>Kamera</translation>
+    </message>
+    <message>
+        <source>Live picture in the attachment picker</source>
+        <translation>Élőkép a mellékletválasztóban</translation>
+    </message>
+    <message>
+        <source>On, the camera cell shows what the camera sees while the picker is open. Off, the camera only runs once you tap the cell.</source>
+        <translation>Be: a kamera csempéje mutatja, amit a kamera lát, amíg a választó nyitva van. Ki: a kamera csak akkor indul el, ha a csempére koppintasz.</translation>
+    </message>
+    <message>
+        <source>Off, who read what is neither tracked nor shown, which also keeps the conversation smoother. On, your own messages say how many people have read them.</source>
+        <translation>Kikapcsolva nem követjük és nem mutatjuk, ki mit olvasott, ami a beszélgetést is gördülékenyebben tartja. Bekapcsolva a saját üzeneteid mutatják, hányan olvasták őket.</translation>
+    </message>
+</context>
+<context>
+    <name>PushPage</name>
+    <message>
+        <source>Push notifications</source>
+        <translation>Push értesítések</translation>
+    </message>
+    <message>
+        <source>Shoal Messages has no background service, so messages arrive only while it runs. A push distributor is a separate app that holds one connection for every app on the device and wakes them when something comes in.</source>
+        <translation>Az Shoal Messagesnak nincs háttérszolgáltatása, így üzenetek csak futás közben érkeznek. A push elosztó egy külön alkalmazás, amely egyetlen kapcsolatot tart fenn az eszköz összes alkalmazása helyett, és felébreszti őket, ha valami érkezik.</translation>
+    </message>
+    <message>
+        <source>Receive push notifications</source>
+        <translation>Push értesítések fogadása</translation>
+    </message>
+    <message>
+        <source>Distributor</source>
+        <translation>Elosztó</translation>
+    </message>
+    <message>
+        <source>No push distributor is installed. Without one there is nothing to hold the connection, and this stays off.</source>
+        <translation>Nincs telepítve push elosztó. Nélküle semmi sem tartja a kapcsolatot, és ez kikapcsolva marad.</translation>
+    </message>
+    <message>
+        <source>Registration</source>
+        <translation>Regisztráció</translation>
+    </message>
+    <message>
+        <source>This device has an address to be reached at.</source>
+        <translation>Ennek az eszköznek van címe, amelyen elérhető.</translation>
+    </message>
+    <message>
+        <source>Waiting for the distributor.</source>
+        <translation>Várakozás az elosztóra.</translation>
+    </message>
+    <message>
+        <source>Not registered.</source>
+        <translation>Nincs regisztrálva.</translation>
+    </message>
+    <message>
+        <source>Gateway</source>
+        <translation>Átjáró</translation>
+    </message>
+    <message>
+        <source>A Matrix homeserver cannot talk to a push distributor directly, so it posts to a gateway that forwards. There is no default: it is the one thing nobody can guess for you.</source>
+        <translation>Egy Matrix kiszolgáló nem tud közvetlenül a push elosztóval beszélni, ezért egy átjárónak küld, amely továbbítja. Nincs alapérték: ez az egyetlen dolog, amit senki nem tud kitalálni helyetted.</translation>
+    </message>
+    <message>
+        <source>Push gateway</source>
+        <translation>Push átjáró</translation>
+    </message>
+    <message>
+        <source>What leaves this device</source>
+        <translation>Mi hagyja el ezt az eszközt</translation>
+    </message>
+    <message>
+        <source>Your homeserver is told an address at the push service, and posts a room and message identifier to the gateway for every notification. No message text: the push carries identifiers only and this device fetches and decrypts the message itself. That address is a secret — whoever holds it can send this phone a notification.</source>
+        <translation>A kiszolgálód megkapja a push szolgáltatásnál lévő címet, és minden értesítéshez elküldi az átjárónak a szoba- és üzenetazonosítót. Üzenetszöveget nem: a push csak azonosítókat visz, az üzenetet ez az eszköz tölti le és fejti vissza. Ez a cím titok — akinél megvan, értesítést küldhet erre a telefonra.</translation>
+    </message>
+</context>
+<context>
+    <name>PushWake</name>
+    <message>
+        <source>New message</source>
+        <translation>Új üzenet</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <source>no session description</source>
+        <translation>nincs munkamenet-leírás</translation>
+    </message>
+</context>
+<context>
+    <name>ReactionDialog</name>
+    <message>
+        <source>React</source>
+        <translation>Reagálás</translation>
+    </message>
+    <message>
+        <source>Nothing kept here</source>
+        <translation>Itt nincs semmi</translation>
+    </message>
+    <message>
+        <source>Press and hold an emoji in another tab to keep it here</source>
+        <translation>Tarts nyomva egy emodzsit egy másik lapon, hogy ide kerüljön</translation>
+    </message>
+    <message>
+        <source>Your own text</source>
+        <translation>A saját szöveged</translation>
+    </message>
+    <message>
+        <source>Your text as reaction</source>
+        <translation>A szöveged reakcióként</translation>
+    </message>
+</context>
+<context>
+    <name>RoomActionsPage</name>
+    <message>
+        <source>Rooms</source>
+        <translation>Szobák</translation>
+    </message>
+    <message>
+        <source>New chat</source>
+        <translation>Új beszélgetés</translation>
+    </message>
+    <message>
+        <source>New room</source>
+        <translation>Új szoba</translation>
+    </message>
+    <message>
+        <source>Join room</source>
+        <translation>Belépés szobába</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Szobák felfedezése</translation>
+    </message>
+</context>
+<context>
+    <name>RoomDelegate</name>
+    <message>
+        <source>Invitation</source>
+        <translation>Meghívó</translation>
+    </message>
+    <message>
+        <source>Replaced by a new room</source>
+        <translation>Új szoba váltotta fel</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Tér</translation>
+    </message>
+</context>
+<context>
+    <name>RoomInfoPage</name>
+    <message>
+        <source>this room</source>
+        <translation>ezt a szobát</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Tényleg elhagyod ezt a szobát?</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>A szobát elhagyod és elfelejted. Eltűnik a beszélgetéslistából, és a visszatéréshez új meghívó vagy nyilvános cím kell.</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Elhagyás</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Szoba elhagyása folyamatban</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Szoba elhagyása</translation>
+    </message>
+    <message>
+        <source>Room</source>
+        <translation>Szoba</translation>
+    </message>
+    <message>
+        <source>Replaced — open the new room</source>
+        <translation>Felváltva — nyisd meg az új szobát</translation>
+    </message>
+    <message>
+        <source>Replaced — join the new room</source>
+        <translation>Felváltva — lépj be az új szobába</translation>
+    </message>
+    <message>
+        <source>Older messages in the previous room</source>
+        <translation>Régebbi üzenetek a korábbi szobában</translation>
+    </message>
+    <message>
+        <source>People and messages</source>
+        <translation>Emberek és üzenetek</translation>
+    </message>
+    <message>
+        <source>Members: %1 (%2 invited)</source>
+        <translation>Tagok: %1 (%2 meghívva)</translation>
+    </message>
+    <message>
+        <source>Members: %1</source>
+        <translation>Tagok: %1</translation>
+    </message>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Kitűzött üzenetek</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Meghívás</translation>
+    </message>
+    <message>
+        <source>This room for me</source>
+        <translation>Ez a szoba nekem</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Értesítések</translation>
+    </message>
+    <message>
+        <source>Stored with the account, so it holds in every client</source>
+        <translation>A fiókkal együtt tárolódik, így minden kliensben érvényes</translation>
+    </message>
+    <message>
+        <source>Account default</source>
+        <translation>A fiók alapértelmezése</translation>
+    </message>
+    <message>
+        <source>Every message</source>
+        <translation>Minden üzenet</translation>
+    </message>
+    <message>
+        <source>Only mentions and keywords</source>
+        <translation>Csak említések és kulcsszavak</translation>
+    </message>
+    <message>
+        <source>Nothing (muted)</source>
+        <translation>Semmi (némítva)</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Kedvenc</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Alacsony prioritás</translation>
+    </message>
+    <message>
+        <source>Sorts to the bottom of the list and stays quiet</source>
+        <translation>A lista aljára kerül és csendben marad</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Részletek</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Titkosítás</translation>
+    </message>
+    <message>
+        <source>End-to-end encrypted</source>
+        <translation>Végpontok között titkosítva</translation>
+    </message>
+    <message>
+        <source>Not encrypted</source>
+        <translation>Nincs titkosítva</translation>
+    </message>
+    <message>
+        <source>Turning on encryption</source>
+        <translation>Titkosítás bekapcsolása</translation>
+    </message>
+    <message>
+        <source>Turn on encryption</source>
+        <translation>Titkosítás bekapcsolása</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption?</source>
+        <translation>Újratárgyalod a titkosítást?</translation>
+    </message>
+    <message>
+        <source>The next message starts a new session and hands its key to every device in the room again. Messages already sent stay as they are; nothing of your own history is lost.</source>
+        <translation>A következő üzenet új munkamenetet indít, és a kulcsát újra átadja a szoba minden eszközének. A már elküldött üzenetek változatlanok maradnak; az előzményeidből semmi nem vész el.</translation>
+    </message>
+    <message>
+        <source>Renegotiate</source>
+        <translation>Újratárgyalás</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption</source>
+        <translation>Titkosítás újratárgyalása</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Cím</translation>
+    </message>
+    <message>
+        <source>Access</source>
+        <translation>Hozzáférés</translation>
+    </message>
+    <message>
+        <source>Public</source>
+        <translation>Nyilvános</translation>
+    </message>
+    <message>
+        <source>On invitation</source>
+        <translation>Meghívóval</translation>
+    </message>
+    <message>
+        <source>Room version</source>
+        <translation>Szobaverzió</translation>
+    </message>
+    <message>
+        <source>Room ID</source>
+        <translation>Szobaazonosító</translation>
+    </message>
+    <message>
+        <source>Room ID copied</source>
+        <translation>Szobaazonosító másolva</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Szoba szerkesztése</translation>
+    </message>
+</context>
+<context>
+    <name>RoomListPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Tényleg elutasítod ezt a meghívót?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Tényleg elhagyod ezt a szobát?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>A meghívó ezután eltűnik. Csak akkor jutsz vissza, ha valaki újra meghív.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>A szobát elhagyod és elfelejted. Eltűnik a beszélgetéslistából, és a visszatéréshez új meghívó vagy nyilvános cím kell.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Elutasítás</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Elhagyás</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Elutasítás</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Szoba elhagyása folyamatban</translation>
+    </message>
+    <message>
+        <source>Rooms</source>
+        <translation>Szobák</translation>
+    </message>
+    <message>
+        <source>This homeserver is not supported</source>
+        <translation>Ez az otthoni kiszolgáló nem támogatott</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Kapcsolat nélkül — várakozás a hálózatra</translation>
+    </message>
+    <message>
+        <source>Your homeserver does not offer the sync this app needs (simplified sliding sync, MSC4186). Rooms cannot be loaded from it. A newer server version, or an account on a server that supports it, is required.</source>
+        <translation>Az otthoni kiszolgálód nem kínálja azt a szinkronizálást, amire ennek az alkalmazásnak szüksége van (simplified sliding sync, MSC4186). Róla nem tölthetők be szobák. Újabb kiszolgálóverzió kell, vagy fiók egy olyan kiszolgálón, ami támogatja.</translation>
+    </message>
+    <message>
+        <source>Search rooms</source>
+        <translation>Szobák keresése</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Eltávolítás a kedvencekből</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Kedvenc</translation>
+    </message>
+    <message>
+        <source>Normal priority</source>
+        <translation>Normál prioritás</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Alacsony prioritás</translation>
+    </message>
+    <message>
+        <source>Unmute</source>
+        <translation>Némítás feloldása</translation>
+    </message>
+    <message>
+        <source>Mute</source>
+        <translation>Némítás</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Meghívó elutasítása</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Szoba elhagyása</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Nincsenek szobák</translation>
+    </message>
+    <message>
+        <source>Rooms you join show up here once the first sync is through.</source>
+        <translation>Azok a szobák, amikbe belépsz, itt jelennek meg az első szinkronizálás után.</translation>
+    </message>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Az Shoal Messages névjegye</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Legyen a kezdőoldal</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Fiók</translation>
+    </message>
+    <message>
+        <source>Mark as read</source>
+        <translation>Megjelölés olvasottként</translation>
+    </message>
+    <message>
+        <source>%1 of %2 rooms</source>
+        <translation>%1 / %2 szoba</translation>
+    </message>
+    <message>
+        <source>Verify user</source>
+        <translation>Felhasználó ellenőrzése</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>A helyi adatok sérültek</translation>
+    </message>
+    <message>
+        <source>Part of the data stored on this device cannot be read any more, and Shoal Messages has not been able to put it right while running — so it has stopped syncing rather than meet the same row again. Close the app and start it again. If rooms are still missing afterwards, signing out and in rebuilds the local data — but it replaces this device&apos;s keys, so check on the encryption page that the key backup is on before you do.</source>
+        <translation>Az ezen az eszközön tárolt adatok egy része már nem olvasható, és az Shoal Messages futás közben nem tudta helyrehozni — ezért leállította a szinkronizálást ahelyett, hogy újra ugyanabba a sorba ütközne. Zárd be az alkalmazást, és indítsd újra. Ha utána még mindig hiányoznak szobák, a kijelentkezés és az újbóli bejelentkezés újraépíti a helyi adatokat — de lecseréli az eszköz kulcsait is: előbb ellenőrizd a titkosítási oldalon, hogy a kulcsmentés be van-e kapcsolva.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Tényleg elutasítod ezt a meghívót?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Tényleg elhagyod ezt a szobát?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>A meghívó ezután eltűnik. Csak akkor jutsz vissza, ha valaki újra meghív.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>A szobát elhagyod és elfelejted. Eltűnik a beszélgetéslistából, és a visszatéréshez új meghívó vagy nyilvános cím kell.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Elutasítás</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Elhagyás</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Elutasítás</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Szoba elhagyása folyamatban</translation>
+    </message>
+    <message>
+        <source>The sender did not share the key: they consider this device insecure. Verify this device.</source>
+        <translation>A küldő nem osztotta meg a kulcsot: nem tartja biztonságosnak ezt az eszközt. Ellenőrizd ezt az eszközt.</translation>
+    </message>
+    <message>
+        <source>The sender could not deliver the key to this device.</source>
+        <translation>A küldő nem tudta eljuttatni a kulcsot erre az eszközre.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s identity has changed since you verified them, so the key was withheld.</source>
+        <translation>A küldő személyazonossága megváltozott az ellenőrzésed óta, ezért a kulcsot visszatartotta.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is not signed by its owner.</source>
+        <translation>A küldő eszközét nem írta alá a tulajdonosa.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is unknown here.</source>
+        <translation>A küldő eszköze itt ismeretlen.</translation>
+    </message>
+    <message>
+        <source>Sent before you joined the room.</source>
+        <translation>Azelőtt küldték, hogy beléptél volna a szobába.</translation>
+    </message>
+    <message>
+        <source>Older than this device, and there is no key backup.</source>
+        <translation>Régebbi, mint ez az eszköz, és nincs kulcsmentés.</translation>
+    </message>
+    <message>
+        <source>Older than this device. Verify this device to read it.</source>
+        <translation>Régebbi, mint ez az eszköz. Ellenőrizd az eszközt, hogy elolvashasd.</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Nem fejthető vissza — ezen az eszközön nincs meg a kulcs</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Meghívó elutasítása</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Szoba elhagyása</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <translation>Hívás</translation>
+    </message>
+    <message>
+        <source>Video call</source>
+        <translation>Videohívás</translation>
+    </message>
+    <message>
+        <source>Back to the call</source>
+        <translation>Vissza a híváshoz</translation>
+    </message>
+    <message>
+        <source>Go to the new room</source>
+        <translation>Ugrás az új szobába</translation>
+    </message>
+    <message>
+        <source>Join the new room</source>
+        <translation>Belépés az új szobába</translation>
+    </message>
+    <message>
+        <source>Load older messages</source>
+        <translation>Régebbi üzenetek betöltése</translation>
+    </message>
+    <message>
+        <source>Room info</source>
+        <translation>Szoba adatai</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Kapcsolat nélkül — várakozás a hálózatra</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Meghívó</translation>
+    </message>
+    <message>
+        <source>This room has been replaced</source>
+        <translation>Ezt a szobát felváltották</translation>
+    </message>
+    <message>
+        <source>Switching to the new room…</source>
+        <translation>Váltás az új szobára…</translation>
+    </message>
+    <message>
+        <source>Tap to open the new room</source>
+        <translation>Érintsd meg az új szoba megnyitásához</translation>
+    </message>
+    <message>
+        <source>Tap to join the new room</source>
+        <translation>Érintsd meg az új szobába lépéshez</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pinned message(s)</source>
+        <translation>
+            <numerusform>%n kitűzött üzenet</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Beginning of the conversation</source>
+        <translation>A beszélgetés eleje</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <comment>timeline system line, a noun</comment>
+        <translation>Hívás</translation>
+    </message>
+    <message>
+        <source>%1 joined</source>
+        <translation>%1 belépett</translation>
+    </message>
+    <message>
+        <source>%1 left</source>
+        <translation>%1 kilépett</translation>
+    </message>
+    <message>
+        <source>%1 declined the invitation</source>
+        <translation>%1 elutasította a meghívót</translation>
+    </message>
+    <message>
+        <source>%1 asked to join</source>
+        <translation>%1 belépést kért</translation>
+    </message>
+    <message>
+        <source>%1 changed membership</source>
+        <translation>%1 tagsága megváltozott</translation>
+    </message>
+    <message>
+        <source>%1 changed their profile</source>
+        <translation>%1 módosította a profilját</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Másolás</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Válasz</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Mentés</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Továbbítás</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Szerkesztés</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Kitűzés</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Törlés</translation>
+    </message>
+    <message>
+        <source>More…</source>
+        <translation>Több…</translation>
+    </message>
+    <message>
+        <source>The quoted message cannot be loaded: it no longer exists or you are not allowed to see it.</source>
+        <translation>Az idézett üzenet nem tölthető be: már nem létezik, vagy nincs jogod látni.</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Hangüzenet</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Üzenet törölve</translation>
+    </message>
+    <message>
+        <source>Thread · %1</source>
+        <translation>Szál · %1</translation>
+    </message>
+    <message>
+        <source>In thread</source>
+        <translation>A szálban</translation>
+    </message>
+    <message>
+        <source>not sent</source>
+        <translation>nincs elküldve</translation>
+    </message>
+    <message>
+        <source>edited</source>
+        <translation>szerkesztve</translation>
+    </message>
+    <message>
+        <source>No messages</source>
+        <translation>Nincsenek üzenetek</translation>
+    </message>
+    <message>
+        <source>Accept invitation</source>
+        <translation>Meghívó elfogadása</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s</source>
+        <translation>Felvétel… %1 mp</translation>
+    </message>
+    <message>
+        <source>Reply to %1</source>
+        <translation>Válasz neki: %1</translation>
+    </message>
+    <message>
+        <source>Editing message</source>
+        <translation>Üzenet szerkesztése</translation>
+    </message>
+    <message>
+        <source>New text</source>
+        <translation>Új szöveg</translation>
+    </message>
+    <message>
+        <source>Message</source>
+        <translation>Üzenet</translation>
+    </message>
+    <message>
+        <source>That message is not in the loaded history</source>
+        <translation>Ez az üzenet nincs a betöltött előzményekben</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Elvetés</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Küldés újra</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reagálás</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Válasz a szálban</translation>
+    </message>
+    <message>
+        <source>Copy room link</source>
+        <translation>Szobahivatkozás másolása</translation>
+    </message>
+    <message>
+        <source>Room link copied</source>
+        <translation>Szobahivatkozás másolva</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Titkosítás nélkül küldve</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Nem a megnevezett fiók küldte</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>A feladó kulcsai megváltoztak</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Nem ellenőrzött eszközről</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Nem ellenőrzött személytől</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>A hitelesség nincs megerősítve</translation>
+    </message>
+    <message>
+        <source>Discarding</source>
+        <translation>Elvetés</translation>
+    </message>
+    <message>
+        <source>Deleting</source>
+        <translation>Törlés</translation>
+    </message>
+    <message>
+        <source>This reaction hides text and was not sent</source>
+        <translation>Ez a reakció szöveget rejt, ezért nem lett elküldve</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Kép</translation>
+    </message>
+    <message>
+        <source>Search messages</source>
+        <translation>Üzenetek keresése</translation>
+    </message>
+    <message>
+        <source>What do these marks mean?</source>
+        <translation>Mit jelentenek ezek a jelek?</translation>
+    </message>
+    <message>
+        <source>Verify contact</source>
+        <translation>Partner ellenőrzése</translation>
+    </message>
+    <message>
+        <source>The conversation could not be loaded</source>
+        <translation>A beszélgetést nem sikerült betölteni</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Megnyitja ezt a címet?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Megnyitás</translation>
+    </message>
+    <message>
+        <source>Select files</source>
+        <translation>Fájlok kiválasztása</translation>
+    </message>
+    <message>
+        <source>New poll</source>
+        <translation>Új szavazás</translation>
+    </message>
+    <message>
+        <source>Voting failed</source>
+        <translation>A szavazás nem sikerült</translation>
+    </message>
+    <message>
+        <source>The poll could not be ended</source>
+        <translation>A szavazást nem sikerült lezárni</translation>
+    </message>
+    <message>
+        <source>The poll could not be sent</source>
+        <translation>A szavazást nem sikerült elküldeni</translation>
+    </message>
+    <message>
+        <source>Your vote was not sent</source>
+        <translation>A szavazatod nem lett elküldve</translation>
+    </message>
+    <message>
+        <source>%1 invited %2</source>
+        <translation>%1 meghívta %2 felhasználót</translation>
+    </message>
+    <message>
+        <source>%1 removed %2</source>
+        <translation>%1 eltávolította %2 felhasználót</translation>
+    </message>
+    <message>
+        <source>%1 banned %2</source>
+        <translation>%1 kitiltotta %2 felhasználót</translation>
+    </message>
+    <message>
+        <source>%1 unbanned %2</source>
+        <translation>%1 feloldotta %2 felhasználó kitiltását</translation>
+    </message>
+    <message>
+        <source>%1 withdrew the invitation for %2</source>
+        <translation>%1 visszavonta %2 meghívását</translation>
+    </message>
+    <message>
+        <source>%1: %2</source>
+        <comment>system line and the reason given for it</comment>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Átalakítás szöveggé</translation>
+    </message>
+    <message>
+        <source>Converting to text…</source>
+        <translation>Átalakítás szöveggé…</translation>
+    </message>
+    <message>
+        <source>Recognised automatically, may contain mistakes</source>
+        <translation>Automatikusan felismerve, hibákat tartalmazhat</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s. Tap the microphone to send.</source>
+        <translation>Felvétel… %1 mp. Koppints a mikrofonra a küldéshez.</translation>
+    </message>
+    <message>
+        <source>Nothing was said, so nothing was sent.</source>
+        <translation>Semmi sem hangzott el, így semmi sem lett elküldve.</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Mentve a galériába</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nem sikerült menteni</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Mentve a Letöltések mappába</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Kevesebb megjelenítése</translation>
+    </message>
+    <message>
+        <source>Show more</source>
+        <translation>Több megjelenítése</translation>
+    </message>
+    <message>
+        <source>The text could not be written as a file</source>
+        <translation>A szöveget nem sikerült fájlba írni</translation>
+    </message>
+    <message>
+        <source>Share location</source>
+        <translation>Hely megosztása</translation>
+    </message>
+    <message>
+        <source>deletion not sent</source>
+        <translation>a törlés nincs elküldve</translation>
+    </message>
+    <message>
+        <source>edit not sent</source>
+        <translation>a szerkesztés nincs elküldve</translation>
+    </message>
+    <message>
+        <source>That did not work. Try again in a moment.</source>
+        <translation>Nem sikerült. Próbáld újra egy pillanat múlva.</translation>
+    </message>
+    <message>
+        <source>Back to the latest messages</source>
+        <translation>Vissza a legújabb üzenetekhez</translation>
+    </message>
+    <message>
+        <source>Live location could not be started</source>
+        <translation>Az élő hely megosztását nem sikerült elindítani</translation>
+    </message>
+    <message>
+        <source>It is no longer waiting to be sent.</source>
+        <translation>Már nem vár elküldésre.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomSettingsPage</name>
+    <message>
+        <source>Change it on the other network as well?</source>
+        <translation>A másik hálózaton is módosítod?</translation>
+    </message>
+    <message>
+        <source>The bridge passes the change on. Everyone in the chat there sees it, including people who do not use Matrix.</source>
+        <translation>A híd továbbítja a változást. Az ottani csevegésben mindenki látja, azok is, akik nem használják a Matrixot.</translation>
+    </message>
+    <message>
+        <source>Change</source>
+        <translation>Módosítás</translation>
+    </message>
+    <message>
+        <source>The name could not be changed: %1</source>
+        <translation>A nevet nem sikerült módosítani: %1</translation>
+    </message>
+    <message>
+        <source>The topic could not be changed: %1</source>
+        <translation>A témát nem sikerült módosítani: %1</translation>
+    </message>
+    <message>
+        <source>The picture could not be changed: %1</source>
+        <translation>A képet nem sikerült módosítani: %1</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Szoba szerkesztése</translation>
+    </message>
+    <message>
+        <source>Your role in this room does not allow changing its name, topic or picture.</source>
+        <translation>A szerepköröd ebben a szobában nem teszi lehetővé a név, a téma vagy a kép módosítását.</translation>
+    </message>
+    <message>
+        <source>This room is bridged to another network. The bridge usually passes a new name, topic or picture on, and there it changes for everyone in the chat, including people who do not use Matrix.</source>
+        <translation>Ez a szoba híddal kapcsolódik egy másik hálózathoz. A híd általában továbbítja az új nevet, témát vagy képet, és ott mindenkinek megváltozik a csevegésben, azoknak is, akik nem használják a Matrixot.</translation>
+    </message>
+    <message>
+        <source>This chat is bridged to another network. There, name and picture belong to the contact: the bridge usually passes nothing on, and it can overwrite a name set here whenever the contact changes theirs. Which contact name the bridge shows is part of its own configuration.</source>
+        <translation>Ez a csevegés híddal kapcsolódik egy másik hálózathoz. Ott a név és a kép a partneré: a híd általában semmit sem továbbít, és felülírhatja az itt beállított nevet, amikor a partner megváltoztatja a sajátját. Hogy a híd melyik partnernevet mutatja, azt a saját beállításai határozzák meg.</translation>
+    </message>
+    <message>
+        <source>Name, topic and picture belong to the room: everyone in it sees the change.</source>
+        <translation>A név, a téma és a kép a szobához tartozik: a változást mindenki látja, aki benne van.</translation>
+    </message>
+    <message>
+        <source>Bridged to</source>
+        <translation>Hídon át</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Kép</translation>
+    </message>
+    <message>
+        <source>Change picture</source>
+        <translation>Kép cseréje</translation>
+    </message>
+    <message>
+        <source>Set picture</source>
+        <translation>Kép beállítása</translation>
+    </message>
+    <message>
+        <source>Remove picture</source>
+        <translation>Kép eltávolítása</translation>
+    </message>
+    <message>
+        <source>Name and topic</source>
+        <translation>Név és téma</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Név</translation>
+    </message>
+    <message>
+        <source>No name set</source>
+        <translation>Nincs név megadva</translation>
+    </message>
+    <message>
+        <source>Without a name, the room is shown under the names of its members.</source>
+        <translation>Név nélkül a szoba a tagjai nevével jelenik meg.</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Téma</translation>
+    </message>
+    <message>
+        <source>No topic set</source>
+        <translation>Nincs téma megadva</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Mentés</translation>
+    </message>
+    <message>
+        <source>Saving…</source>
+        <translation>Mentés…</translation>
+    </message>
+    <message>
+        <source>Saved</source>
+        <translation>Mentve</translation>
+    </message>
+    <message>
+        <source>Whether this room is bridged to another network could not be checked. If it is, the change may apply there for everyone in the chat.</source>
+        <translation>Nem sikerült ellenőrizni, hogy ez a szoba híddal kapcsolódik-e egy másik hálózathoz. Ha igen, a változás ott a csevegésben mindenkire vonatkozhat.</translation>
+    </message>
+    <message>
+        <source>Change it anyway?</source>
+        <translation>Mégis módosítod?</translation>
+    </message>
+</context>
+<context>
+    <name>SearchPage</name>
+    <message>
+        <source>Search messages</source>
+        <translation>Üzenetek keresése</translation>
+    </message>
+    <message>
+        <source>Search this conversation</source>
+        <translation>Keresés ebben a beszélgetésben</translation>
+    </message>
+    <message>
+        <source>Search failed</source>
+        <translation>A keresés nem sikerült</translation>
+    </message>
+    <message>
+        <source>Nothing found</source>
+        <translation>Nincs találat</translation>
+    </message>
+    <message>
+        <source>Whole words only: &quot;test&quot; does not find &quot;test9&quot;. Pictures, files and messages from bots are not searched. And only what this device has already downloaded - load older messages in the conversation to add more.</source>
+        <translation>Csak teljes szavak: a „test” nem találja meg a „test9” szót. Képek, fájlok és botüzenetek nem kerülnek átnézésre. És csak az, amit az eszköz már letöltött — tölts be régebbi üzeneteket, hogy több legyen.</translation>
+    </message>
+</context>
+<context>
+    <name>SecretsHelpPage</name>
+    <message>
+        <source>Getting in again</source>
+        <translation>Vissza be</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys.</source>
+        <translation>Ebből a rendszerből hiányzik a szolgáltatás, amely a titkosítási kulcsokat őrzi.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service reports damaged data. Nothing can be unlocked in this state.</source>
+        <translation>Az eszköz biztonságos tárolója sérült adatokat jelez. Ebben az állapotban semmit sem lehet feloldani.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service itself is locked. Every app on this phone that stores secrets is affected, not only Shoal Messages.</source>
+        <translation>Az eszköz biztonságos tárolója maga is zárolva van. Ez a telefon minden titkot tároló alkalmazását érinti, nem csak az Shoal Messagesot.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages' own key store is locked and waiting for your confirmation.</source>
+        <translation>Az Shoal Messages saját kulcstárolója zárolva van, és a megerősítésedre vár.</translation>
+    </message>
+    <message>
+        <source>The secrets service did not hand out a key, and it did not say why.</source>
+        <translation>A biztonságos tároló nem adott ki kulcsot, és nem mondta meg, miért.</translation>
+    </message>
+    <message>
+        <source>This is a property of the operating system, not a fault in Shoal Messages. The package exists and can be installed; some Sailfish images simply do not ship it.</source>
+        <translation>Ez az operációs rendszer tulajdonsága, nem az Shoal Messages hibája. A csomag létezik és telepíthető; néhány Sailfish lemezkép egyszerűen nem szállítja.</translation>
+    </message>
+    <message>
+        <source>This is beyond what Shoal Messages can reach. Repairing it means resetting the service&apos;s own data, which affects every app on the device that stores secrets — ask in the Sailfish support channels before doing that.</source>
+        <translation>Ez túlmutat azon, amit az Shoal Messages elér. A javítás a szolgáltatás saját adatainak nullázását jelenti, ami az eszköz minden titkot tároló alkalmazását érinti — kérdezz előbb a Sailfish támogatási csatornáin.</translation>
+    </message>
+    <message>
+        <source>The service is unlocked at start-up from your device lock code. Where that hand-off has stopped working, restarting lands in the same state every time — setting the code afresh is what starts it again.</source>
+        <translation>A szolgáltatás induláskor az eszköz zárolási kódjával oldódik fel. Ha ez az átadás már nem működik, az újraindítás minden alkalommal ugyanabban az állapotban végződik — a kód újbóli beállítása az, ami újra elindítja.</translation>
+    </message>
+    <message>
+        <source>The approval lasts until the device is restarted. If no request appears at all, the system components that draw it may be missing.</source>
+        <translation>A jóváhagyás az eszköz következő újraindításáig tart. Ha egyáltalán nem jelenik meg kérés, hiányozhatnak a rendszer részei, amelyek megrajzolják.</translation>
+    </message>
+    <message>
+        <source>Setting the device lock code afresh and restarting is worth trying: it is what unlocks the service at start-up.</source>
+        <translation>Érdemes újra beállítani az eszköz zárolási kódját és újraindítani: pontosan ez oldja fel a szolgáltatást induláskor.</translation>
+    </message>
+    <message>
+        <source>What to do</source>
+        <translation>Mit tehetsz</translation>
+    </message>
+    <message>
+        <source>1. Switch on Developer mode in the system settings, under Settings › Developer tools.</source>
+        <translation>1. Kapcsold be a fejlesztői módot a rendszerbeállításokban, a Beállítások › Fejlesztői eszközök alatt.</translation>
+    </message>
+    <message>
+        <source>2. Open the Terminal app and run the line below — tap it to copy. Then restart the device and start Shoal Messages again.</source>
+        <translation>2. Nyisd meg a Terminal alkalmazást, és futtasd az alábbi sort — koppints rá a másoláshoz. Utána indítsd újra az eszközt, és nyisd meg újra az Shoal Messagesot.</translation>
+    </message>
+    <message>
+        <source>Note down what this page reports below and take it to the Sailfish support channels. Signing out of Shoal Messages does not repair it.</source>
+        <translation>Jegyezd fel, mit jelez ez az oldal alább, és vidd el a Sailfish támogatási csatornáira. Az Shoal Messagesból való kijelentkezés ezt nem javítja meg.</translation>
+    </message>
+    <message>
+        <source>Go back and tap “Try again”, then confirm the system&apos;s request. If nothing appears, install the missing components (tap the line to copy) and restart the device.</source>
+        <translation>Menj vissza, koppints az „Újra” gombra, majd erősítsd meg a rendszer kérését. Ha semmi sem jelenik meg, telepítsd a hiányzó részeket (koppints a sorra a másoláshoz), és indítsd újra az eszközt.</translation>
+    </message>
+    <message>
+        <source>1. Open Settings › Device lock and set a new security code.</source>
+        <translation>1. Nyisd meg a Beállítások › Eszközzár menüt, és állíts be új biztonsági kódot.</translation>
+    </message>
+    <message>
+        <source>2. Restart the device.</source>
+        <translation>2. Indítsd újra az eszközt.</translation>
+    </message>
+    <message>
+        <source>3. Start Shoal Messages again.</source>
+        <translation>3. Nyisd meg újra az Shoal Messagesot.</translation>
+    </message>
+    <message>
+        <source>Signing out does not help</source>
+        <translation>A kijelentkezés nem segít</translation>
+    </message>
+    <message>
+        <source>Signing out deletes this device&apos;s encryption keys along with the local data. You would then have to verify this device again from another one, and older messages would need your recovery key. It does not repair the secrets service.</source>
+        <translation>Kijelentkezéskor az eszköz titkosítási kulcsai a helyi adatokkal együtt törlődnek. Ezután egy másik eszközről kellene újra ellenőrizned ezt az eszközt, a régebbi üzenetekhez pedig a helyreállítási kulcsod kellene. A biztonságos tárolót ez nem javítja meg.</translation>
+    </message>
+    <message>
+        <source>What this page measured</source>
+        <translation>Mit mért ez az oldal</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityRows</name>
+    <message>
+        <source>Backup</source>
+        <translation>Biztonsági mentés</translation>
+    </message>
+    <message>
+        <source>Your room keys are backed up.</source>
+        <translation>A szobakulcsaidról van biztonsági mentés.</translation>
+    </message>
+    <message>
+        <source>The backup is on the server but not unlocked on this device.</source>
+        <translation>A mentés a kiszolgálón van, de ezen az eszközön nincs feloldva.</translation>
+    </message>
+    <message>
+        <source>There is no key backup. Without one, messages become unreadable when this device is gone.</source>
+        <translation>Nincs kulcsmentés. Nélküle az üzenetek olvashatatlanná válnak, amint ez az eszköz eltűnik.</translation>
+    </message>
+    <message>
+        <source>Recovery</source>
+        <translation>Helyreállítás</translation>
+    </message>
+    <message>
+        <source>Recovery is set up.</source>
+        <translation>A helyreállítás be van állítva.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key to unlock the backup on this device.</source>
+        <translation>Add meg a helyreállítási kulcsodat, hogy feloldd a mentést ezen az eszközön.</translation>
+    </message>
+    <message>
+        <source>Cross-signing</source>
+        <translation>Keresztaláírás</translation>
+    </message>
+    <message>
+        <source>This device is signed as yours.</source>
+        <translation>Ez az eszköz a tiédként van aláírva.</translation>
+    </message>
+    <message>
+        <source>Others see this device as unverified. The recovery key or a verification from another device settles it.</source>
+        <translation>Mások ellenőrizetlennek látják ezt az eszközt. A helyreállítási kulcs vagy egy másik eszközről végzett ellenőrzés megoldja.</translation>
+    </message>
+    <message>
+        <source>Local storage</source>
+        <translation>Helyi tárolás</translation>
+    </message>
+    <message>
+        <source>Session and message database are encrypted on this device.</source>
+        <translation>A munkamenet és az üzenet-adatbázis titkosítva van ezen az eszközön.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because they were created before this app could encrypt them. An existing database cannot be encrypted in place.</source>
+        <translation>Titkosítatlanul állnak, mert még azelőtt jöttek létre, hogy az alkalmazás titkosítani tudta volna őket. Meglévő adatbázis utólag nem titkosítható.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because the system&apos;s secure storage did not hand out a key.</source>
+        <translation>Titkosítatlanul állnak, mert a rendszer biztonságos tárolója nem adott ki kulcsot.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because this system is missing the service that keeps encryption keys.</source>
+        <translation>Titkosítatlanul állnak, mert ebből a rendszerből hiányzik a titkosítási kulcsokat őrző szolgáltatás.</translation>
+    </message>
+    <message>
+        <source>Recovery key accepted — finishing. This can take a moment.</source>
+        <translation>Helyreállítási kulcs elfogadva — befejezés folyamatban. Ez eltarthat egy pillanatig.</translation>
+    </message>
+    <message>
+        <source>There is no recovery for this account yet. Set up a key backup to create one.</source>
+        <translation>Ehhez a fiókhoz még nincs helyreállítás. Állíts be kulcsmentést, hogy létrejöjjön.</translation>
+    </message>
+    <message>
+        <source>The server could not be asked whether a backup exists.</source>
+        <translation>Nem sikerült megkérdezni a kiszolgálót, hogy van-e biztonsági mentés.</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityStatusPage</name>
+    <message>
+        <source>Security</source>
+        <translation>Biztonság</translation>
+    </message>
+    <message>
+        <source>Something on this device is not in order yet. You can settle it now or later.</source>
+        <translation>Valami ezen az eszközön még nincs rendben. Most vagy később is elintézheted.</translation>
+    </message>
+    <message>
+        <source>Enter recovery key</source>
+        <translation>Helyreállítási kulcs megadása</translation>
+    </message>
+    <message>
+        <source>Set up backup now</source>
+        <translation>Mentés beállítása most</translation>
+    </message>
+    <message>
+        <source>Encrypt storage now</source>
+        <translation>Tároló titkosítása most</translation>
+    </message>
+    <message>
+        <source>Why is that</source>
+        <translation>Miért van ez</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Később</translation>
+    </message>
+    <message>
+        <source>You will find all of this again under Account › Encryption.</source>
+        <translation>Mindezt megtalálod újra a Fiók › Titkosítás alatt.</translation>
+    </message>
+    <message>
+        <source>Everything on this device is in order.</source>
+        <translation>Ezen az eszközön minden rendben van.</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Bezárás</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Az eszköz igazolása</translation>
+    </message>
+</context>
+<context>
+    <name>SendMediaPage</name>
+    <message>
+        <source>Reply</source>
+        <translation>Válasz</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Küldés</translation>
+    </message>
+    <message>
+        <source>Caption</source>
+        <translation>Felirat</translation>
+    </message>
+    <message>
+        <source>Caption (optional)</source>
+        <translation>Felirat (nem kötelező)</translation>
+    </message>
+    <message>
+        <source>%1 files, sent one after another. The caption goes with the first one.</source>
+        <translation>%1 fájl, egymás után elküldve. A felirat az elsővel megy.</translation>
+    </message>
+    <message>
+        <source>Send at original resolution</source>
+        <translation>Küldés eredeti felbontásban</translation>
+    </message>
+    <message>
+        <source>Off, the picture is made smaller before it goes out and its metadata - the place it was taken, among them - does not travel with it.</source>
+        <translation>Kikapcsolva a kép küldés előtt kisebb lesz, és a metaadatai – köztük a készítés helye – nem mennek vele.</translation>
+    </message>
+</context>
+<context>
+    <name>SendQueueBanner</name>
+    <message>
+        <source>A message could not be sent.</source>
+        <translation>Egy üzenetet nem sikerült elküldeni.</translation>
+    </message>
+    <message>
+        <source>An edit could not be sent.</source>
+        <translation>Egy szerkesztést nem sikerült elküldeni.</translation>
+    </message>
+    <message>
+        <source>A deletion could not be sent. The message is still there for everyone else.</source>
+        <translation>Egy törlést nem sikerült elküldeni. Mindenki más számára az üzenet még ott van.</translation>
+    </message>
+    <message>
+        <source>A reaction could not be sent.</source>
+        <translation>Egy reakciót nem sikerült elküldeni.</translation>
+    </message>
+    <message>
+        <source>A poll vote could not be sent.</source>
+        <translation>Egy szavazatot nem sikerült elküldeni.</translation>
+    </message>
+    <message>
+        <source>A change could not be sent.</source>
+        <translation>Egy módosítást nem sikerült elküldeni.</translation>
+    </message>
+    <message>
+        <source>Someone you verified has a new identity. Withdraw the verification on their profile, then send again.</source>
+        <translation>Valaki, akit ellenőriztél, új identitást kapott. Vond vissza az ellenőrzést a profilján, majd küldd el újra.</translation>
+    </message>
+    <message>
+        <source>This device has to be verified first.</source>
+        <translation>Ezt az eszközt előbb ellenőrizni kell.</translation>
+    </message>
+    <message>
+        <source>Some devices in this room are not verified.</source>
+        <translation>A szoba néhány eszköze nincs ellenőrizve.</translation>
+    </message>
+    <message>
+        <source>Everything sent after it in this room waits behind it.</source>
+        <translation>Minden, ami utána lett elküldve ebben a szobában, mögötte vár.</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Küldés újra</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Elvetés</translation>
+    </message>
+    <message>
+        <source>A poll could not be sent.</source>
+        <translation>Egy szavazást nem sikerült elküldeni.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionLockedPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Kijelentkezés és a helyi adatok törlése</translation>
+    </message>
+    <message>
+        <source>Locked</source>
+        <translation>Zárolva</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix Sailfish OS-re</translation>
+    </message>
+    <message>
+        <source>Your session is stored encrypted, and the key was not available when Shoal Messages started.</source>
+        <translation>A munkameneted titkosítva van tárolva, és a kulcs nem volt elérhető az Shoal Messages indulásakor.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Újra</translation>
+    </message>
+    <message>
+        <source>The key lives in the device&apos;s secrets storage. Try again and confirm the system&apos;s request; the approval lasts until the next restart of the device. If no request appears at all, the secrets service itself is at fault rather than your account.</source>
+        <translation>A kulcs az eszköz biztonságos tárolójában van. Próbáld újra, és erősítsd meg a rendszer kérését; a jóváhagyás az eszköz következő újraindításáig tart. Ha egyáltalán nem jelenik meg kérés, a hiba a biztonságos tárolóban van, nem a fiókodban.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Segítségre van szükséged?</translation>
+    </message>
+</context>
+<context>
+    <name>SessionNewerPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Kijelentkezés és a helyi adatok törlése</translation>
+    </message>
+    <message>
+        <source>Newer version needed</source>
+        <translation>Újabb verzió szükséges</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix Sailfish OS-re</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Újra</translation>
+    </message>
+    <message>
+        <source>Your session was saved in a format this version does not know, most likely by a newer version of Shoal Messages.</source>
+        <translation>A munkameneted olyan formátumban lett mentve, amelyet ez a verzió nem ismer, valószínűleg az Shoal Messages egy újabb verziója mentette.</translation>
+    </message>
+    <message>
+        <source>If a newer version of Shoal Messages was installed before, installing it again opens everything as before. Signing out instead deletes the data and keys this device holds.</source>
+        <translation>Ha korábban az Shoal Messages egy újabb verziója volt telepítve, annak újratelepítése után minden úgy nyílik meg, mint korábban. A kijelentkezés viszont törli ennek az eszköznek az adatait és kulcsait.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionOfflinePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Kijelentkezés és a helyi adatok törlése</translation>
+    </message>
+    <message>
+        <source>No connection</source>
+        <translation>Nincs kapcsolat</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix Sailfish OS-re</translation>
+    </message>
+    <message>
+        <source>Your homeserver could not be reached. You are still signed in, and nothing on this device has changed.</source>
+        <translation>Az otthoni kiszolgálód nem volt elérhető. Továbbra is be vagy jelentkezve, és ezen az eszközön semmi sem változott.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages keeps trying on its own. Do not sign in again: that would start a new device and cost the keys to your encrypted history.</source>
+        <translation>Az Shoal Messages magától tovább próbálkozik. Ne jelentkezz be újra: az új eszközt hozna létre, és elvesznének a titkosított előzményeid kulcsai.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Újra</translation>
+    </message>
+</context>
+<context>
+    <name>ShareLocationPage</name>
+    <message>
+        <source>Share location</source>
+        <translation>Hely megosztása</translation>
+    </message>
+    <message>
+        <source>Finding your position…</source>
+        <translation>A pozíciód meghatározása…</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Újra</translation>
+    </message>
+    <message>
+        <source>Send this position</source>
+        <translation>Ennek a pozíciónak az elküldése</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Élő hely</translation>
+    </message>
+    <message>
+        <source>Your position goes to this room when you move, while the app is open, until the time is up or you stop it. When the app is closed, the others see the last position until the end of the time.</source>
+        <translation>A pozíciód ebbe a szobába megy, amikor mozogsz, amíg az alkalmazás nyitva van, amíg le nem jár az idő vagy le nem állítod. Ha az alkalmazás zárva van, a többiek az utolsó pozíciót látják az idő végéig.</translation>
+    </message>
+    <message>
+        <source>For</source>
+        <translation>Időtartam</translation>
+    </message>
+    <message>
+        <source>1 hour</source>
+        <translation>1 óra</translation>
+    </message>
+    <message>
+        <source>Share live location</source>
+        <translation>Élő hely megosztása</translation>
+    </message>
+    <message>
+        <source>Sharing your live location until %1.</source>
+        <translation>Megosztod az élő helyedet eddig: %1.</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Megosztás leállítása</translation>
+    </message>
+    <message>
+        <source>6 hours</source>
+        <translation>6 óra</translation>
+    </message>
+    <message>
+        <source>1 day</source>
+        <translation>1 nap</translation>
+    </message>
+</context>
+<context>
+    <name>ShareToRoomPage</name>
+    <message>
+        <source>Send to</source>
+        <translation>Küldés ide</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Nincsenek szobák</translation>
+    </message>
+</context>
+<context>
+    <name>ShieldGlossaryPage</name>
+    <message>
+        <source>Message marks</source>
+        <translation>Jelek az üzeneteknél</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Titkosítás nélkül küldve</translation>
+    </message>
+    <message>
+        <source>The message went out without encryption although the room uses it. Anybody who can read the server&apos;s copy can read the message.</source>
+        <translation>Az üzenet titkosítatlanul ment ki, pedig a szoba használ titkosítást. Bárki, aki elolvashatja a kiszolgálón lévő másolatot, elolvashatja az üzenetet.</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Nem a megnevezett fiók küldte</translation>
+    </message>
+    <message>
+        <source>The message was encrypted by a device that does not belong to the account it claims to come from - somebody is sending under another name. Some bridges work this way and produce it harmlessly; anywhere else it is the one sign of an actual impersonation this app has.</source>
+        <translation>Az üzenetet olyan eszköz titkosította, amely nem tartozik ahhoz a fiókhoz, amelytől állítása szerint származik — valaki más nevében küld. Egyes hidak így működnek, és ez ártalmatlan; máshol ez az egyetlen jele a valódi megszemélyesítésnek, amivel ez az alkalmazás rendelkezik.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>A feladó kulcsai megváltoztak</translation>
+    </message>
+    <message>
+        <source>This person&apos;s cryptographic identity is no longer the one that was verified. Either they set up their account again, or somebody else is using it.</source>
+        <translation>Ennek a személynek a kriptográfiai azonossága már nem az, amit igazoltak. Vagy újra beállította a fiókját, vagy valaki más használja.</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Nem ellenőrzött eszközről</translation>
+    </message>
+    <message>
+        <source>The device that sent this has not been confirmed by the account it belongs to. That is normal for a device somebody has just started using.</source>
+        <translation>Az eszközt, amely ezt küldte, nem erősítette meg a fiók, amelyhez tartozik. Egy éppen használatba vett eszköznél ez normális.</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Nem ellenőrzött személytől</translation>
+    </message>
+    <message>
+        <source>This person&apos;s identity has never been verified, so there is nothing to check the message against.</source>
+        <translation>Ennek a személynek az azonosságát soha nem igazolták, így nincs mihez mérni az üzenetet.</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>A hitelesség nincs megerősítve</translation>
+    </message>
+    <message>
+        <source>The message could not be checked at all. It is not necessarily wrong - only unproven.</source>
+        <translation>Az üzenetet egyáltalán nem lehetett ellenőrizni. Nem feltétlenül hamis — csak igazolatlan.</translation>
+    </message>
+    <message>
+        <source>A mark beside a message means its authenticity could not be fully confirmed. A red triangle says the message is not what it claims to be. An orange dot says something about it could not be checked. Tap a mark in the conversation to see which of the cases below it is.</source>
+        <translation>Az üzenet melletti jel azt jelenti, hogy a hitelességét nem sikerült teljesen igazolni. A piros háromszög azt mondja, hogy az üzenet nem az, aminek mondja magát. A narancssárga pont azt mondja, hogy valamit nem lehetett ellenőrizni. Koppints egy jelre a beszélgetésben, hogy lásd, az alábbi esetek közül melyikről van szó.</translation>
+    </message>
+</context>
+<context>
+    <name>SpaceColourPage</name>
+    <message>
+        <source>Colour</source>
+        <translation>Szín</translation>
+    </message>
+    <message>
+        <source>Automatic colour</source>
+        <translation>Automatikus szín</translation>
+    </message>
+    <message>
+        <source>Taken from the space itself, a different one for each</source>
+        <translation>Magából a térből származik, mindegyiké más</translation>
+    </message>
+    <message>
+        <source>Marking the space on a room&apos;s picture is switched off under Account, Appearance. Until it is on, this colour is drawn nowhere.</source>
+        <translation>A Space jelölése a szoba képén ki van kapcsolva a(z) Fiók, Megjelenés alatt. Amíg ki van kapcsolva, ez a szín sehol nem jelenik meg.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacePage</name>
+    <message>
+        <source>Space</source>
+        <translation>Tér</translation>
+    </message>
+    <message>
+        <source>Add rooms</source>
+        <translation>Szobák hozzáadása</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Frissítés</translation>
+    </message>
+    <message>
+        <source>Move to space</source>
+        <translation>Áthelyezés térbe</translation>
+    </message>
+    <message>
+        <source>Remove from space</source>
+        <translation>Eltávolítás a térből</translation>
+    </message>
+    <message>
+        <source>Linked, not joined</source>
+        <translation>Hivatkozva, nincs belépve</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n tag</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Belépés</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Belépés folyamatban</translation>
+    </message>
+    <message>
+        <source>No rooms in this space</source>
+        <translation>Nincsenek szobák ebben a térben</translation>
+    </message>
+    <message>
+        <source>Add rooms with the pulldown menu, or rooms of this space that you have joined show up here.</source>
+        <translation>Adj hozzá szobákat a lehúzható menüvel, vagy itt jelennek meg a tér azon szobái, amikbe beléptél.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacesPage</name>
+    <message>
+        <source>Really delete this space?</source>
+        <translation>Tényleg törlöd ezt a teret?</translation>
+    </message>
+    <message>
+        <source>The space is left and forgotten. The rooms in it are not touched — they stay in the chat list.</source>
+        <translation>A teret elhagyod és elfelejted. A benne lévő szobákhoz nem nyúlunk — maradnak a beszélgetéslistában.</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Törlés</translation>
+    </message>
+    <message>
+        <source>Deleting space</source>
+        <translation>Tér törlése folyamatban</translation>
+    </message>
+    <message>
+        <source>Spaces</source>
+        <translation>Terek</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Kapcsolat nélkül — várakozás a hálózatra</translation>
+    </message>
+    <message>
+        <source>Create space</source>
+        <translation>Tér létrehozása</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Legyen a kezdőoldal</translation>
+    </message>
+    <message>
+        <source>Delete space</source>
+        <translation>Tér törlése</translation>
+    </message>
+    <message>
+        <source>No spaces</source>
+        <translation>Nincsenek terek</translation>
+    </message>
+    <message>
+        <source>Spaces you are a member of show up here. Spaces group rooms together.</source>
+        <translation>Azok a terek jelennek meg itt, amelyeknek tagja vagy. A terek szobákat fognak össze.</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>A helyi adatok sérültek</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Szín</translation>
+    </message>
+</context>
+<context>
+    <name>StorageBlockedPage</name>
+    <message>
+        <source>Encryption not possible</source>
+        <translation>A titkosítás nem lehetséges</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix Sailfish OS-re</translation>
+    </message>
+    <message>
+        <source>The secure storage did not hand out a key, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>A biztonságos tároló nem adott ki kulcsot, így az Shoal Messages nem tud titkosított adatbázist létrehozni.</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Ebből a rendszerből hiányzik a titkosítási kulcsokat őrző szolgáltatás, így az Shoal Messages nem tud titkosított adatbázist létrehozni.</translation>
+    </message>
+    <message>
+        <source>Check again</source>
+        <translation>Ellenőrzés újra</translation>
+    </message>
+    <message>
+        <source>Messages stay end-to-end encrypted on their way through the network either way. This is only about what lies on the device.</source>
+        <translation>Az üzenetek a hálózaton át vezető úton mindenképp végponttól végpontig titkosítva maradnak. Itt csak arról van szó, ami az eszközön hever.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Segítségre van szükséged?</translation>
+    </message>
+    <message>
+        <source>Checked — the secure storage still will not hand out a key.</source>
+        <translation>Ellenőrizve — a biztonságos tároló továbbra sem ad ki kulcsot.</translation>
+    </message>
+</context>
+<context>
+    <name>StoreUnreadablePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Kijelentkezés és a helyi adatok törlése</translation>
+    </message>
+    <message>
+        <source>Local data unreadable</source>
+        <translation>A helyi adatok nem olvashatók</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix Sailfish OS-re</translation>
+    </message>
+    <message>
+        <source>Shoal Messages could not read back part of the data it keeps on this device. Your account, this device and its encryption keys are not affected.</source>
+        <translation>Az Shoal Messages nem tudta újra beolvasni az eszközön tárolt adatai egy részét. A fiókodat, ezt az eszközt és a titkosítási kulcsait ez nem érinti.</translation>
+    </message>
+    <message>
+        <source>Rebuilding deletes the rooms and messages stored on this device and loads them again from your homeserver. This device and its keys stay; messages that were not sent yet are lost.</source>
+        <translation>Az újraépítés törli az eszközön tárolt szobákat és üzeneteket, majd újra letölti őket az otthoni kiszolgálódról. Ez az eszköz és a kulcsai megmaradnak; a még el nem küldött üzenetek elvesznek.</translation>
+    </message>
+    <message>
+        <source>Rebuild local data</source>
+        <translation>Helyi adatok újraépítése</translation>
+    </message>
+</context>
+<context>
+    <name>ThreadPage</name>
+    <message>
+        <source>Load older posts</source>
+        <translation>Régebbi bejegyzések betöltése</translation>
+    </message>
+    <message>
+        <source>Thread</source>
+        <translation>Szál</translation>
+    </message>
+    <message>
+        <source>Event</source>
+        <translation>Esemény</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Nem fejthető vissza — ezen az eszközön nincs meg a kulcs</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Üzenet törölve</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Melléklet</translation>
+    </message>
+    <message>
+        <source>Thread unavailable</source>
+        <translation>A szál nem érhető el</translation>
+    </message>
+    <message>
+        <source>Loading thread</source>
+        <translation>Szál betöltése</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Válasz a szálban</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Titkosítás nélkül küldve</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Nem a megnevezett fiók küldte</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>A feladó kulcsai megváltoztak</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>Nem ellenőrzött eszközről</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>Nem ellenőrzött személytől</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>A hitelesség nincs megerősítve</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Megnyitja ezt a címet?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Megnyitás</translation>
+    </message>
+</context>
+<context>
+    <name>UnverifiedRecipientsDialog</name>
+    <message>
+        <source>Send anyway</source>
+        <translation>Küldés mindenképp</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n unverified device(s)</source>
+        <translation>
+            <numerusform>%n nem ellenőrzött eszköz</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Do not warn about this user again</source>
+        <translation>Ne figyelmeztessen többé erre a felhasználóra</translation>
+    </message>
+    <message>
+        <source>Do not warn about these users again</source>
+        <translation>Ne figyelmeztessen többé ezekre a felhasználókra</translation>
+    </message>
+    <message>
+        <source>Applies until you verify or clear it.</source>
+        <translation>Addig érvényes, amíg nem ellenőrzöd vagy nem állítod vissza.</translation>
+    </message>
+    <message>
+        <source>keys changed since you verified them</source>
+        <translation>a kulcsok megváltoztak, mióta ellenőrizted őket</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>nincs ellenőrizve</translation>
+    </message>
+    <message>
+        <source>This device is not verified</source>
+        <translation>Ez az eszköz nincs ellenőrizve</translation>
+    </message>
+    <message>
+        <source>Unverified recipients</source>
+        <translation>Nem ellenőrzött címzettek</translation>
+    </message>
+    <message>
+        <source>The message will be encrypted for recipients you have not verified. Verify them for real certainty, or send anyway.</source>
+        <translation>Az üzenet olyan címzettek számára lesz titkosítva, akiket nem ellenőriztél. Ellenőrizd őket a valódi bizonyosságért, vagy küldd el mégis.</translation>
+    </message>
+    <message>
+        <source>Do not warn again</source>
+        <translation>Ne figyelmeztessen többé</translation>
+    </message>
+    <message>
+        <source>As long as this device is unverified, no other device can be shown as verified — not even one that is. Verify it under Account → Encryption, or send anyway.</source>
+        <translation>Amíg ez az eszköz nincs ellenőrizve, semelyik másik eszköz sem jeleníthető meg ellenőrzöttként — még olyan sem, amelyik az. Ellenőrizd a Fiók → Titkosítás alatt, vagy küldd el mégis.</translation>
+    </message>
+</context>
+<context>
+    <name>VerificationPage</name>
+    <message>
+        <source>Verification</source>
+        <translation>Ellenőrzés</translation>
+    </message>
+    <message>
+        <source>Another one of your devices</source>
+        <translation>Egy másik eszközöd</translation>
+    </message>
+    <message>
+        <source>Your answer is in. Waiting for the other device.</source>
+        <translation>A válaszod rögzítve. Várakozás a másik eszközre.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other device to accept.</source>
+        <translation>Várakozás a másik eszköz jóváhagyására.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other side to accept the request on their device.</source>
+        <translation>Várakozás arra, hogy a másik fél elfogadja a kérést a saját eszközén.</translation>
+    </message>
+    <message>
+        <source>Confirm that this is really your other device. Once verified, both can share room keys and older messages become readable.</source>
+        <translation>Erősítsd meg, hogy ez tényleg a másik eszközöd. Az ellenőrzés után mindkettő megoszthat szobakulcsokat, és a régebbi üzenetek olvashatóvá válnak.</translation>
+    </message>
+    <message>
+        <source>Confirm that you are really talking to this person and not to someone in between.</source>
+        <translation>Erősítsd meg, hogy tényleg ezzel a személlyel beszélsz, és nem valakivel közte.</translation>
+    </message>
+    <message>
+        <source>Both devices must show the same emoji, in the same order.</source>
+        <translation>Mindkét eszköznek ugyanazokat az emodzsikat kell mutatnia, ugyanabban a sorrendben.</translation>
+    </message>
+    <message>
+        <source>Verified.</source>
+        <translation>Ellenőrizve.</translation>
+    </message>
+    <message>
+        <source>The verification was cancelled.</source>
+        <translation>Az ellenőrzést megszakították.</translation>
+    </message>
+    <message>
+        <source>They do not match</source>
+        <translation>Nem egyeznek</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Elutasítás</translation>
+    </message>
+    <message>
+        <source>They match</source>
+        <translation>Egyeznek</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Fogadás</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Mégse</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Bezárás</translation>
+    </message>
+</context>
+<context>
+    <name>VerifyUserPage</name>
+    <message>
+        <source>Verify user</source>
+        <translation>Felhasználó ellenőrzése</translation>
+    </message>
+    <message>
+        <source>Both sides then compare seven emoji. That is what says nobody is sitting in between — and it holds for every room you share with this person.</source>
+        <translation>Ezután mindkét fél összehasonlít hét emodzsit. Éppen ez mondja meg, hogy senki nem ül közétek — és minden szobára érvényes, amelyet ezzel a személlyel megosztasz.</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>Felhasználóazonosító</translation>
+    </message>
+    <message>
+        <source>For example @anna:example.org or @tom:example.net</source>
+        <translation>Például @anna:example.org vagy @tom:example.net</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Ellenőrzés</translation>
+    </message>
+    <message>
+        <source>Your own device</source>
+        <translation>A saját eszközöd</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Hét emodzsit hasonlít össze a másik eszközöddel. Szükséged van arra az eszközre magad előtt; ha mindkettő megerősítette, ez az eszköz olvashatja a megosztott szobakulcsokat.</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Az eszköz igazolása</translation>
+    </message>
+</context>
+<context>
+    <name>VideoPage</name>
+    <message>
+        <source>Save</source>
+        <translation>Mentés</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Ezt a mellékletet nem sikerült betölteni</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Mentve a Letöltések mappába</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nem sikerült menteni</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Továbbítás</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceRecorder</name>
+    <message>
+        <source>Nothing was recorded.</source>
+        <translation>Semmi nem lett rögzítve.</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceTranscripts</name>
+    <message>
+        <source>This voice message has no file.</source>
+        <translation>Ehhez a hangüzenethez nincs fájl.</translation>
+    </message>
+    <message>
+        <source>The voice message is too long to convert.</source>
+        <translation>A hangüzenet túl hosszú az átalakításhoz.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be downloaded.</source>
+        <translation>A hangüzenetet nem sikerült letölteni.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be read.</source>
+        <translation>A hangüzenetet nem sikerült beolvasni.</translation>
+    </message>
+    <message>
+        <source>This is not a voice message that can be converted.</source>
+        <translation>Ez nem olyan hangüzenet, amely átalakítható.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be decoded.</source>
+        <translation>A hangüzenetet nem sikerült dekódolni.</translation>
+    </message>
+    <message>
+        <source>Converting took too long and was stopped.</source>
+        <translation>Az átalakítás túl sokáig tartott, és leállt.</translation>
+    </message>
+    <message>
+        <source>Speech Note is not installed, or its service does not start.</source>
+        <translation>A Speech Note nincs telepítve, vagy a szolgáltatása nem indul el.</translation>
+    </message>
+    <message>
+        <source>Speech Note has no model that recognises the language by itself. Download &quot;Auto (WhisperCpp Small)&quot; in Speech Note.</source>
+        <translation>A Speech Note-ban nincs olyan modell, amely magától felismeri a nyelvet. Töltsd le a Speech Note-ban az „Auto (WhisperCpp Small)” modellt.</translation>
+    </message>
+    <message>
+        <source>The speech service is busy. Try again in a moment.</source>
+        <translation>A beszédszolgáltatás foglalt. Próbáld újra egy pillanat múlva.</translation>
+    </message>
+    <message>
+        <source>The speech service refused the voice message.</source>
+        <translation>A beszédszolgáltatás elutasította a hangüzenetet.</translation>
+    </message>
+    <message>
+        <source>The speech service reported an error.</source>
+        <translation>A beszédszolgáltatás hibát jelzett.</translation>
+    </message>
+    <message>
+        <source>Everything works: voice messages can be converted.</source>
+        <translation>Minden működik: a hangüzenetek átalakíthatók.</translation>
+    </message>
+    <message>
+        <source>No speech was recognised.</source>
+        <translation>Nem sikerült beszédet felismerni.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages may not talk to the speech service. Reinstalling Shoal Messages puts the permission back.</source>
+        <translation>Az Shoal Messages nem kommunikálhat a beszédszolgáltatással. Az Shoal Messages újratelepítése visszaadja az engedélyt.</translation>
+    </message>
+    <message>
+        <source>The speech service does not answer.</source>
+        <translation>A beszédszolgáltatás nem válaszol.</translation>
+    </message>
+</context>
+<context>
+    <name>shipwright-shoal-messages</name>
+    <message numerus="yes">
+        <source>%n mention(s)</source>
+        <translation>
+            <numerusform>%n említés</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new message(s)</source>
+        <translation>
+            <numerusform>%n új üzenet</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Bejövő videohívás</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Bejövő hívás</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Új üzenet</translation>
+    </message>
+</context>
+</TS>

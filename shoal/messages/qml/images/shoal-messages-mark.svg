@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Patrick Quinn -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Shoal Messages placeholder cover mark: monochrome, drawn over the ambience at low opacity. Original Shipwright artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M64 70 h128 a20 20 0 0 1 20 20 v62 a20 20 0 0 1 -20 20 h-70 l-34 28 v-28 h-24 a20 20 0 0 1 -20 -20 v-62 a20 20 0 0 1 20 -20 z M86 104 q16 -12 32 0 q-16 12 -32 0 z M116 132 q16 -12 32 0 q-16 12 -32 0 z M140 104 q14 -10 28 0 q-14 10 -28 0 z"/>
+</svg>

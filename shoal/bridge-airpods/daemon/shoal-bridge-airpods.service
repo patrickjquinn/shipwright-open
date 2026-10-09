@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# systemd user unit for the Shoal Bridge AirPods daemon (patched MagicPodsCore).
+#
+# Ordering: deliberately no After=bluetooth.target. That is a system target
+# and does not exist in the user manager (docs/plan.md, acceptance test 8).
+# The daemon needs no ordering: it starts without a Bluetooth adapter and
+# picks one up when BlueZ adds it (patch 0001).
+#
+# PulseAudio: ordered after pulseaudio.service when that user unit exists
+# (ordering only, no dependency). Patch 0005 lets the daemon start without
+# PulseAudio, but it connects only once, at startup, so starting after it
+# keeps Bluetooth profile switching available. [VERIFY] the unit name on
+# Sailfish 5.2 with `systemctl --user list-units | grep -i pulse`.
+#
+# Enabling: the RPM installs a symlink in post-user-session.target.wants, the
+# Sailfish convention (Sailfish's own bluez5 package enables mpris-proxy the
+# same way), so the service starts with the user session without any
+# `systemctl --user enable`.
+#
+# Port 2020: the daemon binds it exclusively and exits with status 1 if the
+# bind fails. A second instance (usually the SailfishOS-MagicPods port's
+# magicpodscore.service, or a copy started by hand) would otherwise hold this
+# unit in an endless restart loop. So:
+#   - Conflicts= stops the port's user service when this one starts;
+#   - ExecStartPre= logs any other magicpodscore process, naming the cause;
+#   - StartLimit* makes systemd give up after 5 failed starts in 2 minutes,
+#     leaving the unit visibly "failed" instead of looping forever.
+# Recover with: systemctl --user reset-failed shoal-bridge-airpods && systemctl --user start shoal-bridge-airpods
+
+[Unit]
+Description=Shoal Bridge wireless earbuds daemon (MagicPodsCore)
+Documentation=https://github.com/steam3d/MagicPodsCore
+Conflicts=magicpodscore.service
+After=pulseaudio.service
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# Pin the Bluetooth adapter if the automatic choice is wrong, e.g. with a
+# drop-in (systemctl --user edit shoal-bridge-airpods):
+#   [Service]
+#   Environment=MAGICPODS_ADAPTER=hci1
+ExecStartPre=-/bin/sh -c 'if pgrep -x magicpodscore >/dev/null 2>&1; then echo "another magicpodscore is running and holds port 2020:" >&2; pgrep -a -x magicpodscore >&2; fi; exit 0'
+ExecStart=/usr/libexec/shoal-bridge-airpods/magicpodscore
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=post-user-session.target

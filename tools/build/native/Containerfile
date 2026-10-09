@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT
+#
+# A native Sailfish OS build root (tools/build/native/native.sh builds it):
+# Jolla's public aarch64 SDK target image, upgraded to RELEASE with
+# Sailfish's own tools, plus Chum's chum:testing (Qt 6) and the toolchain.
+# Runs without emulation on an aarch64 host.
+
+ARG BASE
+FROM localhost/shipwright-sailfish-target:${BASE} AS runtime
+
+ARG RELEASE
+# The release the phone runs, through Jolla's repositories. zypper exits 107
+# when packages installed but an RPM scriptlet failed; in a container that is
+# expected (5.1 -> 5.2: an old Qt 5 particles package's %postun), so it
+# passes, and any other failure stops the build.
+RUN ssu release "${RELEASE}" \
+ && zypper --non-interactive --gpg-auto-import-keys ref \
+ && { zypper --non-interactive --gpg-auto-import-keys dup --allow-vendor-change || [ $? -eq 107 ]; } \
+ && zypper --non-interactive clean --all
+
+# Chum's chum:testing carries Qt 6 for 5.2 (ADR-0013). Added without GPG
+# checking, as the SDK build does (tools/build/sdk/sdk.sh): this root only
+# builds packages.
+RUN rel="${RELEASE%.*.*}" \
+ && zypper --non-interactive ar -G -f \
+        "https://repo.sailfishos.org/obs/sailfishos:/chum:/testing/${rel}_aarch64/" chum-testing \
+ && zypper --non-interactive --gpg-auto-import-keys ref
+
+# `runtime` stops here: the release and Chum, no toolchain, as on the phone
+# (install-test.sh installs the built RPMs into it).
+FROM runtime AS build
+
+# The toolchain the SDK's tooling provides, plus what the build scripts use.
+# Per-spec BuildRequires are installed at build time (tools/build/native/mb2).
+RUN { zypper --non-interactive in --no-recommends \
+        gcc gcc-c++ make cmake ninja rpm-build pkgconfig git tar xz bzip2 gzip \
+        python3-base curl findutils which diffutils \
+        qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel \
+     || [ $? -eq 107 ]; } \
+ && zypper --non-interactive clean --all

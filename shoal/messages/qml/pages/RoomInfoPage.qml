@@ -1,0 +1,611 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; bridged-room note; the room's pull-down entries that moved here; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+
+// Everything about one room on one page - what it is, who is in it, and the
+// actions that belong to the room rather than to the conversation.
+Page {
+    id: page
+
+    property string roomId
+    property string roomName
+    // An invitation not yet accepted: the room can be looked at — its topic is
+    // what tells someone whether to accept — but nothing inside it can be done.
+    property bool invited: false
+
+    // The core's answer. Empty until it arrives, which is the state every
+    // binding below is written for.
+    property var info: ({})
+    property bool infoLoaded: false
+
+    // Held separately because they are written from this page.
+    property string notifyMode: "default"
+    property bool favourite: false
+
+    function applyNotifyMode(mode) {
+        if (mode === notifyMode) {
+            return
+        }
+        notifyMode = mode
+        matrix.setRoomNotifyMode(roomId, mode)
+    }
+    property bool lowPriority: false
+    property bool encrypted: false
+    // Shipwright: "Signal" or "Telegram" for a room of a hosted bridge.
+    readonly property string bridgeName: {
+        var bridge = matrix.roomBridge(roomId)
+        return bridge === "signal" ? "Signal" : (bridge === "telegram" ? "Telegram" : "")
+    }
+
+    // Leaving the foreground aborts a running countdown at once: suppressing it
+    // at expiry left it firing on return from a minimised app.
+    property var activeRemorse: null
+    readonly property bool appForeground: Qt.application.active
+    onAppForegroundChanged: {
+        if (!appForeground && activeRemorse && activeRemorse.pending) {
+            activeRemorse.cancel()
+        }
+    }
+
+
+    allowedOrientations: Orientation.All
+
+    Component.onCompleted: matrix.loadRoomInfo(roomId)
+
+    // The name shown to the user, which is what the confirmation has to say
+    // back to them — the push site may not have known it.
+    readonly property string displayName: page.roomName.length > 0
+                                          ? page.roomName
+                                          : (page.info.name || qsTr("this room"))
+
+    // Two steps, because leaving cannot be undone: a dialog that names the
+    // room, then the remorse as the undo.
+    function confirmLeave() {
+        var dialog = pageStack.push(
+                    Qt.resolvedUrl("ConfirmDialog.qml"),
+                    {
+                        question: page.invited ? qsTranslate("RoomPage", "Really decline this invitation?")
+                                               : qsTr("Really leave this room?"),
+                        subject: page.displayName,
+                        explanation: page.invited
+                                     ? qsTranslate("RoomPage", "The invitation is gone afterwards. You can only get back in if somebody invites you again.")
+                                     : qsTr("The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address."),
+                        acceptLabel: page.invited ? qsTranslate("RoomPage", "Decline") : qsTr("Leave")
+                    })
+        dialog.accepted.connect(function() { page.startLeave() })
+    }
+
+    function startLeave() {
+        page.activeRemorse = Remorse.popupAction(page, page.invited ? qsTranslate("RoomPage", "Declining") : qsTr("Leaving room"), function() {
+            // A remorse whose page went away was executed by Silica, not by the user.
+            // Going back means abort.
+            if (page.status !== PageStatus.Active || !Qt.application.active) {
+                return
+            }
+            matrix.leaveRoom(page.roomId)
+            // Two levels: the conversation of a room just left must not stay
+            // behind this page.
+            var roomPage = pageStack.previousPage(page)
+            var below = roomPage ? pageStack.previousPage(roomPage) : null
+            if (below) {
+                pageStack.pop(below)
+            } else {
+                pageStack.pop()
+            }
+        })
+    }
+
+    Connections {
+        target: matrix.roomSettings
+        onSaved: {
+            if (roomId !== page.roomId) {
+                return
+            }
+            var info = JSON.parse(JSON.stringify(page.info))
+            if (field === "topic") {
+                info.topic = value
+            } else if (field === "avatar") {
+                info.avatar = value
+            }
+            page.info = info
+            if (shownName.length > 0) {
+                page.roomName = shownName
+            }
+        }
+    }
+
+    // "Copy room link": the core answers with the link, which goes to the clipboard.
+    Connections {
+        target: matrix
+        onRoomLinkReady: {
+            if (link.length === 0 || page.status !== PageStatus.Active) {
+                return
+            }
+            Clipboard.text = link
+            linkHint.visible = true
+            linkHintTimer.restart()
+        }
+    }
+
+    Timer {
+        id: linkHintTimer
+
+        interval: 2500
+        onTriggered: linkHint.visible = false
+    }
+
+    Connections {
+        target: matrix
+        onRoomInfoReady: {
+            if (info.roomId !== page.roomId) {
+                return
+            }
+            page.info = info
+            page.notifyMode = info.notifyMode || "default"
+            page.favourite = info.favourite === true
+            page.lowPriority = info.lowPriority === true
+            page.encrypted = info.encrypted === true
+            page.infoLoaded = true
+        }
+    }
+
+    SilicaFlickable {
+        id: flickable
+
+        anchors.fill: parent
+        contentHeight: content.height + Theme.paddingLarge
+
+        VerticalScrollDecorator {}
+
+        PullDownMenu {
+            // Edit last: the shortest tug must not leave.
+            MenuItem {
+                text: page.invited ? qsTranslate("RoomPage", "Decline invitation") : qsTr("Leave room")
+                onClicked: page.confirmLeave()
+            }
+            // The link others need to be pointed at this room. Copied
+            // rather than shown: it is only ever wanted somewhere else.
+            MenuItem {
+                text: qsTranslate("RoomPage", "Copy room link")
+                visible: !page.invited
+                onClicked: matrix.loadRoomLink(page.roomId)
+            }
+            MenuItem {
+                text: qsTr("Edit room")
+                visible: !page.invited
+                         && (matrix.roomPermissions.name === true
+                             || matrix.roomPermissions.topic === true
+                             || matrix.roomPermissions.avatar === true)
+                onClicked: pageStack.push(Qt.resolvedUrl("RoomSettingsPage.qml"), {
+                                              roomId: page.roomId,
+                                              roomName: page.displayName
+                                          })
+            }
+        }
+
+        Column {
+            id: content
+
+            width: page.width
+            spacing: Theme.paddingMedium
+
+            PageHeader {
+                title: page.roomName.length > 0 ? page.roomName
+                                                : (page.info.name || qsTr("Room"))
+                description: page.info.alias || ""
+            }
+
+            Avatar {
+                anchors.horizontalCenter: parent.horizontalCenter
+                size: Theme.itemSizeLarge
+                source: page.info.avatar || ""
+                name: page.roomName.length > 0 ? page.roomName : (page.info.name || "")
+            }
+
+            // The one thing a room says about itself — and until now Shoal Messages
+            // showed it only for rooms one had not joined yet.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: text.length > 0
+                wrapMode: Text.Wrap
+                textFormat: Text.PlainText
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeSmall
+                text: page.info.topic || ""
+            }
+
+            // An upgraded room leads on: the banner's action, in the place a user goes
+            // looking for what is wrong with the room.
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                visible: page.info.successor !== undefined && page.info.successor !== null
+                onClicked: matrix.followSuccessor(page.roomId)
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    color: Theme.highlightColor
+                    text: (page.info.successor && page.info.successor.joined)
+                          ? qsTr("Replaced. Open the new room")
+                          : qsTr("Replaced. Join the new room")
+                }
+            }
+
+            // The way back into the room this one grew out of, offered only while that
+            // room is still joined.
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                visible: page.info.predecessor !== undefined
+                         && page.info.predecessor !== null
+                         && page.info.predecessor.joined === true
+                onClicked: pageStack.push(Qt.resolvedUrl("RoomPage.qml"),
+                                          { roomId: page.info.predecessor.roomId,
+                                            roomName: "" })
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    color: Theme.highlightColor
+                    text: qsTr("Older messages in the previous room")
+                }
+            }
+
+            SectionHeader {
+                visible: !page.invited
+                text: qsTr("People and messages")
+            }
+
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                visible: !page.invited
+                onClicked: pageStack.push(Qt.resolvedUrl("MemberListPage.qml"), {
+                                              roomId: page.roomId,
+                                              roomName: page.roomName
+                                          })
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    // The invited are counted apart: they are not in the room
+                    // yet, and a single number would not match the member list.
+                    text: page.info.invitedMembers > 0
+                          ? qsTr("Members: %1 (%2 invited)")
+                            .arg(page.info.joinedMembers || 0)
+                            .arg(page.info.invitedMembers)
+                          : qsTr("Members: %1").arg(page.info.joinedMembers || 0)
+                }
+            }
+
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                visible: !page.invited
+                onClicked: pageStack.push(Qt.resolvedUrl("PinnedMessagesPage.qml"), {
+                                              roomId: page.roomId,
+                                              roomName: page.roomName
+                                          })
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    text: qsTr("Pinned messages")
+                }
+            }
+
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                visible: !page.invited
+                onClicked: pageStack.push(Qt.resolvedUrl("SearchPage.qml"), {
+                                              roomId: page.roomId,
+                                              roomName: page.roomName
+                                          })
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    text: qsTranslate("RoomPage", "Search messages")
+                }
+            }
+
+            // Only in a two-party encrypted chat: the core answers with the other
+            // person's address, so nothing has to be typed and groups never show it.
+            // The room's state is the open room's, which is the one this page was
+            // opened from.
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                visible: !page.invited && matrix.roomDirectPeer.length > 0
+                onClicked: {
+                    matrix.requestVerification(matrix.roomDirectPeer)
+                    pageStack.push(Qt.resolvedUrl("VerificationPage.qml"))
+                }
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    text: qsTranslate("RoomPage", "Verify contact")
+                }
+            }
+
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                // Inviting is a power level like any other. Offering it regardless led to a
+                // dialog whose only outcome was the server's refusal.
+                visible: !page.invited && matrix.roomPermissions.invite !== false
+                onClicked: pageStack.push(Qt.resolvedUrl("InviteToRoomDialog.qml"), {
+                                              roomId: page.roomId,
+                                              roomName: page.roomName
+                                          })
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    text: qsTr("Invite")
+                }
+            }
+
+            SectionHeader {
+                visible: !page.invited
+                text: qsTr("This room for me")
+            }
+
+            // Also in the chat list's context menu as a direct action. Here they show
+            // their state as well, which a list row cannot.
+            ComboBox {
+                visible: !page.invited
+                enabled: page.infoLoaded
+                label: qsTr("Notifications")
+                description: qsTr("Stored with the account, so it holds in every client")
+
+                // Index follows the page state, never the reverse: a binding on currentIndex
+                // fires during load and writes the first entry into every room opened.
+                currentIndex: ["default", "all", "mentions", "mute"]
+                              .indexOf(page.notifyMode)
+
+                // Each entry applies itself: a handler on currentIndex would
+                // also run when the loaded state arrives and re-send it.
+                menu: ContextMenu {
+                    MenuItem {
+                        text: qsTr("Account default")
+                        onClicked: page.applyNotifyMode("default")
+                    }
+                    MenuItem {
+                        text: qsTr("Every message")
+                        onClicked: page.applyNotifyMode("all")
+                    }
+                    MenuItem {
+                        text: qsTr("Only mentions and keywords")
+                        onClicked: page.applyNotifyMode("mentions")
+                    }
+                    MenuItem {
+                        text: qsTr("Nothing (muted)")
+                        onClicked: page.applyNotifyMode("mute")
+                    }
+                }
+            }
+
+            TextSwitch {
+                visible: !page.invited
+                text: qsTr("Favourite")
+                checked: page.favourite
+                automaticCheck: false
+                enabled: page.infoLoaded
+                onClicked: {
+                    page.favourite = !page.favourite
+                    matrix.setRoomFavourite(page.roomId, page.favourite)
+                    // The core clears the other tag; the switch has to follow,
+                    // or the page claims a state the room does not have.
+                    if (page.favourite) {
+                        page.lowPriority = false
+                    }
+                }
+            }
+
+            TextSwitch {
+                visible: !page.invited
+                text: qsTr("Low priority")
+                description: qsTr("Sorts to the bottom of the list and stays quiet")
+                checked: page.lowPriority
+                automaticCheck: false
+                enabled: page.infoLoaded
+                onClicked: {
+                    page.lowPriority = !page.lowPriority
+                    matrix.setRoomLowPriority(page.roomId, page.lowPriority)
+                    if (page.lowPriority) {
+                        page.favourite = false
+                    }
+                }
+            }
+
+            SectionHeader {
+                text: qsTr("Details")
+            }
+
+            DetailItem {
+                label: qsTr("Encryption")
+                value: page.bridgeName.length > 0
+                       ? (page.encrypted ? qsTr("Encrypted up to the bridge")
+                                         : qsTr("Not encrypted"))
+                       : (page.encrypted ? qsTr("End-to-end encrypted")
+                                         : qsTr("Not encrypted"))
+            }
+
+            // Shipwright: what a bridged room is, where the padlock is explained.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: page.bridgeName.length > 0
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("A %1 chat, through the bridge on your Shipwright cell. Messages are encrypted between this phone and the bridge; the bridge decrypts them to hand them on to %1, so they pass through it readable.").arg(page.bridgeName)
+            }
+
+            // One-way, so it asks first — the same remorse timer the room's
+            // pull-down used to carry.
+            BackgroundItem {
+                width: parent.width
+                height: visible ? Theme.itemSizeSmall : 0
+                visible: page.infoLoaded && !page.encrypted
+                onClicked: page.activeRemorse = Remorse.popupAction(page, qsTr("Turning on encryption"), function() {
+                    // Leaving the page aborts. Silica executes on `Deactivating`, which for a
+                    // one-way switch is the wrong direction.
+                    if (page.status !== PageStatus.Active || !Qt.application.active) {
+                        return
+                    }
+                    matrix.enableEncryption(page.roomId)
+                    page.encrypted = true
+                })
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.NoWrap
+                    truncationMode: TruncationMode.Fade
+                    color: Theme.highlightColor
+                    text: qsTr("Turn on encryption")
+                }
+            }
+
+            // The remedy when the other side cannot read what this device sends: only the
+            // sending session goes, so nothing of the own history becomes unreadable.
+            BackgroundItem {
+                width: parent.width
+                visible: page.encrypted
+
+                onClicked: {
+                    var dialog = pageStack.push(
+                                Qt.resolvedUrl("ConfirmDialog.qml"),
+                                {
+                                    question: qsTr("Renegotiate encryption?"),
+                                    subject: page.roomName,
+                                    explanation: qsTr("The next message starts a new session and hands its key to every device in the room again. Messages already sent stay as they are; nothing of your own history is lost."),
+                                    acceptLabel: qsTr("Renegotiate")
+                                })
+                    dialog.accepted.connect(function() {
+                        matrix.resetRoomKeys(page.roomId)
+                    })
+                }
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    truncationMode: TruncationMode.Fade
+                    color: Theme.highlightColor
+                    text: qsTr("Renegotiate encryption")
+                }
+            }
+
+            DetailItem {
+                label: qsTr("Address")
+                visible: value.length > 0
+                value: page.info.alias || ""
+            }
+
+            DetailItem {
+                label: qsTr("Access")
+                visible: page.info.isPublic !== undefined && page.info.isPublic !== null
+                value: page.info.isPublic ? qsTr("Public") : qsTr("On invitation")
+            }
+
+            // The two lines that say "this room is old".
+            DetailItem {
+                label: qsTr("Room version")
+                visible: value.length > 0
+                value: page.info.version || ""
+            }
+
+            // The id is offered for copying because it is the only handle left
+            // on a room whose address has moved on to its successor.
+            BackgroundItem {
+                width: parent.width
+                height: roomIdDetail.height + Theme.paddingSmall
+
+                onClicked: {
+                    Clipboard.text = page.info.roomId || page.roomId
+                    copiedHint.visible = true
+                }
+
+                DetailItem {
+                    id: roomIdDetail
+
+                    width: parent.width
+                    anchors.verticalCenter: parent.verticalCenter
+                    label: qsTr("Room ID")
+                    value: page.info.roomId || page.roomId
+                }
+            }
+
+            Label {
+                id: copiedHint
+
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: false
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Room ID copied")
+            }
+        }
+    }
+
+    // Feedback for "copy room link". The pull-down has closed by the time
+    // the core answers, so the confirmation stands over the page.
+    Label {
+        id: linkHint
+
+        anchors {
+            top: parent.top
+            topMargin: Theme.itemSizeLarge
+            horizontalCenter: parent.horizontalCenter
+        }
+        visible: false
+        font.pixelSize: Theme.fontSizeExtraSmall
+        color: Theme.highlightColor
+        textFormat: Text.PlainText
+        text: qsTranslate("RoomPage", "Room link copied")
+
+        Rectangle {
+            anchors {
+                fill: parent
+                leftMargin: -Theme.paddingMedium
+                rightMargin: -Theme.paddingMedium
+                topMargin: -Theme.paddingSmall
+                bottomMargin: -Theme.paddingSmall
+            }
+            z: -1
+            radius: Theme.paddingSmall
+            color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
+        }
+    }
+}

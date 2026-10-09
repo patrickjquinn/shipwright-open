@@ -1,0 +1,19 @@
+# Modified by Shipwright, 2026: rebranded as Shoal Messages; Keel Actions; see CHANGES-FROM-UPSTREAM.md.
+# D-Bus activation, so sharing works when Shoal Messages is not running.
+#
+# The name is not free: Sailjail derives it from the OrganizationName and
+# ApplicationName in the desktop file, the same pair that decides where the
+# app's data lives, and the share dialog looks the app up under exactly that
+# name. Renaming it here would move the state store on the next start.
+#
+# Started through sailjail rather than the booster for the same reason the
+# desktop file uses a generic application type: the Rust core's runtime does
+# not survive being dlopened from a preforked process.
+#
+# Shipwright: it also starts the app for a Keel Actions call (Pilot, through
+# keel-mcp) that finds it closed. Keel apps have a generated file of their own
+# that starts them without a window (--keel-actions); this app cannot, the one
+# name being spent here, so such a call opens Shoal Messages as a tap would.
+[D-BUS Service]
+Name=org.shipwright.ShoalMessages
+Exec=/usr/bin/sailjail -p shipwright-shoal-messages.desktop /usr/bin/shipwright-shoal-messages

@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 20:57:56 +0000
+Subject: [PATCH] Allow offline builds from local dependency archives
+
+All five dependencies are fetched at configure time, which fails on
+build hosts without network access (OBS, distribution builders).
+
+Add MAGICPODS_DEPENDENCY_DIR: when it names a directory holding the
+source archive of a dependency, that archive is used instead of the
+download, and is verified against a pinned SHA256. The archives are
+`git archive` tarballs of the same tags upstream already pins
+(prefix <name>-<version>/, gzip -n), except nlohmann/json, which uses
+its release asset json.tar.xz, the file its README recommends for
+FetchContent.
+
+MAGICPODS_OFFLINE=ON turns a missing archive into a configure error, so
+a packaging build can never fall back to the network silently.
+
+Without either option nothing changes: the same URLs and git tags as
+before are used.
+
+  sdbus-c++    1.6.0    sdbus-cpp-1.6.0.tar.gz        (tag commit 7450515d)
+  uWebSockets  20.58.0  uWebSockets-20.58.0.tar.gz    (tag commit fc2b7be7)
+  uSockets     0.8.7    uSockets-0.8.7.tar.gz         (tag commit a15d9bbd)
+  nlohmann     3.11.3   nlohmann-json-3.11.3.tar.xz   (release asset)
+  toml++       3.4.0    tomlplusplus-3.4.0.tar.gz     (tag commit 30172438)
+---
+ dependencies/CMakeLists.txt             | 39 +++++++++++++++++++++++++
+ dependencies/json/CMakeLists.txt        |  7 +++--
+ dependencies/sdbus-cpp/CMakeLists.txt   |  9 +++---
+ dependencies/toml++/CMakeLists.txt      |  7 +++--
+ dependencies/uSockets/CMakeLists.txt    | 14 +++++----
+ dependencies/uWebSockets/CMakeLists.txt | 14 +++++----
+ 6 files changed, 68 insertions(+), 22 deletions(-)
+
+diff --git a/dependencies/CMakeLists.txt b/dependencies/CMakeLists.txt
+index 8e9e3aa..5165f11 100644
+--- a/dependencies/CMakeLists.txt
++++ b/dependencies/CMakeLists.txt
+@@ -1,3 +1,42 @@
++include(FetchContent)
++
++# Offline builds.
++#
++# By default each dependency is downloaded at configure time. Packagers whose
++# build hosts have no network access (OBS, distribution builders) can instead
++# point MAGICPODS_DEPENDENCY_DIR at a directory holding the source archives
++# named below; an archive found there is used instead of the download and is
++# checked against its SHA256. The archives are `git archive` tarballs of the
++# pinned tags (prefix <name>-<version>/, gzip -n), except nlohmann/json,
++# which is its release asset json.tar.xz.
++#
++# MAGICPODS_OFFLINE=ON turns a missing archive into a configure error instead
++# of a silent download.
++set(MAGICPODS_DEPENDENCY_DIR "" CACHE PATH "Directory holding dependency source archives for offline builds")
++option(MAGICPODS_OFFLINE "Fail if a dependency archive is missing from MAGICPODS_DEPENDENCY_DIR instead of downloading it" OFF)
++
++if(POLICY CMP0135)
++    # Extracted files get the extraction time as timestamp.
++    cmake_policy(SET CMP0135 NEW)
++endif()
++
++# magicpods_declare_dependency(<name> ARCHIVE <file> SHA256 <hash> REMOTE <FetchContent_Declare arguments...>)
++function(magicpods_declare_dependency name)
++    cmake_parse_arguments(PARSE_ARGV 1 ARG "" "ARCHIVE;SHA256" "REMOTE")
++    if(MAGICPODS_DEPENDENCY_DIR AND EXISTS "${MAGICPODS_DEPENDENCY_DIR}/${ARG_ARCHIVE}")
++        message(STATUS "${name}: using ${MAGICPODS_DEPENDENCY_DIR}/${ARG_ARCHIVE}")
++        FetchContent_Declare(${name}
++            URL "${MAGICPODS_DEPENDENCY_DIR}/${ARG_ARCHIVE}"
++            URL_HASH SHA256=${ARG_SHA256}
++        )
++    elseif(MAGICPODS_OFFLINE)
++        message(FATAL_ERROR "MAGICPODS_OFFLINE is ON but ${ARG_ARCHIVE} is not in "
++                            "MAGICPODS_DEPENDENCY_DIR ('${MAGICPODS_DEPENDENCY_DIR}')")
++    else()
++        FetchContent_Declare(${name} ${ARG_REMOTE})
++    endif()
++endfunction()
++
+ add_subdirectory(sdbus-cpp)
+ add_subdirectory(uSockets)
+ add_subdirectory(uWebSockets)
+diff --git a/dependencies/json/CMakeLists.txt b/dependencies/json/CMakeLists.txt
+index 716f8a1..62364fc 100644
+--- a/dependencies/json/CMakeLists.txt
++++ b/dependencies/json/CMakeLists.txt
+@@ -1,7 +1,8 @@
+ include(FetchContent)
+ 
+-FetchContent_Declare(
+-    nlohmann_json
+-    URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.zip    
++magicpods_declare_dependency(nlohmann_json
++    ARCHIVE nlohmann-json-3.11.3.tar.xz
++    SHA256 d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
++    REMOTE URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.zip
+ )
+ FetchContent_MakeAvailable(nlohmann_json)
+diff --git a/dependencies/sdbus-cpp/CMakeLists.txt b/dependencies/sdbus-cpp/CMakeLists.txt
+index 4c6acb4..720f1f9 100644
+--- a/dependencies/sdbus-cpp/CMakeLists.txt
++++ b/dependencies/sdbus-cpp/CMakeLists.txt
+@@ -1,7 +1,8 @@
+ include(FetchContent)
+ 
+-FetchContent_Declare(
+-    sdbus-cpp
+-    URL https://github.com/Kistler-Group/sdbus-cpp/archive/refs/tags/v1.6.0.zip    
++magicpods_declare_dependency(sdbus-cpp
++    ARCHIVE sdbus-cpp-1.6.0.tar.gz
++    SHA256 61e460dd523e82557e6ba6cea359ab80211a2382a2141c277339813320b138ea
++    REMOTE URL https://github.com/Kistler-Group/sdbus-cpp/archive/refs/tags/v1.6.0.zip
+ )
+-FetchContent_MakeAvailable(sdbus-cpp)
+\ No newline at end of file
++FetchContent_MakeAvailable(sdbus-cpp)
+diff --git a/dependencies/toml++/CMakeLists.txt b/dependencies/toml++/CMakeLists.txt
+index 8904422..f8778dd 100644
+--- a/dependencies/toml++/CMakeLists.txt
++++ b/dependencies/toml++/CMakeLists.txt
+@@ -1,7 +1,8 @@
+ include(FetchContent)
+ 
+-FetchContent_Declare(
+-    tomlplusplus
+-    URL https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.zip
++magicpods_declare_dependency(tomlplusplus
++    ARCHIVE tomlplusplus-3.4.0.tar.gz
++    SHA256 0b95fd0988c9d114fe13f70dcbcc25df39eb860c42c32bbea395fa5a583d9d89
++    REMOTE URL https://github.com/marzer/tomlplusplus/archive/refs/tags/v3.4.0.zip
+ )
+ FetchContent_MakeAvailable(tomlplusplus)
+diff --git a/dependencies/uSockets/CMakeLists.txt b/dependencies/uSockets/CMakeLists.txt
+index ee3a584..e780b18 100644
+--- a/dependencies/uSockets/CMakeLists.txt
++++ b/dependencies/uSockets/CMakeLists.txt
+@@ -2,12 +2,14 @@
+ cmake_minimum_required(VERSION 3.22.1)
+ set(CMAKE_C_STANDARD 11)
+ include(FetchContent)
+-FetchContent_Declare(
+-  uSockets_content
+-  GIT_REPOSITORY https://github.com/uNetworking/uSockets
+-  GIT_TAG v0.8.7
+-  GIT_SHALLOW ON
+-  GIT_SUBMODULES ""
++magicpods_declare_dependency(uSockets_content
++  ARCHIVE uSockets-0.8.7.tar.gz
++  SHA256 d1ded58525af4964afc871c508821e9c6b404b2a6ca67f8c574ed8a1586acacb
++  REMOTE
++    GIT_REPOSITORY https://github.com/uNetworking/uSockets
++    GIT_TAG v0.8.7
++    GIT_SHALLOW ON
++    GIT_SUBMODULES ""
+ )
+ FetchContent_MakeAvailable(uSockets_content)
+ file(GLOB_RECURSE SOURCES ${usockets_content_SOURCE_DIR}/src/*.c)
+diff --git a/dependencies/uWebSockets/CMakeLists.txt b/dependencies/uWebSockets/CMakeLists.txt
+index 97674d1..e18c9ed 100644
+--- a/dependencies/uWebSockets/CMakeLists.txt
++++ b/dependencies/uWebSockets/CMakeLists.txt
+@@ -1,12 +1,14 @@
+ # $ROOT/external/uWebSockets/CMakeLists.txt
+ cmake_minimum_required(VERSION 3.22.1)
+ include(FetchContent)
+-FetchContent_Declare(
+-  uWebSockets_content
+-  GIT_REPOSITORY https://github.com/uNetworking/uWebSockets
+-  GIT_TAG v20.58.0
+-  GIT_SHALLOW ON
+-  GIT_SUBMODULES ""
++magicpods_declare_dependency(uWebSockets_content
++  ARCHIVE uWebSockets-20.58.0.tar.gz
++  SHA256 206fd817da7268339b081e0fd74bda7df6bf3dc97a3ddb0ba0e1e19494050e48
++  REMOTE
++    GIT_REPOSITORY https://github.com/uNetworking/uWebSockets
++    GIT_TAG v20.58.0
++    GIT_SHALLOW ON
++    GIT_SUBMODULES ""
+ )
+ FetchContent_MakeAvailable(uWebSockets_content)
+ find_package(ZLIB REQUIRED)

@@ -1,0 +1,752 @@
+// Modified by Shipwright, 2026: rustfmt and clippy fixes; see CHANGES-FROM-UPSTREAM.md.
+//! Rewrites `formatted_body` into what `Text.StyledText` can draw. Not a
+//! sanitiser: the tree is walked and re-emitted, so every `<` is written here.
+
+use ruma_html::{Html, HtmlSanitizerMode, SanitizerConfig};
+
+/// Beyond this the plain body is used: the whole row ends up in one Qt label,
+/// and a megabyte of markup in a list delegate is a frozen scroll.
+const MAX_INPUT: usize = 64 * 1024;
+
+/// Same, on the output: a small input can expand through nesting.
+const MAX_OUTPUT: usize = 96 * 1024;
+/// How many tags a message may carry at all. A body that needs more is not a
+/// message, and counting them costs one pass over the bytes.
+const MAX_TAGS: u32 = 4096;
+
+/// How deeply the raw string nests, counted without building anything. Crude
+/// on purpose: the bound is about the parser's recursion, not about the count.
+fn nesting_is_sane(html: &str) -> bool {
+    let mut depth: i32 = 0;
+    let mut tags: u32 = 0;
+    let bytes = html.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] != b'<' {
+            i += 1;
+            continue;
+        }
+        tags += 1;
+        if tags > MAX_TAGS {
+            return false;
+        }
+        if bytes.get(i + 1) == Some(&b'/') {
+            depth -= 1;
+        } else if !html[i..].starts_with("<!") {
+            depth += 1;
+            if depth > MAX_DEPTH as i32 {
+                return false;
+            }
+        }
+        i += 1;
+    }
+    true
+}
+
+/// `None` when the result adds nothing over the plain body — the usual case,
+/// since many clients attach a `formatted_body` to every message.
+pub fn to_styled_text(html: &str) -> Option<String> {
+    if html.is_empty() || html.len() > MAX_INPUT {
+        return None;
+    }
+
+    // Before the parser: `Html::parse` builds and drops the whole tree, and 20 000
+    // nested tags overflow the stack - an abort no catch_unwind holds.
+    if !nesting_is_sane(html) {
+        return None;
+    }
+
+    let parsed = Html::parse(html);
+    // The reply fallback goes, or the quote appears twice. `remove_elements`
+    // because a merely disallowed element is replaced by its children.
+    let config = SanitizerConfig::with_mode(HtmlSanitizerMode::Compat)
+        .remove_reply_fallback()
+        .remove_elements([
+            "script", "style", "noscript", "template", "iframe", "object", "embed", "applet",
+            "head", "title", "base", "link", "meta",
+        ]);
+    parsed.sanitize_with(&config);
+
+    let mut writer = Writer::default();
+    writer.children(parsed.children(), &Context::default());
+
+    let markup = writer.markup;
+    let out = writer.finish();
+    if out.is_empty() || !markup {
+        return None;
+    }
+    Some(out)
+}
+
+/// What the position in the tree changes about rendering.
+#[derive(Clone, Copy, Default)]
+struct Context {
+    /// Inside `<pre>`: line breaks are kept and leading indentation survives.
+    preformatted: bool,
+    /// Inside `<a>`: no nested anchor.
+    in_anchor: bool,
+    /// Inside a monospace run. `<pre><code>` would otherwise open the font twice.
+    monospace: bool,
+    /// Inside `<del>`/`<s>`/`<strike>`. StyledText has no tag for it, so the
+    /// line is drawn by the text: an overlay per character.
+    struck: bool,
+    /// Guards this module's own recursion; ruma caps the tree at 100 levels.
+    depth: u32,
+}
+
+const MAX_DEPTH: u32 = 64;
+
+#[derive(Default)]
+struct Writer {
+    out: String,
+    /// Whether anything was written that the plain body could not carry.
+    markup: bool,
+    /// Set once a cap was hit; everything after is dropped.
+    truncated: bool,
+}
+
+impl Writer {
+    fn finish(mut self) -> String {
+        // A trailing break renders as an empty line under the message.
+        while self.out.ends_with("<br>") {
+            let len = self.out.len() - 4;
+            self.out.truncate(len);
+        }
+        self.out
+    }
+
+    fn push_raw(&mut self, markup: &str) {
+        if self.truncated {
+            return;
+        }
+        if self.out.len() + markup.len() > MAX_OUTPUT {
+            self.truncated = true;
+            return;
+        }
+        self.out.push_str(markup);
+    }
+
+    /// Writes our own markup and marks the row as needing the rich-text path.
+    fn push_tag(&mut self, tag: &str) {
+        self.markup = true;
+        self.push_raw(tag);
+    }
+
+    /// Writes sender text, escaped so it can never become markup. Direction
+    /// controls are dropped: they are invisible and reorder what follows.
+    fn push_text(&mut self, text: &str, context: &Context) {
+        for character in text.chars() {
+            if crate::text::is_bidi_control(character) {
+                continue;
+            }
+            let mut drawn = true;
+            match character {
+                '&' => self.push_raw("&amp;"),
+                '<' => self.push_raw("&lt;"),
+                '>' => self.push_raw("&gt;"),
+                '\n' if context.preformatted => {
+                    self.push_tag("<br>");
+                    drawn = false;
+                }
+                // Only leading spaces: `&nbsp;` everywhere would stop the
+                // label wrapping, and a long code line would be cut off.
+                ' ' if context.preformatted && self.at_indent() => {
+                    self.push_raw("&nbsp;");
+                    drawn = false;
+                }
+                // A bidi override in a target reverses what the address
+                // looks like; the text filter drops them and so does this.
+                _ if crate::text::is_bidi_control(character) => drawn = false,
+                _ => {
+                    let mut buffer = [0u8; 4];
+                    let encoded: &str = character.encode_utf8(&mut buffer);
+                    self.push_raw(encoded);
+                }
+            }
+            // The strike-out line, drawn by the text because Qt has no tag for
+            // it. Written as raw text, never as markup.
+            if context.struck && drawn && carries_overlay(character) {
+                self.push_raw(STRIKE_OVERLAY);
+            }
+        }
+    }
+
+    fn at_line_start(&self) -> bool {
+        self.out.is_empty() || self.out.ends_with("<br>")
+    }
+
+    /// Still in the leading whitespace — `&nbsp;` does not start the line.
+    fn at_indent(&self) -> bool {
+        self.at_line_start() || self.out.ends_with("&nbsp;")
+    }
+
+    /// Separates blocks, never doubling up.
+    fn block_break(&mut self) {
+        if self.out.is_empty() || self.at_line_start() {
+            return;
+        }
+        self.push_tag("<br>");
+    }
+
+    fn children(&mut self, nodes: ruma_html::Children, context: &Context) {
+        for node in nodes {
+            self.node(&node, context);
+        }
+    }
+}
+
+/// U+0336 COMBINING LONG STROKE OVERLAY: one per character is what a struck
+/// line is, where the renderer offers no tag for one.
+const STRIKE_OVERLAY: &str = "\u{336}";
+
+/// Whether a character may carry the overlay. A joiner, a variation selector, a
+/// mark of its own or an emoji would be cut off from what it belongs to.
+fn carries_overlay(character: char) -> bool {
+    let code = character as u32;
+    !matches!(code, 0x200D | 0xFE0E | 0xFE0F | 0x0300..=0x036F
+                    | 0x2190..=0x2BFF | 0x1F000..=0x1FAFF)
+        && character != '\n'
+        && character != '\r'
+}
+
+/// Which of Qt's tags an element maps to, where the mapping is a plain wrap.
+fn inline_wrapper(name: &str) -> Option<(&'static str, &'static str)> {
+    match name {
+        "b" | "strong" => Some(("<b>", "</b>")),
+        "i" | "em" | "cite" | "dfn" | "var" => Some(("<i>", "</i>")),
+        "u" | "ins" => Some(("<u>", "</u>")),
+        "sub" => Some(("<sub>", "</sub>")),
+        "sup" => Some(("<sup>", "</sup>")),
+        // Qt's `<font>` takes `color` and `size` and nothing else - `family` is
+        // silently ignored (`qquickstyledtext.cpp`), and `<pre>` would break the
+        // line mid-sentence. A marker Qt does not know: the UI paints it, and
+        // where it does not, the tag contributes its text and nothing else.
+        "code" | "kbd" | "samp" | "tt" => Some(("<code>", "</code>")),
+        _ => None,
+    }
+}
+
+impl Writer {
+    fn node(&mut self, node: &ruma_html::NodeRef, context: &Context) {
+        if self.truncated || context.depth > MAX_DEPTH {
+            return;
+        }
+
+        match node.data() {
+            ruma_html::NodeData::Text(text) => {
+                self.push_text(&text.borrow(), context);
+            }
+            ruma_html::NodeData::Element(element) => {
+                self.element(node, &element.name.local, element, context);
+            }
+            // Document and comments: only their children matter.
+            _ => {
+                let inner = Context {
+                    depth: context.depth + 1,
+                    ..*context
+                };
+                self.children(node.children(), &inner);
+            }
+        }
+    }
+
+    fn element(
+        &mut self,
+        node: &ruma_html::NodeRef,
+        name: &str,
+        element: &ruma_html::ElementData,
+        context: &Context,
+    ) {
+        let inner = Context {
+            depth: context.depth + 1,
+            ..*context
+        };
+
+        // Struck text carries its own line, so there is no tag to open.
+        if matches!(name, "s" | "del" | "strike") {
+            self.markup = true;
+            let struck = Context {
+                struck: true,
+                ..inner
+            };
+            self.children(node.children(), &struck);
+            return;
+        }
+
+        if let Some((open, close)) = inline_wrapper(name) {
+            if context.monospace && open == "<code>" {
+                self.children(node.children(), &inner);
+                return;
+            }
+            let inner = Context {
+                monospace: open == "<code>",
+                ..inner
+            };
+            self.push_tag(open);
+            self.children(node.children(), &inner);
+            self.push_tag(close);
+            return;
+        }
+
+        match name {
+            "br" => self.push_tag("<br>"),
+
+            // No Qt equivalent; their contribution is the line break.
+            "p" | "div" | "section" | "article" | "aside" | "caption" | "summary" | "details" => {
+                self.block_break();
+                self.children(node.children(), &inner);
+                self.block_break();
+            }
+
+            // Not Qt's `<h1>`: it scales the font by a fixed factor, which in
+            // a chat bubble is several times the conversation's size.
+            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
+                self.block_break();
+                self.push_tag("<b>");
+                self.children(node.children(), &inner);
+                self.push_tag("</b>");
+                self.block_break();
+            }
+
+            "hr" => {
+                self.block_break();
+                self.push_tag("————");
+                self.block_break();
+            }
+
+            // Not Qt's `<ul>`/`<ol>`: it indents by a fixed pixel margin a
+            // bubble does not have, and nesting loses its level.
+            "ul" | "ol" => {
+                self.block_break();
+                self.list(node, name == "ol", element, &inner);
+                self.block_break();
+            }
+
+            // Only a stray `<li>` outside a list; inside one, `list` handles it.
+            "li" => {
+                self.block_break();
+                self.children(node.children(), &inner);
+                self.block_break();
+            }
+
+            // No blockquote in StyledText; the bar is a character and has to
+            // be repeated per line, so render first, then prefix.
+            "blockquote" => {
+                self.block_break();
+                let mut quoted = Writer::default();
+                quoted.children(node.children(), &inner);
+                let markup = quoted.markup;
+                let text = quoted.finish();
+                if !text.is_empty() {
+                    self.markup = self.markup || markup;
+                    self.push_tag("▏ ");
+                    self.push_raw(&text.replace("<br>", "<br>▏ "));
+                }
+                self.block_break();
+            }
+
+            // The one place Qt does give a monospace font: `<pre>` sets
+            // "Courier New,courier" and fixed pitch. It forces a line break with
+            // it, which is what a block wants anyway.
+            "pre" => {
+                self.block_break();
+                let preformatted = Context {
+                    preformatted: true,
+                    monospace: true,
+                    ..inner
+                };
+                self.push_tag("<pre>");
+                self.children(node.children(), &preformatted);
+                self.push_tag("</pre>");
+                self.block_break();
+            }
+
+            "a" => self.anchor(node, element, &inner),
+
+            // A table cannot be one in a phone-width bubble; keep cells apart.
+            "tr" => {
+                self.block_break();
+                self.children(node.children(), &inner);
+                self.block_break();
+            }
+            "td" | "th" => {
+                if !self.at_line_start() {
+                    self.push_tag("  │  ");
+                }
+                self.children(node.children(), &inner);
+            }
+
+            // Never fetched — the sender picks the URL. Custom emoji included.
+            "img" => {
+                let alt = attribute(element, "alt")
+                    .or_else(|| attribute(element, "title"))
+                    .unwrap_or_default();
+                if !alt.is_empty() {
+                    self.push_text(&alt, context);
+                }
+            }
+
+            // Carries the spoiler in the spec; its colours are ignored.
+            "span" => {
+                if attribute(element, "data-mx-spoiler").is_some() {
+                    // Marked, not hidden.
+                    self.push_tag("▨ ");
+                }
+                self.children(node.children(), &inner);
+            }
+
+            // Content only, nothing of the element. `<font>` lands here on
+            // purpose: its attributes are the ones refused above.
+            _ => self.children(node.children(), &inner),
+        }
+    }
+
+    fn list(
+        &mut self,
+        node: &ruma_html::NodeRef,
+        ordered: bool,
+        element: &ruma_html::ElementData,
+        context: &Context,
+    ) {
+        let mut number: u64 = if ordered {
+            attribute(element, "start")
+                .and_then(|start| start.parse().ok())
+                .unwrap_or(1)
+        } else {
+            0
+        };
+
+        for child in node.children() {
+            let is_item = child
+                .as_element()
+                .map(|data| &*data.name.local == "li")
+                .unwrap_or(false);
+            if !is_item {
+                // Whitespace, or a nested list put directly under the `<ul>`.
+                self.node(&child, context);
+                continue;
+            }
+
+            self.block_break();
+            if ordered {
+                self.push_tag(&format!("{number}. "));
+                number = number.saturating_add(1);
+            } else {
+                self.push_tag("• ");
+            }
+            self.children(child.children(), context);
+        }
+    }
+
+    fn anchor(
+        &mut self,
+        node: &ruma_html::NodeRef,
+        element: &ruma_html::ElementData,
+        context: &Context,
+    ) {
+        let href = attribute(element, "href").unwrap_or_default();
+        let usable = !context.in_anchor && is_web_url(&href);
+
+        if !usable {
+            // Mention, `matrix:`, `mailto:`: text stays, target goes.
+            let inner = Context {
+                depth: context.depth + 1,
+                ..*context
+            };
+            self.children(node.children(), &inner);
+            return;
+        }
+
+        self.push_tag("<a href=\"");
+        // The sender's string, except that `&` stays itself: Qt decodes no entities in
+        // an attribute, so `&amp;` would end up in the opened address.
+        for character in href.chars() {
+            match character {
+                '<' => self.push_raw("&lt;"),
+                '>' => self.push_raw("&gt;"),
+                '"' => self.push_raw("&quot;"),
+                '\'' => self.push_raw("&#39;"),
+                _ => {
+                    let mut buffer = [0u8; 4];
+                    let encoded: &str = character.encode_utf8(&mut buffer);
+                    self.push_raw(encoded);
+                }
+            }
+        }
+        self.push_tag("\">");
+
+        let inner = Context {
+            in_anchor: true,
+            depth: context.depth + 1,
+            ..*context
+        };
+        self.children(node.children(), &inner);
+        self.push_tag("</a>");
+    }
+}
+
+fn attribute(element: &ruma_html::ElementData, name: &str) -> Option<String> {
+    element
+        .attrs
+        .borrow()
+        .iter()
+        .find(|attribute| &*attribute.name.local == name)
+        .map(|attribute| attribute.value.to_string())
+}
+
+/// Only http(s) with a host: an anchor hands the URL to whatever claims the
+/// scheme. Characters that cannot occur in a URL are rejected, not escaped.
+fn is_web_url(href: &str) -> bool {
+    // RFC 3986: a URI is ASCII. Everything else has to arrive percent-encoded or
+    // as punycode, and a sender who writes it directly is not being helpful.
+    // Measured, because a list of forbidden characters kept missing one: neither
+    // `is_control` (category Cc) nor the bidi set catches U+200B, U+00AD, U+FEFF,
+    // the tags block or a variation selector - all invisible, all drawn as
+    // nothing in the confirmation dialog, which is the only thing between the
+    // user and a link that says one host and goes to another. The same rule
+    // takes the cyrillic homograph with it.
+    if !href.is_ascii() {
+        return false;
+    }
+    if href.chars().any(|character| {
+        matches!(character, '"' | '\'' | '<' | '>' | '`') || character.is_control()
+    }) {
+        return false;
+    }
+    let rest = match href
+        .strip_prefix("https://")
+        .or_else(|| href.strip_prefix("http://"))
+    {
+        Some(rest) => rest,
+        None => return false,
+    };
+    let host_end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    let host = &rest[..host_end];
+    // `https://bank.example.com.pad…@evil.tld/`: everything before the `@` is a
+    // user name, and the part that decides sits far to the right, where a dialog
+    // wraps it out of sight. No web link in a message needs one.
+    !host.is_empty() && !host.contains(char::is_whitespace) && !host.contains('@')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The display text is walked character by character and loses these; the
+    /// target was handed on whole. Same trick as the file name that ends `.exe`.
+    /// Invisible characters are not a list to keep up with: an address is ASCII.
+    #[test]
+    fn a_link_target_cannot_hide_characters() {
+        // Zero width, soft hyphen, byte order mark, tags block, variation selector.
+        for hidden in ['\u{200B}', '\u{00AD}', '\u{FEFF}', '\u{E0041}', '\u{FE0F}'] {
+            let href = format!("https://host.exa{hidden}mple/x");
+            assert!(!is_web_url(&href), "{hidden:?} passed");
+        }
+        // A homograph is not ASCII either, so the same rule takes it.
+        assert!(!is_web_url("https://\u{0430}pple.com/login"));
+        // And the user-info trick, where the deciding part sits far to the right.
+        assert!(!is_web_url(
+            "https://accounts.example.com.aaaaaaaaaaaaaaaaaaaaaaaaaaaa@evil.tld/"
+        ));
+        assert!(is_web_url("https://host.example/holiday.jpg"));
+    }
+
+    #[test]
+    fn a_link_target_cannot_be_written_backwards() {
+        assert!(!is_web_url("https://host.example/\u{202E}gnp.exe"));
+        assert!(!is_web_url("https://host.example/\u{200F}x"));
+        assert!(!is_web_url("https://\u{2066}host.example/x"));
+        // The ordinary address is untouched.
+        assert!(is_web_url("https://host.example/holiday.jpg"));
+    }
+
+    #[test]
+    fn plain_html_stays_on_the_plain_path() {
+        // The common case by a wide margin: a client attaches a formatted body
+        // to every message, formatted or not.
+        assert_eq!(to_styled_text("hello there"), None);
+        assert_eq!(to_styled_text(""), None);
+    }
+
+    #[test]
+    fn emphasis_survives() {
+        assert_eq!(
+            to_styled_text("<em>yes</em> and <strong>no</strong>").as_deref(),
+            Some("<i>yes</i> and <b>no</b>")
+        );
+    }
+
+    #[test]
+    fn scripts_and_pictures_never_reach_qt() {
+        // The two that must not survive under any circumstance: one executes,
+        // the other reports back that the message was displayed.
+        let rendered = to_styled_text("<script>alert(1)</script><b>text</b>").unwrap();
+        assert!(!rendered.contains("script"), "{rendered}");
+        assert!(!rendered.contains("alert"), "{rendered}");
+
+        // A picture alone renders as its alt text and therefore as nothing the
+        // plain body did not already say — no markup, so the plain path stays.
+        assert_eq!(
+            to_styled_text("<img src=\"http://tracker.invalid/x\" alt=\"cat\">"),
+            None
+        );
+
+        let rendered =
+            to_styled_text("<b>look</b> <img src=\"http://tracker.invalid/x\" alt=\"cat\">")
+                .unwrap();
+        assert!(!rendered.contains("http"), "{rendered}");
+        assert_eq!(rendered, "<b>look</b> cat");
+    }
+
+    #[test]
+    fn text_that_looks_like_markup_is_escaped() {
+        let rendered = to_styled_text("<b>a &lt; b &amp;&amp; c &gt; d</b>").unwrap();
+        assert_eq!(rendered, "<b>a &lt; b &amp;&amp; c &gt; d</b>");
+    }
+
+    #[test]
+    fn only_web_links_keep_their_target() {
+        assert_eq!(
+            to_styled_text("<a href=\"https://example.invalid/x\">site</a>").as_deref(),
+            Some("<a href=\"https://example.invalid/x\">site</a>")
+        );
+        // A mention keeps its name and loses the URI: tapping it would hand the
+        // scheme's owner an argument the sender chose.
+        assert_eq!(
+            to_styled_text("<b>hi</b> <a href=\"https://matrix.to/#/@x:y\">Name</a>").as_deref(),
+            Some("<b>hi</b> <a href=\"https://matrix.to/#/@x:y\">Name</a>")
+        );
+        let rendered = to_styled_text("<b>x</b><a href=\"javascript:alert(1)\">tap</a>").unwrap();
+        assert!(!rendered.contains("javascript"), "{rendered}");
+        assert!(rendered.ends_with("tap"), "{rendered}");
+        let rendered = to_styled_text("<b>x</b><a href=\"mailto:a@b.invalid\">mail</a>").unwrap();
+        assert!(!rendered.contains("mailto"), "{rendered}");
+    }
+
+    #[test]
+    fn a_target_that_would_need_escaping_is_dropped() {
+        // The parser unescapes the attribute before this sees it, so the quote is
+        // real: a URL that needs escaping to stay in its tag is refused instead.
+        let rendered =
+            to_styled_text("<b>x</b><a href='https://a.invalid/\"><img src=x onerror=y>'>t</a>")
+                .unwrap();
+        assert!(!rendered.contains("<a "), "{rendered}");
+        assert!(!rendered.contains("onerror"), "{rendered}");
+        assert!(rendered.ends_with("t"), "{rendered}");
+    }
+
+    #[test]
+    fn colours_are_dropped() {
+        // A sender who may choose the colour may choose the background's.
+        let rendered = to_styled_text("<font color=\"#101010\"><b>invisible?</b></font>").unwrap();
+        assert!(!rendered.contains("color"), "{rendered}");
+        assert_eq!(rendered, "<b>invisible?</b>");
+    }
+
+    #[test]
+    fn lists_become_bullets_and_numbers() {
+        assert_eq!(
+            to_styled_text("<ul><li>one</li><li>two</li></ul>").as_deref(),
+            Some("• one<br>• two")
+        );
+        assert_eq!(
+            to_styled_text("<ol start=\"3\"><li>a</li><li>b</li></ol>").as_deref(),
+            Some("3. a<br>4. b")
+        );
+    }
+
+    #[test]
+    fn quotes_get_a_bar_on_every_line() {
+        assert_eq!(
+            to_styled_text("<blockquote>one<br>two</blockquote>").as_deref(),
+            Some("▏ one<br>▏ two")
+        );
+    }
+
+    #[test]
+    fn code_keeps_its_line_breaks_and_indentation() {
+        let rendered = to_styled_text("<pre><code>fn a() {\n    b()\n}</code></pre>").unwrap();
+        assert!(
+            rendered.contains("<br>&nbsp;&nbsp;&nbsp;&nbsp;b()"),
+            "{rendered}"
+        );
+        // `<pre>` is the only tag that gives Qt a fixed-pitch font; `<font
+        // family=…>` is accepted and ignored.
+        assert!(rendered.contains("<pre>"), "{rendered}");
+    }
+
+    #[test]
+    fn struck_text_carries_its_own_line() {
+        // StyledText knows no strike-out tag, so the line is a combining
+        // overlay on each character.
+        assert_eq!(
+            to_styled_text("<del>ab</del>").as_deref(),
+            Some("a\u{336}b\u{336}")
+        );
+        assert_eq!(
+            to_styled_text("<s>ab</s>").as_deref(),
+            Some("a\u{336}b\u{336}")
+        );
+        assert_eq!(
+            to_styled_text("<strike>a&amp;b</strike>").as_deref(),
+            Some("a\u{336}&amp;\u{336}b\u{336}")
+        );
+    }
+
+    #[test]
+    fn an_overlay_is_never_cut_into_a_sequence() {
+        // A variation selector or a joiner belongs to the character before it.
+        let rendered = to_styled_text("<del>a\u{1f44d}b</del>").unwrap();
+        assert!(!rendered.contains("\u{1f44d}\u{336}"), "{rendered}");
+    }
+
+    #[test]
+    fn inline_code_is_marked_for_the_ui_to_paint() {
+        assert_eq!(
+            to_styled_text("<code>x</code>").as_deref(),
+            Some("<code>x</code>")
+        );
+    }
+
+    #[test]
+    fn the_reply_fallback_is_not_quoted_twice() {
+        // The client draws the quoted message from the event's relation. Left
+        // in, the fallback would repeat it — and it is someone else's text.
+        let rendered =
+            to_styled_text("<mx-reply><blockquote>old text</blockquote></mx-reply><b>answer</b>")
+                .unwrap();
+        assert!(!rendered.contains("old text"), "{rendered}");
+        assert_eq!(rendered, "<b>answer</b>");
+    }
+
+    #[test]
+    fn a_spoiler_is_marked() {
+        let rendered = to_styled_text("<span data-mx-spoiler>ending</span>").unwrap();
+        assert_eq!(rendered, "▨ ending");
+    }
+
+    #[test]
+    fn oversized_input_is_refused() {
+        let huge = format!("<b>{}</b>", "x".repeat(MAX_INPUT));
+        assert_eq!(to_styled_text(&huge), None);
+    }
+
+    #[test]
+    fn a_message_that_would_overflow_the_stack_is_refused() {
+        // 20 327 levels fit under the byte cap and abort the process inside
+        // `Html::parse`. The old test used 300 and certified nothing.
+        let bomb = "<b>".repeat(20327);
+        assert!(bomb.len() < MAX_INPUT);
+        assert_eq!(to_styled_text(&bomb), None);
+        // And the shape that only *counts* a lot without nesting.
+        let flat = "<b>x</b>".repeat(5000);
+        assert_eq!(to_styled_text(&flat), None);
+    }
+
+    #[test]
+    fn deep_nesting_terminates() {
+        let deep = format!("{}deep{}", "<b>".repeat(300), "</b>".repeat(300));
+        // Whatever comes out, it comes out: no stack overflow, no hang.
+        let _ = to_styled_text(&deep);
+    }
+}

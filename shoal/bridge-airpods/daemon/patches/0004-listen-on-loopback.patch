@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 20:59:36 +0000
+Subject: [PATCH] Listen on the loopback interface only and refuse web pages
+
+listen(port, ...) without a host binds the wildcard address, so the
+WebSocket API, which has no authentication, is reachable from every
+network the machine is on. On a phone that is any public Wi-Fi: another
+client could switch the Bluetooth adapter off, connect or disconnect
+headphones, change their settings or rewrite config.toml.
+
+Bind 127.0.0.1 by default. MAGICPODS_LISTEN_HOST overrides it, e.g.
+"0.0.0.0" for the previous behaviour or "::1" for IPv6 loopback.
+Clients that connect to "localhost" still work where it resolves to
+127.0.0.1, or where the client tries every resolved address (as Qt's
+QWebSocket does).
+
+Loopback alone does not keep web pages out: WebSockets are not subject
+to the same-origin policy, so a page open in a browser on the same
+machine (on a phone, any web site the user visits) can connect to
+ws://127.0.0.1:2020 and do all of the above. Browsers always send an
+Origin header with a WebSocket handshake and scripts cannot remove it;
+native clients send none unless told to. Add an upgrade handler that
+refuses (403) a handshake carrying an Origin header unless that origin
+is listed in MAGICPODS_ALLOWED_ORIGINS (comma-separated, exact
+"scheme://host[:port]"), for a client that itself runs in a browser
+engine. Local native processes can still connect; the API remains
+unauthenticated for them.
+
+The bind-failure message now suggests the usual cause, a second
+instance holding the port.
+---
+ src/main.cpp | 71 +++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 67 insertions(+), 4 deletions(-)
+
+diff --git a/src/main.cpp b/src/main.cpp
+index 1e4b441..625397d 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -4,6 +4,11 @@
+ 
+ #include <iostream>
+ #include <atomic>
++#include <algorithm>
++#include <cstdlib>
++#include <string>
++#include <string_view>
++#include <vector>
+ #include <nlohmann/json.hpp>
+ #include <App.h>
+ 
+@@ -24,6 +29,51 @@ using namespace MagicPodsCore;
+ //Do not forget to change version when API changes
+ constexpr int API_VERSION = 0;
+ constexpr int WEBSOCKET_PORT = 2020;
++// The API has no authentication, so it is only offered on the loopback
++// interface. MAGICPODS_LISTEN_HOST overrides this (e.g. "0.0.0.0" to restore
++// listening on every interface, or "::1").
++constexpr auto DEFAULT_WEBSOCKET_HOST = "127.0.0.1";
++
++std::string GetWebSocketHost() {
++    if (const char* host = std::getenv("MAGICPODS_LISTEN_HOST"); host != nullptr && *host != '\0')
++        return host;
++    return DEFAULT_WEBSOCKET_HOST;
++}
++
++// Loopback alone does not keep web pages out: WebSockets are not bound by
++// the same-origin policy, so any page open in a browser on this machine
++// could connect to ws://127.0.0.1:2020. Browsers send an Origin header with
++// every WebSocket handshake, and page scripts cannot remove it, while
++// native clients (QWebSocket, websocat, Python websockets) send none unless
++// told to. So a handshake that carries an Origin is refused, unless that
++// origin is listed in MAGICPODS_ALLOWED_ORIGINS (comma-separated, exact
++// "scheme://host[:port]" strings), for a client that runs in a browser
++// engine.
++std::vector<std::string> GetAllowedOrigins() {
++    std::vector<std::string> origins{};
++    const char* list = std::getenv("MAGICPODS_ALLOWED_ORIGINS");
++    if (list == nullptr)
++        return origins;
++    std::string_view rest{list};
++    while (!rest.empty()) {
++        const auto comma = rest.find(',');
++        std::string_view item = rest.substr(0, comma);
++        rest = comma == std::string_view::npos ? std::string_view{} : rest.substr(comma + 1);
++        while (!item.empty() && item.front() == ' ')
++            item.remove_prefix(1);
++        while (!item.empty() && item.back() == ' ')
++            item.remove_suffix(1);
++        if (!item.empty())
++            origins.emplace_back(item);
++    }
++    return origins;
++}
++
++bool IsOriginAllowed(std::string_view origin, const std::vector<std::string>& allowedOrigins) {
++    if (origin.empty())
++        return true;
++    return std::find(allowedOrigins.begin(), allowedOrigins.end(), origin) != allowedOrigins.end();
++}
+ 
+ nlohmann::json MakeGetDeviceResponse(DevicesInfoFetcher& devicesInfoFetcher) {
+     auto rootObject = nlohmann::json::object();
+@@ -444,7 +494,20 @@ int main(int argc, char** argv) {
+         .resetIdleTimeoutOnSend = false,
+         .sendPingsAutomatically = true,
+         /* Handlers */
+-        .upgrade = nullptr,
++        .upgrade = [allowedOrigins = GetAllowedOrigins()](auto* res, auto* req, auto* context) {
++            const std::string_view origin = req->getHeader("origin");
++            if (!IsOriginAllowed(origin, allowedOrigins)) {
++                Logger::Warn("Refused a WebSocket connection from origin %s (see MAGICPODS_ALLOWED_ORIGINS)",
++                             std::string{origin.substr(0, 128)}.c_str());
++                res->writeStatus("403 Forbidden")->end("WebSocket connections from web pages are not allowed\n");
++                return;
++            }
++            res->template upgrade<PerSocketData>({},
++                req->getHeader("sec-websocket-key"),
++                req->getHeader("sec-websocket-protocol"),
++                req->getHeader("sec-websocket-extensions"),
++                context);
++        },
+         .open = [&initialized](auto* ws) {
+             if (!initialized.load()) {
+                 Logger::Info("Connection attempted before initialization complete, closing");
+@@ -484,9 +547,9 @@ int main(int argc, char** argv) {
+             /* You may access ws->getUserData() here */
+             Logger::Info("On open websocket closed");
+         }
+-    }).listen(WEBSOCKET_PORT, LIBUS_LISTEN_EXCLUSIVE_PORT, [&](auto *listen_socket) {
++    }).listen(GetWebSocketHost(), WEBSOCKET_PORT, LIBUS_LISTEN_EXCLUSIVE_PORT, [&](auto *listen_socket) {
+         if (listen_socket) {
+-            Logger::Info("Listening on port %d", WEBSOCKET_PORT);
++            Logger::Info("Listening on %s port %d", GetWebSocketHost().c_str(), WEBSOCKET_PORT);
+ 
+             Logger::Info("Starting initialization...");
+ 
+@@ -503,7 +566,7 @@ int main(int argc, char** argv) {
+             Logger::Info("Initialization complete, ready to accept connections");
+             initialized.store(true);
+         } else {
+-            Logger::Error("Failed to listen on port %d", WEBSOCKET_PORT);
++            Logger::Error("Failed to listen on %s port %d (is another magicpodscore running?)", GetWebSocketHost().c_str(), WEBSOCKET_PORT);
+             exit(1);
+         }
+     }).run();

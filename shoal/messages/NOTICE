@@ -1,0 +1,23 @@
+Shoal Messages
+Copyright 2026 Patrick Quinn
+
+This product is a modified version ("hard fork") of xmatic (harbour-xmatic),
+a Matrix client for Sailfish OS:
+
+  xmatic
+  Copyright 2026 JimKnopfIoT
+  https://github.com/JimKnopfIoT/harbour-xmatic
+  Licensed under the Apache License, Version 2.0 (see LICENSE)
+
+Forked from upstream tag v0.41.0, commit
+40ce16b482d5a8afe87e0dfc5e6910994a5c2f1a (see UPSTREAM.md).
+
+Modified by Shipwright, 2026. Files changed by Shipwright carry a
+"Modified by Shipwright, 2026" notice; every change is listed in
+CHANGES-FROM-UPSTREAM.md. The upstream project did not ship a NOTICE file.
+
+"xmatic" is the upstream project's name and is used here for attribution
+only. Shoal Messages is not endorsed by or affiliated with the xmatic project.
+
+Third-party components compiled into the binary and their licences are listed
+in THIRD-PARTY.md.

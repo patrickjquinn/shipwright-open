@@ -1,0 +1,134 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# shipwright-reef-repo: register, repin or remove the Reef repository.
+#
+# Used by the shipwright-reef-installer RPM scriptlets, and meant to be
+# shipped by the Reef client package too (the installer is obsoleted by the
+# client, so the client must carry its own copy to repin and clean up).
+# POSIX sh; runs under busybox ash on Sailfish OS 4.0 and later.
+#
+# The command sequence mirrors reef/client/backend/src/repo.rs.
+#
+# Test hooks (never set on a phone): REEF_CONF, REEF_ROOT (prefix for /etc
+# files), SSU, RPM, VERSION_CMD (commands to call instead of the real ones).
+
+# -e as well as -u: a command that fails stops the script with a non-zero
+# status, so a failed `ssu ar` is never reported as "registered". The ssu
+# and rpm calls are also checked one by one, to say which step failed.
+set -eu
+
+# The installer's copy until the client package replaces it, then the client's.
+if [ -z "${REEF_CONF:-}" ]; then
+  REEF_CONF=/usr/share/shipwright-reef-installer/repo.conf
+  [ -r "$REEF_CONF" ] || REEF_CONF=/usr/share/shipwright-reef/repo.conf
+fi
+REEF_ROOT=${REEF_ROOT:-}
+SSU=${SSU:-ssu}
+RPM=${RPM:-rpm}
+VERSION_CMD=${VERSION_CMD:-version}
+
+if [ ! -r "$REEF_CONF" ]; then
+  echo "shipwright-reef-repo: cannot read $REEF_CONF" >&2
+  exit 3
+fi
+# shellcheck source-path=SCRIPTDIR source=../repo.conf
+. "$REEF_CONF"
+
+fail() {
+  echo "shipwright-reef-repo: $* failed" >&2
+  exit 1
+}
+
+usage() {
+  cat <<USAGE
+usage: shipwright-reef-repo <command>
+  release     print the installed Sailfish OS release (not \`ssu re\`)
+  url         print the repository URL for the installed release
+  add         register (or re-pin) the repository: ssu rr, ssu ar, ssu ur
+  remove      unregister the repository: ssu rr, ssu ur
+  import-key  rpm --import the Reef signing key (not inside an RPM transaction)
+  remove-key  erase the Reef key's gpg-pubkey (not inside an RPM transaction)
+USAGE
+}
+
+# A four-part release string from a VERSION_ID= line, quotes optional.
+release_from_file() {
+  sed -n "s/^VERSION_ID=[\"']\{0,1\}\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)[\"']\{0,1\}[[:space:]]*\$/\1/p" "$1" | head -n 1
+}
+
+installed_release() {
+  for f in "$REEF_ROOT/etc/sailfish-release" "$REEF_ROOT/etc/os-release"; do
+    [ -r "$f" ] || continue
+    r=$(release_from_file "$f")
+    if [ -n "$r" ]; then
+      echo "$r"
+      return 0
+    fi
+  done
+  r=$($VERSION_CMD 2>/dev/null | grep -o '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' | head -n 1)
+  if [ -n "$r" ]; then
+    echo "$r"
+    return 0
+  fi
+  echo "shipwright-reef-repo: cannot determine the installed Sailfish OS release" >&2
+  return 1
+}
+
+repo_url() {
+  r=$(installed_release) || return 1
+  case "$REEF_RELEASE_GRANULARITY" in
+    full) component=$r ;;
+    major-minor) component=$(echo "$r" | cut -d . -f 1-2) ;;
+    *)
+      echo "shipwright-reef-repo: bad REEF_RELEASE_GRANULARITY $REEF_RELEASE_GRANULARITY" >&2
+      return 1
+      ;;
+  esac
+  printf '%s\n' "$REEF_URL_TEMPLATE" | sed "s|{release}|$component|"
+}
+
+case "${1:-}" in
+  release)
+    installed_release
+    ;;
+  url)
+    repo_url
+    ;;
+  add)
+    url=$(repo_url) || exit 1
+    # Remove then add, as the Chum GUI does when it switches repositories,
+    # rather than relying on `ssu ar` to overwrite an existing alias.
+    # ssu returns 0 even when the alias does not exist.
+    $SSU rr "$REEF_ALIAS" || fail "ssu rr $REEF_ALIAS"
+    $SSU ar "$REEF_ALIAS" "$url" || fail "ssu ar $REEF_ALIAS $url"
+    $SSU ur || fail "ssu ur"
+    echo "registered $REEF_ALIAS $url"
+    ;;
+  remove)
+    $SSU rr "$REEF_ALIAS" || fail "ssu rr $REEF_ALIAS"
+    $SSU ur || fail "ssu ur"
+    echo "removed $REEF_ALIAS"
+    ;;
+  import-key)
+    $RPM --import "$REEF_KEY_FILE" || fail "rpm --import $REEF_KEY_FILE"
+    ;;
+  remove-key)
+    # gpg-pubkey packages carry the key's user id in their summary.
+    # No gpg-pubkey at all (rpm -q exits 1) or none of ours: nothing to do.
+    keys=$($RPM -q gpg-pubkey --qf '%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n' 2>/dev/null |
+      grep -F "$REEF_KEY_UID" | cut -f 1) || keys=""
+    for k in $keys; do
+      $RPM -e "$k" || fail "rpm -e $k"
+      echo "removed key $k"
+    done
+    ;;
+  -h | --help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

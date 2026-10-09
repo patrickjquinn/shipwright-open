@@ -1,0 +1,676 @@
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; first-run bridges entry, opening a chat started through a bridge; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+import QtMultimedia 5.6
+import Nemo.Notifications 1.0
+import Nemo.KeepAlive 1.2
+import Sailfish.Share 1.0
+
+import "pages"
+import "pages/SecurityStatus.js" as SecurityStatus
+import "pages/MatrixLinks.js" as MatrixLinks
+import "pages/Preview.js" as Preview
+
+ApplicationWindow {
+    id: app
+
+    // Which root page is up, so it is only exchanged when it really changes.
+    // Assigned once, never bound: a binding would beat `showPageFor` to the change.
+    property string shownRoot: ""
+
+    // Whether the security page has already been offered in this run. Once per
+    // app start — it leads, it does not nag.
+    property bool securityShown: false
+
+    // The room the standing notification is about, or "" if none stands.
+    property string notifiedRoomId: ""
+
+    // Decided here rather than corrected a moment later: the login page must not
+    // flash up on a device that has to be told what to install.
+    initialPage: Qt.resolvedUrl(matrix.storageBlocked
+                                ? "pages/StorageBlockedPage.qml"
+                                : "pages/LoginPage.qml")
+    cover: Qt.resolvedUrl("cover/CoverPage.qml")
+
+    // Silica's default is AutoText, which every Label inherits - a display name of
+    // `<img src=http://…>` fetched a remote picture on sight.
+    _defaultLabelFormat: Text.PlainText
+    // Never assign `defaultAllowedOrientations`: it is read-only in Silica and
+    // assigning it makes the whole window fail to load, white screen.
+    allowedOrientations: defaultAllowedOrientations
+    // The writable door: every Page without its own declaration binds to this
+    // (Silica Page.qml) - the platform pickers' sub-pages included.
+    _defaultPageOrientations: Orientation.All
+
+    // The root a `replaceAbove` is still owed. Silica drops a push issued during a
+    // transition, and the login page then never appears at all.
+    property string pendingRoot: ""
+
+    // What another app shared, until there is somewhere to put it. A share can
+    // arrive before the session is restored, and a push mid-transition is dropped.
+    property var pendingShare: null
+
+    function deliverShare() {
+        if (!pendingShare || matrix.sessionState !== "signed-in" || pageStack.busy) {
+            return
+        }
+        var share = pendingShare
+        pendingShare = null
+        pageStack.push(Qt.resolvedUrl("pages/ShareToRoomPage.qml"), share)
+    }
+
+    // A page's address as a string. Qt 6 (Keel) returns a `url` value from
+    // Qt.resolvedUrl, and `===` between two of those, or between one and the
+    // string in `shownRoot`, is false even for the same page: every session or
+    // storage signal then replaced the whole stack with the home page, closing
+    // whatever was open (the encryption page vanished as it opened). Qt 5
+    // returns a string, so this changes nothing there.
+    function pageUrl(file) {
+        return String(Qt.resolvedUrl(file))
+    }
+
+    function rootFor(state) {
+        // Before anything else and before any login: nothing on the device and no key
+        // to be had. Signing in here would create the plaintext store.
+        if (matrix.storageBlocked) {
+            return pageUrl("pages/StorageBlockedPage.qml")
+        }
+        // An encrypted session whose key is not at hand is not "no session": its page
+        // retries, and never leads into a login that would clear the store.
+        if (state === "locked") {
+            return pageUrl("pages/SessionLockedPage.qml")
+        }
+        // Stored data that could not be read back: same reasoning, its page
+        // rebuilds what the next sync restores and keeps the device.
+        if (state === "unreadable") {
+            return pageUrl("pages/StoreUnreadablePage.qml")
+        }
+        // Offline is still a session: a login here would start a new device.
+        if (state === "offline") {
+            return pageUrl("pages/SessionOfflinePage.qml")
+        }
+        if (state === "newer") {
+            return pageUrl("pages/SessionNewerPage.qml")
+        }
+        if (state !== "signed-in") {
+            return pageUrl("pages/LoginPage.qml")
+        }
+        // The home page is the user's choice; the other one is reachable from
+        // it with a sideways swipe (each home page attaches its sibling).
+        return settings.startPage === "spaces" ? pageUrl("pages/SpacesPage.qml")
+                                             : pageUrl("pages/RoomListPage.qml")
+    }
+
+    // Only a home page carries `isHome`; the login and locked pages have no
+    // such property.
+    function propsFor(root) {
+        return root === pageUrl("pages/LoginPage.qml")
+                || root === pageUrl("pages/SessionLockedPage.qml")
+                || root === pageUrl("pages/StoreUnreadablePage.qml")
+                || root === pageUrl("pages/SessionOfflinePage.qml")
+                || root === pageUrl("pages/SessionNewerPage.qml")
+                || root === pageUrl("pages/StorageBlockedPage.qml") ? {} : { isHome: true }
+    }
+
+    function showPageFor(state) {
+        var root = rootFor(state)
+        if (root === shownRoot) {
+            return
+        }
+        shownRoot = root
+        if (pageStack.busy) {
+            pendingRoot = root
+        } else {
+            pageStack.replaceAbove(null, root, propsFor(root))
+        }
+    }
+
+    // Offers the security page once per run, and never over an unanswered state:
+    // interrupting somebody over "unknown" is a claim the app cannot back.
+    function maybeShowSecurity() {
+        if (securityShown || matrix.storageBlocked) {
+            return
+        }
+        if (matrix.sessionState !== "signed-in") {
+            return
+        }
+        if (!SecurityStatus.known(matrix) || !SecurityStatus.needsAttention(matrix)) {
+            return
+        }
+        if (pageStack.busy) {
+            // Retried from onBusyChanged; a push during a transition is
+            // dropped silently and the page would never appear.
+            return
+        }
+        securityShown = true
+        pageStack.push(Qt.resolvedUrl("pages/SecurityStatusPage.qml"))
+    }
+
+    // Shipwright: the bridges page is offered once after sign-in, from the home
+    // page only, so it never lands on top of the security page or a link.
+    property bool bridgesIntroOffered: false
+
+    function maybeShowBridgesIntro() {
+        if (bridgesIntroOffered || settings.bridgesIntroDone || matrix.storageBlocked) {
+            return
+        }
+        if (matrix.sessionState !== "signed-in" || pageStack.busy) {
+            return
+        }
+        var current = pageStack.currentPage
+        if (pageStack.depth !== 1 || !current || current.isHome !== true) {
+            return
+        }
+        bridgesIntroOffered = true
+        pageStack.push(Qt.resolvedUrl("pages/BridgesIntroDialog.qml"))
+    }
+
+    Connections {
+        target: pageStack
+        // One handler, both jobs: QML refuses a type that binds the same signal twice
+        // and the page then fails to load.
+        onBusyChanged: {
+            if (!pageStack.busy && app.pendingRoot !== "") {
+                var root = app.pendingRoot
+                app.pendingRoot = ""
+                pageStack.replaceAbove(null, root, app.propsFor(root))
+            }
+            if (!pageStack.busy) {
+                app.deliverShare()
+                app.maybeShowSecurity()
+                app.maybeShowBridgesIntro()
+                // Last, so a room asked for by a link comes to rest above the
+                // security page rather than under it: the link is what the user
+                // just tapped.
+                app.openPendingLinkPage()
+            }
+        }
+    }
+
+    // Not while the gate is up: a restore on an empty device answers "none" and
+    // would take the app to the login page.
+    Component.onCompleted: {
+        // An assignment, not a binding - see the note on the property.
+        shownRoot = rootFor(matrix.sessionState)
+        if (!matrix.storageBlocked) {
+            matrix.restoreSession()
+        }
+        // A link the app was started for. It waits for the session the restore
+        // above is fetching - opening a room needs one.
+        app.startupLink = activation.takePendingLink()
+        if (app.startupLink.length > 0) {
+            startupLinkLife.restart()
+        }
+    }
+
+    /// The link this start was asked for, until there is a session to open it
+    /// in. There is no state to wait for by name - a restore answers `none`,
+    /// `locked`, `unreadable` or `signed-in`, and `none` is also what a start
+    /// without a session says - so the wait is bounded by time instead.
+    property string startupLink: ""
+
+    Timer {
+        id: startupLinkLife
+
+        // Long enough for a restore over a slow line, short enough that a link
+        // is never acted on after a login the user did for another reason.
+        interval: 30000
+        onTriggered: app.startupLink = ""
+    }
+
+    Connections {
+        target: matrix
+
+        onSessionChanged: {
+            if (app.startupLink.length === 0 || matrix.sessionState !== "signed-in") {
+                return
+            }
+            var link = app.startupLink
+            app.startupLink = ""
+            startupLinkLife.stop()
+            app.openMatrixLink(link)
+        }
+    }
+
+    // The notification tap and the launcher's hand-over. Neither carries an
+    // argument: which room is meant is this app's knowledge, not the caller's.
+    Connections {
+        target: activation
+
+        onRaiseRequested: app.activate()
+
+        onNotifiedRoomRequested: {
+            app.activate()
+            app.openNotifiedRoom()
+        }
+
+        // A link tapped in another app. What it may be was narrowed in
+        // AppService; what it means is decided here, by the same reader the
+        // timeline's own links go through.
+        onLinkRequested: app.openMatrixLink(link)
+    }
+
+    /// A Matrix address from outside: shown, never acted on. A room the user is
+    /// in opens, one they are not in asks first, and a person leads to the
+    /// dialog that names the address - the same three answers a link inside a
+    /// conversation gets, decided in `RoomPage`.
+    function openMatrixLink(link) {
+        var target = MatrixLinks.parse(link)
+        if (!target) {
+            return
+        }
+        // Before a session there is nothing to open the link in - and a start the
+        // link itself woke is exactly that case: the app comes up because of it,
+        // long before the restore is through. So it waits, bounded by the timer,
+        // rather than being dropped.
+        if (matrix.sessionState !== "signed-in") {
+            app.startupLink = link
+            startupLinkLife.restart()
+            return
+        }
+        if (target.kind === "user") {
+            app.pushWhenSettled("pages/NewChatDialog.qml", { prefill: target.id })
+            return
+        }
+        app.pendingLinkAddress = target.id
+        matrix.resolveRoom(target.id)
+    }
+
+    /// The address a link from outside asked about, until the core has answered.
+    property string pendingLinkAddress: ""
+
+    /// What a link decided on, until the page stack will keep it. A session
+    /// coming up replaces the root page, and a push made while that runs is
+    /// thrown away with the page it was pushed onto - measured: the room was
+    /// resolved and the dialog pushed, and the user stood in the room list.
+    property var pendingLinkPage: null
+
+    function pushWhenSettled(url, properties) {
+        app.pendingLinkPage = { "url": url, "properties": properties }
+        app.openPendingLinkPage()
+    }
+
+    function openPendingLinkPage() {
+        if (!app.pendingLinkPage || pageStack.busy) {
+            // Retried from onBusyChanged, the same way the security page waits -
+            // a push during a transition is dropped silently.
+            return
+        }
+        var page = app.pendingLinkPage
+        app.pendingLinkPage = null
+        // A chat started from the contact picker takes the place of the pages
+        // that led to it (Shipwright).
+        if (page.above) {
+            pageStack.replaceAbove(page.above, Qt.resolvedUrl(page.url), page.properties)
+            return
+        }
+        pageStack.push(Qt.resolvedUrl(page.url), page.properties)
+    }
+
+    /// Shipwright: a chat a bridge started (contact picker) is joined; it opens
+    /// over the home page.
+    function openStartedChat(roomId) {
+        if (roomId.length === 0) {
+            return
+        }
+        var home = pageStack.find(function (page) { return page.isHome === true })
+        app.pendingLinkPage = { "url": "pages/RoomPage.qml",
+                                "properties": { roomId: roomId, roomName: "" },
+                                "above": home }
+        app.openPendingLinkPage()
+    }
+
+    Connections {
+        target: matrix.bridges
+        onChatReady: app.openStartedChat(roomId)
+    }
+
+    Connections {
+        target: matrix
+
+        onRoomResolved: {
+            if (app.pendingLinkAddress.length === 0) {
+                return
+            }
+            app.pendingLinkAddress = ""
+            console.warn("shoal-messages: link room resolved, joined:", joined)
+            if (joined) {
+                app.pushWhenSettled("pages/RoomPage.qml",
+                                    { roomId: roomId, roomName: "" })
+                return
+            }
+            // Never from the link itself: a tap in a stranger's app must not put
+            // the user into a room, and the dialog is where that is decided.
+            app.pushWhenSettled("pages/JoinRoomDialog.qml", { prefill: address })
+        }
+
+        // Could not be looked up is not "does not exist": a cold start asks before
+        // the first sync is through. The user asked for it, so the dialog comes up.
+        onRoomResolveFailed: {
+            if (app.pendingLinkAddress.length === 0) {
+                return
+            }
+            var address = app.pendingLinkAddress
+            app.pendingLinkAddress = ""
+            console.warn("shoal-messages: link room could not be resolved")
+            app.pushWhenSettled("pages/JoinRoomDialog.qml", { prefill: address })
+        }
+    }
+
+    // Opens the room the standing notification is about, once - a repeated call
+    // cannot walk the user through rooms. Not while the session is restoring.
+    function openNotifiedRoom() {
+        var roomId = app.notifiedRoomId
+        if (roomId.length === 0 || matrix.sessionState !== "signed-in") {
+            return
+        }
+        app.notifiedRoomId = ""
+        notification.close()
+        var current = pageStack.currentPage
+        // A call takes precedence over everything; the room can wait.
+        if (current && current.objectName === "callPage") {
+            return
+        }
+        // Already there: raising the window was the whole job, and pushing a
+        // second copy of the room would stack it on itself.
+        if (current && current.objectName === "roomPage" && current.roomId === roomId) {
+            return
+        }
+        // An invitation is notified like a message but has no conversation: opened
+        // as a joined room it shows a failed timeline and no way to accept.
+        var invited = matrix.roomInvited(roomId)
+        // Coming from another room, the new one takes its place: swiping back belongs
+        // in the chat list, not in the room the notification pulled the user out of.
+        if (current && current.objectName === "roomPage") {
+            pageStack.replace(Qt.resolvedUrl("pages/RoomPage.qml"),
+                              { roomId: roomId, roomName: "", invited: invited })
+            return
+        }
+        pageStack.push(Qt.resolvedUrl("pages/RoomPage.qml"),
+                       { roomId: roomId, roomName: "", invited: invited })
+    }
+
+    Notification {
+        id: notification
+
+        appName: "Shoal Messages"
+        // Without a category a notification is silent - tone, vibration and LED all
+        // hang off it. This one plays the IM tone and turns the display on.
+        category: "x-nemo.messaging.im"
+        // The category brings its own icon, so the app's has to be named or the
+        // banner would not say who is talking.
+        appIcon: "/usr/share/icons/hicolor/86x86/apps/shipwright-shoal-messages.png"
+        isTransient: false
+        // Tapping opens the room this banner is about. The method takes no argument,
+        // so nothing about the room stays in the system's notification store.
+        remoteActions: [{
+            "name": "default",
+            "service": "org.shipwright.ShoalMessages",
+            "path": "/org/shipwright/ShoalMessages",
+            "iface": "org.shipwright.ShoalMessages",
+            "method": "openNotified"
+        }]
+    }
+
+    // Incoming shares from other apps. The dialog finds Shoal Messages through the
+    // X-Share Method block and calls this object over D-Bus.
+    ShareProvider {
+        method: "room"
+        // The app owns its D-Bus name itself: without this the object is registered
+        // and the name is not, and the dialog starts a second copy.
+        registerName: true
+        capabilities: ["text/x-url", "text/plain",
+                       "image/*", "video/*", "audio/*", "application/*"]
+
+        onTriggered: {
+            if (resources.length === 0) {
+                return
+            }
+
+            // Only the first item: the desktop file does not claim to support
+            // multiple files, so the dialog never sends more than one.
+            var resource = resources[0]
+            var share = { "body": "", "path": "", "mimeType": "" }
+            if (resource.type === ShareResource.FilePathType) {
+                // Whatever asked for the share names the file, and a path inside this app's
+                // own directories is refused - token and crypto store live there.
+                share.path = matrix.shareableFile(resource.filePath)
+                             ? resource.filePath : ""
+                share.mimeType = matrix.mimeTypeForPath(resource.filePath)
+            } else {
+                share.body = resource.data
+            }
+
+            // Kind only, never the content: this tells "nothing arrived" apart
+            // from "it arrived and the app did nothing with it".
+            console.log("shoal-messages: share received,",
+                        share.path.length > 0 ? share.mimeType : "text")
+
+            app.pendingShare = share
+            // The share may have started the app, or found it in the
+            // background; either way the room list has to be on screen.
+            app.activate()
+            app.deliverShare()
+        }
+    }
+
+    // Sailfish suspends idle devices: without a scheduled wake-up the sync
+    // connection drops while the screen is off.
+    BackgroundJob {
+        id: backgroundSync
+
+        frequency: BackgroundJob.FiveMinutes
+        onTriggered: catchUp.restart()
+    }
+
+    // Being awake is all the core needs; the sync service catches up on its
+    // own. This just keeps the device from suspending again immediately.
+    Timer {
+        id: catchUp
+
+        interval: 8000
+        onTriggered: backgroundSync.finished()
+    }
+
+    Connections {
+        target: Qt.application
+        onStateChanged: {
+            if (Qt.application.state === Qt.ApplicationActive) {
+                backgroundSync.enabled = false
+                notification.close()
+                app.notifiedRoomId = ""
+            } else {
+                backgroundSync.enabled = matrix.sessionState === "signed-in"
+            }
+        }
+    }
+
+    // A ringing call is not a message and the system has no category for it, so
+    // the app rings itself - four tones and stop.
+    Audio {
+        id: ringer
+
+        source: "file:///usr/share/sounds/jolla-ringtones/stereo/jolla-ringtone.ogg"
+        loops: Audio.Infinite
+        volume: 0.8
+    }
+
+    Notification {
+        id: callNotification
+
+        appName: "Shoal Messages"
+        category: "x-nemo.messaging.im"
+        appIcon: "/usr/share/icons/hicolor/86x86/apps/shipwright-shoal-messages.png"
+        // Stays in the event feed: the banner is gone in a moment, and a
+        // missed call has to leave a trace.
+        isTransient: false
+        urgency: Notification.Critical
+        remoteActions: [{
+            "name": "default",
+            "service": "org.shipwright.ShoalMessages",
+            "path": "/org/shipwright/ShoalMessages",
+            "iface": "org.shipwright.ShoalMessages",
+            "method": "activate"
+        }]
+    }
+
+    // Why a call ended badly, once the page is gone. The page used to be held
+    // open for this and that was worse: an incoming call finds the old page in
+    // its way and cannot be answered. A banner needs nothing to be dismissed,
+    // and the text is the engine's own - already translated.
+    Notification {
+        id: callFailure
+
+        appName: "Shoal Messages"
+        category: "x-nemo.messaging.im"
+        appIcon: "/usr/share/icons/hicolor/86x86/apps/shipwright-shoal-messages.png"
+        isTransient: true
+    }
+
+    Connections {
+        target: matrix.calls
+
+        onFailureChanged: {
+            if (matrix.calls.failure.length === 0) {
+                return
+            }
+            callFailure.close()
+            callFailure.summary = matrix.calls.failure
+            callFailure.previewSummary = matrix.calls.failure
+            callFailure.publish()
+        }
+
+        // A ringing phone has to be answerable from wherever the user is.
+        onIncomingCall: {
+            if (pageStack.currentPage.objectName !== "callPage") {
+                pageStack.push(Qt.resolvedUrl("pages/CallPage.qml"))
+            }
+            activation.raiseWindow()
+
+            callNotification.summary = !settings.notificationPreview
+                                       ? qsTr("Incoming call")
+                                       : matrix.calls.videoOffered
+                                       || matrix.calls.videoRefused
+                                       ? qsTr("Incoming video call")
+                                       : qsTr("Incoming call")
+            // Who is calling only where the user asked for message text: the
+            // banner shows on the lock screen either way.
+            callNotification.body = settings.notificationPreview ? peer : ""
+            callNotification.previewSummary = callNotification.summary
+            callNotification.previewBody = callNotification.body
+            callNotification.publish()
+            ringer.play()
+        }
+
+        // Answered, declined, or the caller gave up: the ring stops with the
+        // ringing state, whichever way it ended.
+        onStateChanged: {
+            if (matrix.calls.state !== "ringing") {
+                ringer.stop()
+                callNotification.close()
+            }
+        }
+    }
+
+    Connections {
+        target: matrix
+
+        onSessionChanged: {
+            app.showPageFor(matrix.sessionState)
+            if (matrix.sessionState === "signed-in") {
+                matrix.refreshEncryptionStatus()
+                matrix.refreshStorageStatus()
+                // A share that arrived while the session was still being
+                // restored now has a room list to be offered.
+                app.deliverShare()
+            } else {
+                // A sign-out ends the run as far as this is concerned: the
+                // next session is a new device and gets asked again.
+                app.securityShown = false
+            }
+        }
+
+        // Both jobs in one handler each: QML refuses a type that binds the
+        // same signal twice, and the page then fails to load.
+        onEncryptionChanged: app.maybeShowSecurity()
+
+        onStorageChanged: {
+            // The gate can open or close under the running app — the retry on
+            // the blocked page asks the secrets storage again.
+            app.showPageFor(matrix.sessionState)
+            app.maybeShowSecurity()
+        }
+
+        // The login itself happens in the browser; the core is waiting on a
+        // loopback listener for the redirect.
+        onLoginUrlReady: Qt.openUrlExternally(url)
+
+        // A room read elsewhere clears the counter here too, and the banner goes with
+        // it. Only for this room: the notification object is a single one.
+        onRoomRead: {
+            if (roomId === app.notifiedRoomId) {
+                notification.close()
+                app.notifiedRoomId = ""
+            }
+        }
+
+        onRoomActivity: {
+            notification.close()
+            app.notifiedRoomId = roomId
+            // The room's name is content - in a direct chat it is the other person. Same
+            // switch as the text, because the banner shows on the lock screen.
+            notification.summary = settings.notificationPreview
+                                   ? roomName : qsTr("New message")
+            // The count is the default, the message only where the user allowed it.
+            // Non-text events are named by kind, and an undecryptable one says so.
+            var preview = settings.notificationPreview ? Preview.line(previewKind, previewText) : ""
+            notification.body = preview.length > 0 ? preview
+                    : mentions > 0
+                      ? qsTr("%n mention(s)", "", mentions)
+                      : qsTr("%n new message(s)", "", unread)
+            // summary and body alone fill only the event feed; the banner that slides in
+            // is the preview pair.
+            notification.previewSummary = notification.summary
+            notification.previewBody = notification.body
+            notification.itemCount = unread
+            notification.publish()
+        }
+
+        // A direct chat is requested from several places, so the navigation lives
+        // here - on the room list page it was dead when the user came via spaces.
+        onDirectChatReady: {
+            if (roomId.length > 0) {
+                pageStack.push(Qt.resolvedUrl("pages/RoomPage.qml"),
+                               { roomId: roomId, roomName: "" })
+            }
+        }
+
+        // A followed upgrade for the same reason: the old room may have been reached
+        // from the chat list, a space or a search.
+        onSuccessorReady: {
+            if (roomId.length > 0) {
+                pageStack.push(Qt.resolvedUrl("pages/RoomPage.qml"),
+                               { roomId: roomId, roomName: "" })
+            }
+        }
+
+        // A freshly created room opens right away. Its name comes back with the reply,
+        // so the header is right before the first diff arrives.
+        onRoomCreated: {
+            if (roomId.length > 0) {
+                pageStack.push(Qt.resolvedUrl("pages/RoomPage.qml"),
+                               { roomId: roomId, roomName: name,
+                                 encrypted: encrypted })
+            }
+        }
+
+        // A verification request is time limited, so it takes the screen
+        // rather than waiting to be discovered in a menu.
+        onVerificationChanged: {
+            if (matrix.verificationState === "requested"
+                    && pageStack.currentPage.objectName !== "verificationPage") {
+                pageStack.push(Qt.resolvedUrl("pages/VerificationPage.qml"))
+            }
+        }
+    }
+}

@@ -1,0 +1,19 @@
+# Modified by Shipwright, 2026: rebranded as Shoal Messages; see CHANGES-FROM-UPSTREAM.md.
+# D-Bus activation for a push that arrives while Shoal Messages is not running.
+#
+# A second activation entry beside org.shipwright.ShoalMessages, and it has to be: SailJail
+# grants an application exactly one name, that one is already spent on the share
+# activation, and claiming a child of it comes back as ServiceUnknown. The
+# org.unifiedpush.Connector.* namespace exists for this and is granted by the
+# UnifiedPush permission.
+#
+# The mode travels in the environment, not in argv. SailJail matches the command
+# line it is handed against the desktop file's Exec and ExecDBus templates
+# exactly — one extra word is refused with "Command line does not match
+# templates" — and it does not inspect the environment. `env` runs outside the
+# sandbox and the variable is inherited through it; what sailjail sees after the
+# `--` is a bare /usr/bin/shipwright-shoal-messages, which matches the template the icon
+# uses. So one desktop file serves the icon, the share and the push alike.
+[D-BUS Service]
+Name=org.unifiedpush.Connector.ShoalMessages
+Exec=/usr/bin/env SHOAL_MESSAGES_PUSH_WAKE=1 /usr/bin/sailjail -p shipwright-shoal-messages.desktop -- /usr/bin/shipwright-shoal-messages

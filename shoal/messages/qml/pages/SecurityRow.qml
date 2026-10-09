@@ -1,0 +1,47 @@
+// Modified by Shipwright, 2026: Sailfish UI rules pass; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+
+import "SecurityStatus.js" as SecurityStatus
+
+// One line of the security status: lamp, name, and the sentence that says what
+// the colour means - a dot alone says something is wrong, not what to do.
+Column {
+    id: row
+
+    property string label
+    property string level: "unknown"
+    property string detail
+
+    width: parent.width
+    spacing: Theme.paddingSmall
+    visible: level !== SecurityStatus.UNKNOWN
+
+    Row {
+        x: Theme.horizontalPageMargin
+        width: parent.width - 2 * Theme.horizontalPageMargin
+        spacing: Theme.paddingMedium
+
+        SecurityLamp {
+            level: row.level
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Label {
+            width: parent.width - Theme.iconSizeExtraSmall / 2 - Theme.paddingMedium
+            wrapMode: Text.Wrap
+            color: SecurityStatus.color(row.level, Theme,
+                                        Theme.colorScheme === Theme.LightOnDark)
+            text: row.label
+        }
+    }
+
+    Label {
+        x: Theme.horizontalPageMargin + Theme.iconSizeExtraSmall / 2 + Theme.paddingMedium
+        width: parent.width - x - Theme.horizontalPageMargin
+        wrapMode: Text.Wrap
+        font.pixelSize: Theme.fontSizeExtraSmall
+        color: Theme.secondaryHighlightColor
+        text: row.detail
+    }
+}

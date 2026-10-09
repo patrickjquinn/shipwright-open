@@ -1,0 +1,403 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 22:06:29 +0000
+Subject: [PATCH] Report whether the host presents Apple's Device ID
+
+AirPods enable hearing aid, customised transparency, loud sound
+reduction and multi-device use only for hosts whose Device ID (DID
+profile) carries Apple's Bluetooth SIG company identifier, 0x004C.
+BlueZ sets the Device ID from "DeviceID" in main.conf and reports it as
+org.bluez.Adapter1.Modalias ("bluetooth:v004Cp0000d0000").
+
+- HostDeviceId tracks the selected adapter's Modalias (read on selection
+  in the same GetAll as Powered, where its absence means no Device ID is
+  configured; followed through PropertiesChanged; cleared when the
+  adapter goes) and says whether it is Apple's. It is published under
+  the same lock as Powered, so a removed adapter's value is never
+  published after its removal.
+- MAGICPODS_HOST_DEVICE_ID overrides it with a modalias string.
+- New method GetHostDevice: {"hostdevice": {"appleDeviceId": bool,
+  "modalias": string}}, also part of GetAll and broadcast when
+  appleDeviceId changes. It is a separate object so that existing
+  "defaultbluetooth" frames do not change.
+
+Background: LibrePods (https://github.com/librepods-org/librepods,
+README "VendorID Spoofing", linux/README.md "Hearing Aid") documents
+which AirPods features depend on the host's Device ID.
+---
+ CMakeLists.txt             |  1 +
+ api-reference.md           | 36 +++++++++++++++++++--
+ src/HostDeviceId.cpp       | 66 ++++++++++++++++++++++++++++++++++++++
+ src/HostDeviceId.h         | 55 +++++++++++++++++++++++++++++++
+ src/dbus/DBusBtAdapter.cpp | 28 ++++++++++++++--
+ src/main.cpp               | 29 +++++++++++++++++
+ 6 files changed, 211 insertions(+), 4 deletions(-)
+ create mode 100644 src/HostDeviceId.cpp
+ create mode 100644 src/HostDeviceId.h
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3fa7e6a..45de241 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -113,6 +113,7 @@ add_executable(magicpodscore
+     src/ble_ads/PassiveHciBasedBleAdvertisingService.cpp
+ 
+     src/DevicesInfoFetcher.cpp
++    src/HostDeviceId.cpp
+ 
+     src/settings/SettingsService.cpp
+     src/settings/JsonToTomlConverter.cpp
+diff --git a/api-reference.md b/api-reference.md
+index 7eb0cf8..7475721 100644
+--- a/api-reference.md
++++ b/api-reference.md
+@@ -97,6 +97,37 @@ If the connection status of the active Bluetooth adapter changes:
+ }
+ ```
+ 
++## Host Device ID
++
++### GetHostDevice
++
++Returns the Device ID (DID profile) the host's Bluetooth adapter presents to
++peers, as BlueZ reports it in `org.bluez.Adapter1.Modalias`, and whether it
++is Apple's (`bluetooth:v004C...`, which BlueZ sets from
++`DeviceID = bluetooth:004C:0000:0000` in `main.conf`). AirPods offer some
++features only to such hosts; see "Features that need Apple's Device ID".
++`modalias` is empty when there is no adapter or it reports none. The
++environment variable `MAGICPODS_HOST_DEVICE_ID` overrides the detection with
++a modalias string.
++
++Request:
++
++```json
++{ "method": "GetHostDevice" }
++```
++
++Response:
++
++```json
++{
++  "hostdevice": { "appleDeviceId": false, "modalias": "usb:v1D6Bp0246d0548" }
++}
++```
++
++### Broadcast (Notification)
++
++If `appleDeviceId` changes, the same object is sent.
++
+ ## Headphones
+ 
+ ### GetDevices
+@@ -326,7 +357,7 @@ On any property change:
+ 
+ ### GetAll
+ 
+-Combines GetDevices, GetDefaultBluetoothAdapter, and GetActiveDeviceInfo into a single request.
++Combines GetDevices, GetDefaultBluetoothAdapter, GetActiveDeviceInfo and GetHostDevice into a single request.
+ 
+ Request:
+ 
+@@ -340,7 +371,8 @@ Response:
+ {
+   "headphones": [ /* same as GetDevices */ ],
+   "defaultbluetooth": { /* same as GetDefaultBluetoothAdapter */ },
+-  "info": { /* same as GetActiveDeviceInfo */ }
++  "info": { /* same as GetActiveDeviceInfo */ },
++  "hostdevice": { /* same as GetHostDevice */ }
+ }
+ ```
+ 
+diff --git a/src/HostDeviceId.cpp b/src/HostDeviceId.cpp
+new file mode 100644
+index 0000000..88ebf56
+--- /dev/null
++++ b/src/HostDeviceId.cpp
+@@ -0,0 +1,66 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "HostDeviceId.h"
++#include "Logger.h"
++
++#include <cctype>
++#include <cstdlib>
++
++namespace MagicPodsCore {
++
++    HostDeviceId::HostDeviceId() {
++        if (const char* value = std::getenv("MAGICPODS_HOST_DEVICE_ID"); value != nullptr && *value != '\0') {
++            _override = value;
++            Logger::Info("Host Device ID overridden by MAGICPODS_HOST_DEVICE_ID: %s (%s)",
++                         _override.c_str(), IsAppleModalias(_override) ? "Apple" : "not Apple");
++        }
++    }
++
++    HostDeviceId& HostDeviceId::Instance() {
++        static HostDeviceId instance{};
++        return instance;
++    }
++
++    bool HostDeviceId::IsAppleModalias(const std::string& modalias) {
++        // bluetooth:vXXXXpXXXXdXXXX
++        static const std::string prefix = "bluetooth:v";
++        if (modalias.size() < prefix.size() + 4)
++            return false;
++        for (size_t i = 0; i < prefix.size(); ++i) {
++            if (std::tolower(static_cast<unsigned char>(modalias[i])) != prefix[i])
++                return false;
++        }
++        const std::string vendor = modalias.substr(prefix.size(), 4);
++        for (char c : vendor) {
++            if (!std::isxdigit(static_cast<unsigned char>(c)))
++                return false;
++        }
++        return std::stoul(vendor, nullptr, 16) == APPLE_COMPANY_ID;
++    }
++
++    void HostDeviceId::SetModalias(const std::string& modalias) {
++        bool before;
++        bool after;
++        {
++            std::lock_guard lock{_mutex};
++            before = IsAppleModalias(_override.empty() ? _modalias : _override);
++            _modalias = modalias;
++            after = IsAppleModalias(_override.empty() ? _modalias : _override);
++        }
++        Logger::Info("Host Device ID: %s (%s)", modalias.empty() ? "none" : modalias.c_str(),
++                     after ? "Apple" : "not Apple");
++        if (before != after)
++            _changedEvent.FireEvent(after);
++    }
++
++    std::string HostDeviceId::GetModalias() const {
++        std::lock_guard lock{_mutex};
++        return _override.empty() ? _modalias : _override;
++    }
++
++    bool HostDeviceId::IsApple() const {
++        return IsAppleModalias(GetModalias());
++    }
++}
+diff --git a/src/HostDeviceId.h b/src/HostDeviceId.h
+new file mode 100644
+index 0000000..1334cc0
+--- /dev/null
++++ b/src/HostDeviceId.h
+@@ -0,0 +1,55 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "Event.h"
++
++#include <mutex>
++#include <string>
++
++namespace MagicPodsCore {
++
++    // The Device ID (DID profile) the host's Bluetooth adapter presents to
++    // peers, as BlueZ reports it in org.bluez.Adapter1.Modalias. BlueZ builds
++    // that value from "DeviceID" in main.conf, e.g. DeviceID =
++    // bluetooth:004C:0000:0000 gives "bluetooth:v004Cp0000d0000".
++    //
++    // AirPods enable some features (hearing aid, customised transparency, loud
++    // sound reduction, a second connected host) only for hosts whose Device ID
++    // carries Apple's Bluetooth SIG company identifier, 0x004C.
++    //
++    // MAGICPODS_HOST_DEVICE_ID overrides the detection with a modalias string
++    // (for tests, or when the adapter does not report one).
++    class HostDeviceId {
++    private:
++        mutable std::mutex _mutex{};
++        std::string _modalias{};
++        std::string _override{};
++        Event<bool> _changedEvent{};
++
++        HostDeviceId();
++
++    public:
++        static constexpr unsigned short APPLE_COMPANY_ID = 0x004C;
++
++        static HostDeviceId& Instance();
++
++        // Updates the adapter's modalias; fires the changed event if the
++        // Apple/non-Apple result changes. An empty string means no adapter.
++        void SetModalias(const std::string& modalias);
++
++        std::string GetModalias() const;
++        bool IsApple() const;
++
++        // Fired with IsApple() after it changes.
++        Event<bool>& GetChangedEvent() {
++            return _changedEvent;
++        }
++
++        // True if modalias is "bluetooth:v004C...", i.e. DID source 1
++        // (Bluetooth SIG) with Apple's company identifier. Case-insensitive.
++        static bool IsAppleModalias(const std::string& modalias);
++    };
++}
+diff --git a/src/dbus/DBusBtAdapter.cpp b/src/dbus/DBusBtAdapter.cpp
+index 11b7ec3..d2a7b05 100644
+--- a/src/dbus/DBusBtAdapter.cpp
++++ b/src/dbus/DBusBtAdapter.cpp
+@@ -4,6 +4,7 @@
+ 
+ #include "DBusBtAdapter.h"
+ #include "Logger.h"
++#include "HostDeviceId.h"
+ 
+ #include <cstdlib>
+ #include <utility>
+@@ -146,6 +147,7 @@ namespace MagicPodsCore {
+         // publishing its final powered-off state.
+         oldProxy.reset();
+         std::lock_guard publishLock{_publishMutex};
++        HostDeviceId::Instance().SetModalias("");
+         _isPowered.SetValue(false);
+     }
+ 
+@@ -173,6 +175,7 @@ namespace MagicPodsCore {
+         removedProxy.reset();
+         {
+             std::lock_guard publishLock{_publishMutex};
++            HostDeviceId::Instance().SetModalias("");
+             _isPowered.SetValue(false);
+         }
+ 
+@@ -230,6 +233,18 @@ namespace MagicPodsCore {
+             }
+         }
+ 
++        // Modalias is optional in BlueZ, which leaves it out of GetAll when no
++        // Device ID is configured.
++        std::string modalias{};
++        if (const auto found = properties.find("Modalias"); found != properties.end()) {
++            try {
++                modalias = found->second.get<std::string>();
++            }
++            catch (const sdbus::Error& error) {
++                Logger::Error("Bluetooth adapter %s reports Modalias with the wrong type: %s", objectPath.c_str(), error.what());
++            }
++        }
++
+         std::lock_guard publishLock{_publishMutex};
+         {
+             // The adapter may have disappeared while the D-Bus call was running.
+@@ -241,6 +256,7 @@ namespace MagicPodsCore {
+         }
+ 
+         Logger::Info("Using Bluetooth adapter: %s (%s)", objectPath.c_str(), powered ? "powered" : "not powered");
++        HostDeviceId::Instance().SetModalias(modalias);
+         _isPowered.SetValue(powered);
+     }
+ 
+@@ -249,12 +265,20 @@ namespace MagicPodsCore {
+         const std::string& interfaceName,
+         const std::map<std::string, sdbus::Variant>& values) {
+         try {
+-            if (interfaceName != BLUEZ_ADAPTER_INTERFACE || !values.contains("Powered")) {
++            if (interfaceName != BLUEZ_ADAPTER_INTERFACE) {
+                 return;
+             }
+ 
+-            const bool powered = values.at("Powered").get<bool>();
+             std::lock_guard publishLock{_publishMutex};
++            if (values.contains("Modalias") && IsCurrentAdapter(objectPath)) {
++                HostDeviceId::Instance().SetModalias(values.at("Modalias").get<std::string>());
++            }
++
++            if (!values.contains("Powered")) {
++                return;
++            }
++
++            const bool powered = values.at("Powered").get<bool>();
+             {
+                 std::lock_guard lock{_mutex};
+                 if (_currentAdapterPath != objectPath) {
+diff --git a/src/main.cpp b/src/main.cpp
+index 625397d..55b614e 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -13,6 +13,7 @@
+ #include <App.h>
+ 
+ #include "DevicesInfoFetcher.h"
++#include "HostDeviceId.h"
+ #include "device/DeviceBattery.h"
+ #include "device/AapDevice.h"
+ #include "device/enums/DeviceAncModes.h"
+@@ -105,6 +106,16 @@ nlohmann::json MakeGetDefaultBluetoothAdapterResponse(DevicesInfoFetcher& device
+     return responseJson;
+ }
+ 
++// The Device ID the host presents to Bluetooth peers. AirPods offer some
++// features only to hosts with Apple's (DID vendor 0x004C). A separate object,
++// so existing "defaultbluetooth" frames stay as they were.
++nlohmann::json MakeGetHostDeviceResponse() {
++    auto hostDeviceJson = nlohmann::json::object();
++    hostDeviceJson["appleDeviceId"] = HostDeviceId::Instance().IsApple();
++    hostDeviceJson["modalias"] = HostDeviceId::Instance().GetModalias();
++    return nlohmann::json{{"hostdevice", hostDeviceJson}};
++}
++
+ nlohmann::json MakeGetSettingsAllResponse(SettingsService& settingsService) {
+     auto wrappedSettings = settingsService.GetSettingsAllWrapped();
+     return TomlToJson(wrappedSettings);
+@@ -198,6 +209,13 @@ void HandleGetDefaultBluetoothAdapterRequest(auto *ws, const nlohmann::json& jso
+     ws->send(response, opCode, response.length() < 16 * 1024);
+ }
+ 
++void HandleGetHostDeviceRequest(auto *ws, uWS::OpCode opCode) {
++    Logger::Info("HandleGetHostDeviceRequest");
++
++    auto response = MakeGetHostDeviceResponse().dump();
++    ws->send(response, opCode, response.length() < 16 * 1024);
++}
++
+ void HandleEnableDefaultBluetoothAdapter(auto *ws, const nlohmann::json& json, uWS::OpCode opCode, uWS::App& app, DevicesInfoFetcher& devicesInfoFetcher) {
+     Logger::Info("HandleEnableDefaultBluetoothAdapter");
+ 
+@@ -285,6 +303,7 @@ void HandleGetAllRequest(auto *ws, const nlohmann::json& json, uWS::OpCode opCod
+     rootObject["headphones"] = getDevicesResponseJson["headphones"];
+     rootObject["defaultbluetooth"] = getDefaultBluetoothAdapterJson["defaultbluetooth"];
+     rootObject["info"] = getDeckyInfoResponseJson["info"];
++    rootObject["hostdevice"] = MakeGetHostDeviceResponse()["hostdevice"];
+ 
+     auto response = rootObject.dump();
+     ws->send(response, opCode, response.length() < 16 * 1024);
+@@ -311,6 +330,8 @@ void HandleRequest(auto *ws, std::string_view message, uWS::OpCode opCode, uWS::
+                 HandleSetCapabilitiesRequest(ws, json, opCode, devicesInfoFetcher);
+             else if (methodName == "GetDefaultBluetoothAdapter")
+                 HandleGetDefaultBluetoothAdapterRequest(ws, json, opCode, devicesInfoFetcher);
++            else if (methodName == "GetHostDevice")
++                HandleGetHostDeviceRequest(ws, opCode);
+             else if (methodName == "EnableDefaultBluetoothAdapter")
+                 HandleEnableDefaultBluetoothAdapter(ws, json, opCode, app, devicesInfoFetcher);
+             else if (methodName == "DisableDefaultBluetoothAdapter")
+@@ -404,6 +425,13 @@ void SubscribeAndHandleBroadcastEvents(uWS::App& app, DevicesInfoFetcher& device
+     devicesInfoFetcher.GetOnDefaultAdapterChangeEnabledEvent().Subscribe([onDefaultAdapterChangeEnabled](size_t listenerId, bool newValue) {
+         onDefaultAdapterChangeEnabled(newValue);
+     });
++    HostDeviceId::Instance().GetChangedEvent().Subscribe([&app](size_t listenerId, bool isApple) {
++        Logger::Info("OnHostDeviceChanged Broadcast was triggered");
++        app.getLoop()->defer([&app]() {
++            auto response = MakeGetHostDeviceResponse().dump();
++            app.publish("OnHostDeviceChanged", response, uWS::OpCode::TEXT, response.length() < 16 * 1024);
++        });
++    });
+ 
+     auto onSettingUpdate = [&app, &settingsService](const UpdatedSettingNotification& notification) {
+         Logger::Info("OnSettingUpdate Broadcast was triggered");
+@@ -519,6 +547,7 @@ int main(int argc, char** argv) {
+             ws->subscribe("OnConnectedChanged");
+             ws->subscribe("OnActiveDeviceChanged");
+             ws->subscribe("OnDefaultAdapterChangeEnabled");
++            ws->subscribe("OnHostDeviceChanged");
+             ws->subscribe("onAnimationTriggered");
+             ws->subscribe("OnSettingUpdate");
+             InitHandshake(ws);

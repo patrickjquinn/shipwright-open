@@ -1,0 +1,614 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Sat, 3 Oct 2026 16:53:56 +0100
+Subject: [PATCH] Fix the build warnings
+
+Header enum helpers are inline instead of static, so each translation
+unit no longer gets its own unused copy (-Wunused-function). Member
+initialisers follow declaration order (-Wreorder). Unused variables
+are removed, and a failed send() on the client socket is now logged
+instead of ignored. Loop and size comparisons use size_t
+(-Wsign-compare). In the vendored uSockets only, GCC 12+'s
+-Wuse-after-free is turned off for a pointer comparison it misreads.
+---
+ dependencies/uSockets/CMakeLists.txt                   | 7 ++++++-
+ src/client/Client.cpp                                  | 3 ++-
+ src/device/Device.cpp                                  | 2 +-
+ src/device/capabilities/aap/AppAnimationCapability.cpp | 2 +-
+ src/device/capabilities/bhf/BhfBatteryCapability.cpp   | 4 ++--
+ src/device/enums/DeviceAncModes.h                      | 4 ++--
+ src/device/enums/DeviceBatteryStatus.h                 | 2 +-
+ src/device/enums/DeviceBatteryType.h                   | 2 +-
+ src/device/structs/DeviceBatteryData.h                 | 2 +-
+ src/pulseaudio/PulseAudioClient.cpp                    | 1 -
+ src/sdk/aap/enums/AapAncMode.h                         | 2 +-
+ src/sdk/aap/enums/AapBatteryType.h                     | 4 ++--
+ src/sdk/aap/enums/AapChargingStatus.h                  | 4 ++--
+ src/sdk/aap/enums/AapConversationAwarenessMode.h       | 4 ++--
+ src/sdk/aap/enums/AapConversationAwarenessState.h      | 4 ++--
+ src/sdk/aap/enums/AapMuteMicrophoneEndCall.h           | 8 ++++----
+ src/sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h  | 4 ++--
+ src/sdk/aap/enums/AapPersonalizedVolumeMode.h          | 4 ++--
+ src/sdk/aap/enums/AapPressAndHoldDurationMode.h        | 4 ++--
+ src/sdk/aap/enums/AapPressSpeedMode.h                  | 4 ++--
+ src/sdk/aap/enums/AapPrivateKeysType.h                 | 4 ++--
+ src/sdk/aap/enums/AapVolumeSwipeLengthMode.h           | 4 ++--
+ src/sdk/aap/enums/AapVolumeSwipeMode.h                 | 4 ++--
+ src/sdk/pbp/enums/PixelBudsAncState.h                  | 4 ++--
+ src/sdk/sgb/GalaxyBudsPacket.cpp                       | 2 +-
+ src/sdk/sgb/enums/GalaxyBudsAnc.h                      | 4 ++--
+ src/sdk/sgb/enums/GalaxyBudsEarDetectionState.h        | 2 +-
+ src/sdk/sgb/enums/GalaxyBudsLegacyEarDetectionState.h  | 2 +-
+ src/sdk/sgb/enums/GalaxyBudsMsgIds.h                   | 2 +-
+ src/sdk/sgb/enums/GalaxyBudsMsgTypes.h                 | 2 +-
+ src/tests/TestsSgb.cpp                                 | 2 --
+ 31 files changed, 53 insertions(+), 50 deletions(-)
+
+diff --git a/dependencies/uSockets/CMakeLists.txt b/dependencies/uSockets/CMakeLists.txt
+index e780b18..e25a12a 100644
+--- a/dependencies/uSockets/CMakeLists.txt
++++ b/dependencies/uSockets/CMakeLists.txt
+@@ -15,4 +15,9 @@ FetchContent_MakeAvailable(uSockets_content)
+ file(GLOB_RECURSE SOURCES ${usockets_content_SOURCE_DIR}/src/*.c)
+ add_library(uSockets ${SOURCES})
+ target_include_directories(uSockets PUBLIC ${usockets_content_SOURCE_DIR}/src)
+-target_compile_definitions(uSockets PRIVATE LIBUS_NO_SSL)
+\ No newline at end of file
++target_compile_definitions(uSockets PRIVATE LIBUS_NO_SSL)# us_poll_resize() compares the old poll pointer with realloc's result to
++# find it among the pending ready polls; it never dereferences it. GCC 12+
++# flags the comparison. Quiet that one check in the third-party code only.
++if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 12)
++  target_compile_options(uSockets PRIVATE -Wno-use-after-free)
++endif()
+diff --git a/src/client/Client.cpp b/src/client/Client.cpp
+index faa7592..85962a7 100644
+--- a/src/client/Client.cpp
++++ b/src/client/Client.cpp
+@@ -62,7 +62,8 @@ namespace MagicPodsCore {
+                 if (!data.has_value())
+                     break;
+ 
+-                ssize_t sendedBytesLength = send(socket, data.value().data(), data.value().size(), 0);
++                if (send(socket, data.value().data(), data.value().size(), 0) < 0)
++                    Logger::Warn("%s send failed: %s", _address.c_str(), strerror(errno));
+                 Logger::Debug("s:%s",StringUtils::BytesToHexString(data.value().data(), data.value().size()).c_str());
+                 //std::this_thread::sleep_for(std::chrono::milliseconds{500}); //Return if the user's feedback is bad.
+             }
+diff --git a/src/device/Device.cpp b/src/device/Device.cpp
+index 1af4ca0..4ba44d3 100644
+--- a/src/device/Device.cpp
++++ b/src/device/Device.cpp
+@@ -23,7 +23,7 @@ namespace MagicPodsCore {
+         if (capabilityEventIds.size() != capabilities.size())
+             throw std::runtime_error("Size of capabilityEventIds and capabilities different");
+ 
+-        for (int i=0; i<capabilities.size(); i++){
++        for (size_t i=0; i<capabilities.size(); i++){
+             auto& c = capabilities[i];
+             c->GetChangedEvent().Unsubscribe(capabilityEventIds[i]);
+         }
+diff --git a/src/device/capabilities/aap/AppAnimationCapability.cpp b/src/device/capabilities/aap/AppAnimationCapability.cpp
+index c27aa1f..bc71868 100644
+--- a/src/device/capabilities/aap/AppAnimationCapability.cpp
++++ b/src/device/capabilities/aap/AppAnimationCapability.cpp
+@@ -198,7 +198,7 @@ namespace MagicPodsCore
+             return std::nullopt;
+ 
+         // Data is corrupted
+-        if (buffer[1] + 2 != buffer.size())
++        if (static_cast<size_t>(buffer[1]) + 2 != buffer.size())
+             return std::nullopt;
+ 
+         uint16_t leModel = (static_cast<uint16_t>(buffer[4]) << 8) | buffer[3];
+diff --git a/src/device/capabilities/bhf/BhfBatteryCapability.cpp b/src/device/capabilities/bhf/BhfBatteryCapability.cpp
+index 5cee7c7..d6a1f16 100644
+--- a/src/device/capabilities/bhf/BhfBatteryCapability.cpp
++++ b/src/device/capabilities/bhf/BhfBatteryCapability.cpp
+@@ -33,8 +33,8 @@ namespace MagicPodsCore
+     }
+ 
+     BhfBatteryCapability::BhfBatteryCapability(BhfDevice& device) : Capability("battery", true),
+-                                                                    device(device),
+-                                                                    battery(true)
++                                                                    battery(true),
++                                                                    device(device)
+     {
+ 
+         onHandsFreeBatteryPropertyChangedId = device.GetHandsFreeBatteryPropertyChangedEvent().Subscribe([this](size_t id, const uint8_t level){
+diff --git a/src/device/enums/DeviceAncModes.h b/src/device/enums/DeviceAncModes.h
+index cc406f8..6a259f4 100644
+--- a/src/device/enums/DeviceAncModes.h
++++ b/src/device/enums/DeviceAncModes.h
+@@ -18,7 +18,7 @@ namespace MagicPodsCore
+         NoiseCancellation = 16,
+     };
+ 
+-    static bool isValidDeviceAncModesType(unsigned char value){
++    inline bool isValidDeviceAncModesType(unsigned char value){
+         switch (static_cast<DeviceAncModes>(value)) {
+             case DeviceAncModes::Off:
+             case DeviceAncModes::Transparency:
+@@ -31,7 +31,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string DeviceAncModesToString(DeviceAncModes value)
++    inline std::string DeviceAncModesToString(DeviceAncModes value)
+     {
+         switch (value)
+         {
+diff --git a/src/device/enums/DeviceBatteryStatus.h b/src/device/enums/DeviceBatteryStatus.h
+index aa99a88..ccd21bb 100644
+--- a/src/device/enums/DeviceBatteryStatus.h
++++ b/src/device/enums/DeviceBatteryStatus.h
+@@ -20,7 +20,7 @@ namespace MagicPodsCore
+         Cached = 0x03,
+     };
+ 
+-    static std::string DeviceBatteryStatusToString(DeviceBatteryStatus value)
++    inline std::string DeviceBatteryStatusToString(DeviceBatteryStatus value)
+     {
+         switch (value)
+         {
+diff --git a/src/device/enums/DeviceBatteryType.h b/src/device/enums/DeviceBatteryType.h
+index f7bd742..1800b0c 100644
+--- a/src/device/enums/DeviceBatteryType.h
++++ b/src/device/enums/DeviceBatteryType.h
+@@ -16,7 +16,7 @@ namespace MagicPodsCore
+         Case = 0x08,
+     };
+ 
+-    static std::string DeviceBatteryTypeToString(DeviceBatteryType value)
++    inline std::string DeviceBatteryTypeToString(DeviceBatteryType value)
+     {
+         switch (value)
+         {
+diff --git a/src/device/structs/DeviceBatteryData.h b/src/device/structs/DeviceBatteryData.h
+index 29ffe46..a325d6b 100644
+--- a/src/device/structs/DeviceBatteryData.h
++++ b/src/device/structs/DeviceBatteryData.h
+@@ -18,7 +18,7 @@ namespace MagicPodsCore
+         short Battery{};
+ 
+         DeviceBatteryData(DeviceBatteryType type, DeviceBatteryStatus status, short battery, bool isCharging)
+-        :Type(type), Status(status), Battery(std::clamp(battery, static_cast<short>(0), static_cast<short>(100))),IsCharging(isCharging) {}
++        :Type(type), IsCharging(isCharging), Status(status), Battery(std::clamp(battery, static_cast<short>(0), static_cast<short>(100))) {}
+ 
+         bool operator==(const DeviceBatteryData& other) const
+         {
+diff --git a/src/pulseaudio/PulseAudioClient.cpp b/src/pulseaudio/PulseAudioClient.cpp
+index 95367c2..3911267 100644
+--- a/src/pulseaudio/PulseAudioClient.cpp
++++ b/src/pulseaudio/PulseAudioClient.cpp
+@@ -23,7 +23,6 @@ namespace MagicPodsCore
+         pa_context_set_subscribe_callback(ctx, [](pa_context *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
+             auto* self = static_cast<PulseAudioClient*>(userdata);
+             auto facility = t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK;
+-            auto type     = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
+             if (facility == PA_SUBSCRIPTION_EVENT_CARD) {
+ 
+                 pa_context_get_card_info_by_index(
+diff --git a/src/sdk/aap/enums/AapAncMode.h b/src/sdk/aap/enums/AapAncMode.h
+index c91db51..8ebe3ca 100644
+--- a/src/sdk/aap/enums/AapAncMode.h
++++ b/src/sdk/aap/enums/AapAncMode.h
+@@ -17,7 +17,7 @@ namespace MagicPodsCore
+         Adaptive = 0x04,
+     };
+ 
+-    static std::string AapAncModeToString(AapAncMode value)
++    inline std::string AapAncModeToString(AapAncMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapBatteryType.h b/src/sdk/aap/enums/AapBatteryType.h
+index d773d03..36bbc60 100644
+--- a/src/sdk/aap/enums/AapBatteryType.h
++++ b/src/sdk/aap/enums/AapBatteryType.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore
+         Case = 0x08,
+     };
+ 
+-    static bool isValidAapBatteryType(unsigned char value){
++    inline bool isValidAapBatteryType(unsigned char value){
+         switch (static_cast<AapBatteryType>(value)) {
+             case AapBatteryType::Single:
+             case AapBatteryType::Right:
+@@ -26,7 +26,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapBatteryTypeToString(AapBatteryType status)
++    inline std::string AapBatteryTypeToString(AapBatteryType status)
+     {
+         switch (status)
+         {
+diff --git a/src/sdk/aap/enums/AapChargingStatus.h b/src/sdk/aap/enums/AapChargingStatus.h
+index b4e0fb8..7e539ff 100644
+--- a/src/sdk/aap/enums/AapChargingStatus.h
++++ b/src/sdk/aap/enums/AapChargingStatus.h
+@@ -17,7 +17,7 @@ namespace MagicPodsCore
+         Disconnected = 0x04,
+     };
+ 
+-    static bool isValidAapChargingStatusType(unsigned char value){
++    inline bool isValidAapChargingStatusType(unsigned char value){
+         switch (static_cast<AapChargingStatus>(value)) {
+             case AapChargingStatus::Undefined:
+             case AapChargingStatus::Charging:
+@@ -29,7 +29,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapChargingStatusToString(AapChargingStatus status)
++    inline std::string AapChargingStatusToString(AapChargingStatus status)
+     {
+         switch (status)
+         {
+diff --git a/src/sdk/aap/enums/AapConversationAwarenessMode.h b/src/sdk/aap/enums/AapConversationAwarenessMode.h
+index 15495fa..2115e34 100644
+--- a/src/sdk/aap/enums/AapConversationAwarenessMode.h
++++ b/src/sdk/aap/enums/AapConversationAwarenessMode.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore
+         Off = 0x02,
+     };
+ 
+-    static bool isValidAapConversationAwarenessMode(unsigned char value){
++    inline bool isValidAapConversationAwarenessMode(unsigned char value){
+         switch (static_cast<AapConversationAwarenessMode>(value)) {
+             case AapConversationAwarenessMode::On:
+             case AapConversationAwarenessMode::Off:
+@@ -24,7 +24,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapConversationAwarenessModeToString(AapConversationAwarenessMode value)
++    inline std::string AapConversationAwarenessModeToString(AapConversationAwarenessMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapConversationAwarenessState.h b/src/sdk/aap/enums/AapConversationAwarenessState.h
+index cb26ba4..12af6ea 100644
+--- a/src/sdk/aap/enums/AapConversationAwarenessState.h
++++ b/src/sdk/aap/enums/AapConversationAwarenessState.h
+@@ -21,7 +21,7 @@ namespace MagicPodsCore
+         StopSpeaking4 = 0x09,
+     };
+ 
+-    static bool isValidAapConversationAwarenessState(unsigned char value){
++    inline bool isValidAapConversationAwarenessState(unsigned char value){
+         switch (static_cast<AapConversationAwarenessState>(value)) {
+             case AapConversationAwarenessState::Unknown:
+             case AapConversationAwarenessState::StartSpeaking:
+@@ -35,7 +35,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapConversationAwarenessStateToString(AapConversationAwarenessState value)
++    inline std::string AapConversationAwarenessStateToString(AapConversationAwarenessState value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapMuteMicrophoneEndCall.h b/src/sdk/aap/enums/AapMuteMicrophoneEndCall.h
+index 12f2884..55fa984 100644
+--- a/src/sdk/aap/enums/AapMuteMicrophoneEndCall.h
++++ b/src/sdk/aap/enums/AapMuteMicrophoneEndCall.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore
+         SinglePress = 0x03,
+     };
+ 
+-    static bool isValidAapEndCallMode(unsigned char value){
++    inline bool isValidAapEndCallMode(unsigned char value){
+         switch (static_cast<AapEndCallMode>(value)) {
+             case AapEndCallMode::DoublePress:
+             case AapEndCallMode::SinglePress:
+@@ -24,7 +24,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapEndCallModeToString(AapEndCallMode value)
++    inline std::string AapEndCallModeToString(AapEndCallMode value)
+     {
+         switch (value)
+         {
+@@ -44,7 +44,7 @@ namespace MagicPodsCore
+         SinglePress = 0x23,
+     };
+ 
+-    static bool isValidAapMuteMicrophoneMode(unsigned char value){
++    inline bool isValidAapMuteMicrophoneMode(unsigned char value){
+         switch (static_cast<AapMuteMicrophoneMode>(value)) {
+             case AapMuteMicrophoneMode::DoublePress:
+             case AapMuteMicrophoneMode::SinglePress:
+@@ -54,7 +54,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapMuteMicrophoneModeToString(AapMuteMicrophoneMode value)
++    inline std::string AapMuteMicrophoneModeToString(AapMuteMicrophoneMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h b/src/sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h
+index d19dc45..42781d0 100644
+--- a/src/sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h
++++ b/src/sdk/aap/enums/AapNoiseCancellationOneAirPodMode.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore
+         Off = 0x02,
+     };
+ 
+-    static bool isValidAapNoiseCancellationOneAirPodMode(unsigned char value){
++    inline bool isValidAapNoiseCancellationOneAirPodMode(unsigned char value){
+         switch (static_cast<AapNoiseCancellationOneAirPodMode>(value)) {
+             case AapNoiseCancellationOneAirPodMode::On:
+             case AapNoiseCancellationOneAirPodMode::Off:
+@@ -24,7 +24,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapNoiseCancellationOneAirPodModeToString(AapNoiseCancellationOneAirPodMode value)
++    inline std::string AapNoiseCancellationOneAirPodModeToString(AapNoiseCancellationOneAirPodMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapPersonalizedVolumeMode.h b/src/sdk/aap/enums/AapPersonalizedVolumeMode.h
+index c2f6bec..8d33d26 100644
+--- a/src/sdk/aap/enums/AapPersonalizedVolumeMode.h
++++ b/src/sdk/aap/enums/AapPersonalizedVolumeMode.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore
+         Off = 0x02,
+     };
+ 
+-    static bool isValidAapPersonalizedVolumeMode(unsigned char value){
++    inline bool isValidAapPersonalizedVolumeMode(unsigned char value){
+         switch (static_cast<AapPersonalizedVolumeMode>(value)) {
+             case AapPersonalizedVolumeMode::On:
+             case AapPersonalizedVolumeMode::Off:
+@@ -24,7 +24,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapPersonalizedVolumeModeToString(AapPersonalizedVolumeMode value)
++    inline std::string AapPersonalizedVolumeModeToString(AapPersonalizedVolumeMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapPressAndHoldDurationMode.h b/src/sdk/aap/enums/AapPressAndHoldDurationMode.h
+index 888405c..efbd729 100644
+--- a/src/sdk/aap/enums/AapPressAndHoldDurationMode.h
++++ b/src/sdk/aap/enums/AapPressAndHoldDurationMode.h
+@@ -15,7 +15,7 @@ namespace MagicPodsCore
+         Shortest = 0x02,
+     };
+ 
+-    static bool isValidAapPressAndHoldDurationMode(unsigned char value){
++    inline bool isValidAapPressAndHoldDurationMode(unsigned char value){
+         switch (static_cast<AapPressAndHoldDurationMode>(value)) {
+             case AapPressAndHoldDurationMode::Default:
+             case AapPressAndHoldDurationMode::Shorter:
+@@ -26,7 +26,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapPressAndHoldDurationModeToString(AapPressAndHoldDurationMode value)
++    inline std::string AapPressAndHoldDurationModeToString(AapPressAndHoldDurationMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapPressSpeedMode.h b/src/sdk/aap/enums/AapPressSpeedMode.h
+index 62344d8..0305fb6 100644
+--- a/src/sdk/aap/enums/AapPressSpeedMode.h
++++ b/src/sdk/aap/enums/AapPressSpeedMode.h
+@@ -15,7 +15,7 @@ namespace MagicPodsCore
+         Slowest = 0x02,
+     };
+ 
+-    static bool isValidAapPressSpeedMode(unsigned char value){
++    inline bool isValidAapPressSpeedMode(unsigned char value){
+         switch (static_cast<AapPressSpeedMode>(value)) {
+             case AapPressSpeedMode::Default:
+             case AapPressSpeedMode::Slower:
+@@ -26,7 +26,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapPressSpeedModeToString(AapPressSpeedMode value)
++    inline std::string AapPressSpeedModeToString(AapPressSpeedMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapPrivateKeysType.h b/src/sdk/aap/enums/AapPrivateKeysType.h
+index 6c8d0ce..29ac60e 100644
+--- a/src/sdk/aap/enums/AapPrivateKeysType.h
++++ b/src/sdk/aap/enums/AapPrivateKeysType.h
+@@ -15,7 +15,7 @@ namespace MagicPodsCore
+         Enc = 0x04,
+     };
+ 
+-    static bool isValidAapPrivateKeysType(unsigned char value){
++    inline bool isValidAapPrivateKeysType(unsigned char value){
+         switch (static_cast<AapPrivateKeysType>(value)) {
+             case AapPrivateKeysType::Irk:
+             case AapPrivateKeysType::Enc:
+@@ -26,7 +26,7 @@ namespace MagicPodsCore
+     }
+ 
+ 
+-    static std::string AapPrivateKeysTypeToString(AapPrivateKeysType value)
++    inline std::string AapPrivateKeysTypeToString(AapPrivateKeysType value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapVolumeSwipeLengthMode.h b/src/sdk/aap/enums/AapVolumeSwipeLengthMode.h
+index d31a783..266e88f 100644
+--- a/src/sdk/aap/enums/AapVolumeSwipeLengthMode.h
++++ b/src/sdk/aap/enums/AapVolumeSwipeLengthMode.h
+@@ -15,7 +15,7 @@ namespace MagicPodsCore
+         Longest = 0x02,
+     };
+ 
+-    static bool isValidAapVolumeSwipeLengthMode(unsigned char value){
++    inline bool isValidAapVolumeSwipeLengthMode(unsigned char value){
+         switch (static_cast<AapVolumeSwipeLengthMode>(value)) {
+             case AapVolumeSwipeLengthMode::Default:
+             case AapVolumeSwipeLengthMode::Longer:
+@@ -26,7 +26,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapVolumeSwipeLengthModeToString(AapVolumeSwipeLengthMode value)
++    inline std::string AapVolumeSwipeLengthModeToString(AapVolumeSwipeLengthMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/aap/enums/AapVolumeSwipeMode.h b/src/sdk/aap/enums/AapVolumeSwipeMode.h
+index d4dcb22..e8d835a 100644
+--- a/src/sdk/aap/enums/AapVolumeSwipeMode.h
++++ b/src/sdk/aap/enums/AapVolumeSwipeMode.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore
+         Off = 0x02,
+     };
+ 
+-    static bool isValidAapVolumeSwipeMode(unsigned char value){
++    inline bool isValidAapVolumeSwipeMode(unsigned char value){
+         switch (static_cast<AapVolumeSwipeMode>(value)) {
+             case AapVolumeSwipeMode::On:
+             case AapVolumeSwipeMode::Off:
+@@ -24,7 +24,7 @@ namespace MagicPodsCore
+         }
+     }
+ 
+-    static std::string AapVolumeSwipeModeToString(AapVolumeSwipeMode value)
++    inline std::string AapVolumeSwipeModeToString(AapVolumeSwipeMode value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/pbp/enums/PixelBudsAncState.h b/src/sdk/pbp/enums/PixelBudsAncState.h
+index 020477c..75c8886 100644
+--- a/src/sdk/pbp/enums/PixelBudsAncState.h
++++ b/src/sdk/pbp/enums/PixelBudsAncState.h
+@@ -16,7 +16,7 @@ namespace MagicPodsCore {
+         Adaptive = 4
+     };
+ 
+-    static bool isValidPixelBudsAncStateType(unsigned char value){
++    inline bool isValidPixelBudsAncStateType(unsigned char value){
+         switch (static_cast<PixelBudsAncState>(value)) {
+             case PixelBudsAncState::Off:
+             case PixelBudsAncState::Active:
+@@ -28,7 +28,7 @@ namespace MagicPodsCore {
+         }
+     }
+ 
+-    static std::string PixelBudsAncStateToString(PixelBudsAncState value)
++    inline std::string PixelBudsAncStateToString(PixelBudsAncState value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/sgb/GalaxyBudsPacket.cpp b/src/sdk/sgb/GalaxyBudsPacket.cpp
+index 050c765..22bb029 100644
+--- a/src/sdk/sgb/GalaxyBudsPacket.cpp
++++ b/src/sdk/sgb/GalaxyBudsPacket.cpp
+@@ -41,7 +41,7 @@ namespace MagicPodsCore
+         else
+         {
+             unsigned short header = (static_cast<unsigned short>(buffer[2]) << 8) | buffer[1]; // to big Endian
+-            bool isFragment = (header & 0x2000) != 0;
++            // 0x2000 marks a fragment; fragments are not reassembled.
+             type = (header & 0x1000) != 0 ? GalaxyBudsMsgTypes::Request : GalaxyBudsMsgTypes::Response;
+             size = header & 0x3FF;
+         }
+diff --git a/src/sdk/sgb/enums/GalaxyBudsAnc.h b/src/sdk/sgb/enums/GalaxyBudsAnc.h
+index c0fea01..5b0678d 100644
+--- a/src/sdk/sgb/enums/GalaxyBudsAnc.h
++++ b/src/sdk/sgb/enums/GalaxyBudsAnc.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore {
+         Adaptive = 3
+     };
+ 
+-    static bool isValidGalaxyBudsAncType(unsigned char value){
++    inline bool isValidGalaxyBudsAncType(unsigned char value){
+         switch (static_cast<GalaxyBudsAnc>(value)) {
+             case GalaxyBudsAnc::Off:
+             case GalaxyBudsAnc::AmbientSound:
+@@ -26,7 +26,7 @@ namespace MagicPodsCore {
+         }
+     }
+ 
+-    static std::string GalaxyBudsAncToString(GalaxyBudsAnc value)
++    inline std::string GalaxyBudsAncToString(GalaxyBudsAnc value)
+     {
+         switch (value)
+         {
+diff --git a/src/sdk/sgb/enums/GalaxyBudsEarDetectionState.h b/src/sdk/sgb/enums/GalaxyBudsEarDetectionState.h
+index 61742cc..48f9baf 100644
+--- a/src/sdk/sgb/enums/GalaxyBudsEarDetectionState.h
++++ b/src/sdk/sgb/enums/GalaxyBudsEarDetectionState.h
+@@ -14,7 +14,7 @@ namespace MagicPodsCore {
+         ClosedCase = 4,
+     };
+ 
+-    static bool isValidGalaxyBudsEarDetectionStateType(unsigned char value){
++    inline bool isValidGalaxyBudsEarDetectionStateType(unsigned char value){
+         switch (static_cast<GalaxyBudsEarDetectionState>(value)) {
+             case GalaxyBudsEarDetectionState::Disconnected:
+             case GalaxyBudsEarDetectionState::Wearing:
+diff --git a/src/sdk/sgb/enums/GalaxyBudsLegacyEarDetectionState.h b/src/sdk/sgb/enums/GalaxyBudsLegacyEarDetectionState.h
+index 3578eae..f124835 100644
+--- a/src/sdk/sgb/enums/GalaxyBudsLegacyEarDetectionState.h
++++ b/src/sdk/sgb/enums/GalaxyBudsLegacyEarDetectionState.h
+@@ -13,7 +13,7 @@ namespace MagicPodsCore {
+         Both = 17
+     };
+ 
+-    static bool isValidGalaxyBudsLegacyEarDetectionStateType(unsigned char value){
++    inline bool isValidGalaxyBudsLegacyEarDetectionStateType(unsigned char value){
+         switch (static_cast<GalaxyBudsLegacyEarDetectionState>(value)) {
+             case GalaxyBudsLegacyEarDetectionState::None:
+             case GalaxyBudsLegacyEarDetectionState::R:
+diff --git a/src/sdk/sgb/enums/GalaxyBudsMsgIds.h b/src/sdk/sgb/enums/GalaxyBudsMsgIds.h
+index a6d25b2..493320f 100644
+--- a/src/sdk/sgb/enums/GalaxyBudsMsgIds.h
++++ b/src/sdk/sgb/enums/GalaxyBudsMsgIds.h
+@@ -16,7 +16,7 @@ namespace MagicPodsCore
+         NOISE_CONTROLS = 120,
+     };
+ 
+-    static bool isValidGalaxyBudsMsgIdsType(unsigned char value)
++    inline bool isValidGalaxyBudsMsgIdsType(unsigned char value)
+     {
+         switch (static_cast<GalaxyBudsMsgIds>(value))
+         {
+diff --git a/src/sdk/sgb/enums/GalaxyBudsMsgTypes.h b/src/sdk/sgb/enums/GalaxyBudsMsgTypes.h
+index 14cf655..639d28a 100644
+--- a/src/sdk/sgb/enums/GalaxyBudsMsgTypes.h
++++ b/src/sdk/sgb/enums/GalaxyBudsMsgTypes.h
+@@ -13,7 +13,7 @@ namespace MagicPodsCore
+         Response = 1
+     };
+ 
+-    static bool isValidGalaxyBudsMsgType(unsigned char value)
++    inline bool isValidGalaxyBudsMsgType(unsigned char value)
+     {
+         switch (static_cast<GalaxyBudsMsgTypes>(value))
+         {
+diff --git a/src/tests/TestsSgb.cpp b/src/tests/TestsSgb.cpp
+index 0c87678..16c1e6c 100644
+--- a/src/tests/TestsSgb.cpp
++++ b/src/tests/TestsSgb.cpp
+@@ -51,7 +51,6 @@ bool TestsSgb::TestFindByGuid1()
+         "d908aab5-7a90-4cbe-8641-86a553db0147",
+         std::string(GalaxyBudsHelper::GALAXYBUDSNEW),
+     };
+-    GalaxyBudsHelper helper;
+     std::pair<GalaxyBudsModelIds, std::string> pairModelColor = GalaxyBudsHelper::SearchModelColor(guids, "");
+ 
+     return pairModelColor.first == GalaxyBudsModelIds::GalaxyBuds2Pro &&
+@@ -64,7 +63,6 @@ bool TestsSgb::TestFindByGuid2()
+         "d908aab5-7a90-4cbe-8641-86a553db0154",
+         std::string(GalaxyBudsHelper::GALAXYBUDSNEW),
+     };
+-    GalaxyBudsHelper helper;
+     std::pair<GalaxyBudsModelIds, std::string> pairModelColor = GalaxyBudsHelper::SearchModelColor(guids, "");
+ 
+     return pairModelColor.first == GalaxyBudsModelIds::GalaxyBuds3Pro &&

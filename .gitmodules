@@ -1,0 +1,3 @@
+[submodule "shoal/bridge-airpods/daemon/upstream"]
+	path = shoal/bridge-airpods/daemon/upstream
+	url = https://github.com/steam3d/MagicPodsCore

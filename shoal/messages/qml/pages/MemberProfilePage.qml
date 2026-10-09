@@ -1,0 +1,559 @@
+// Modified by Shipwright, 2026: address-book name of a member; role changes as buttons under the role; see CHANGES-FROM-UPSTREAM.md.
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+
+// Profile of one member in one room, reloaded on `memberChanged`: no diff
+// follows core-made state changes. Visibility per entry, never on a container.
+Page {
+    id: page
+
+    property string roomId
+    property string userId
+
+    // The `member.profile` answer, or null while loading.
+    property var profile: null
+    readonly property bool loaded: profile !== null
+    // Page-local, because matrix.lastError is global: a slow download
+    // elsewhere would otherwise read as a failed ban.
+    property string error: ""
+    readonly property bool failed: error.length > 0 && !loaded
+
+    // Remorse guard as in MemberListPage: abort on minimise, never fire on
+    // an inactive page.
+    property var activeRemorse: null
+    readonly property bool appForeground: Qt.application.active
+    onAppForegroundChanged: {
+        if (!appForeground && activeRemorse && activeRemorse.pending) {
+            activeRemorse.cancel()
+        }
+    }
+
+    allowedOrientations: Orientation.All
+
+    function reload() {
+        error = ""
+        matrix.loadMemberProfile(roomId, userId)
+    }
+
+    Component.onCompleted: reload()
+
+    function guardedRemorse(text, action) {
+        page.activeRemorse = Remorse.popupAction(page, text, function() {
+            page.activeRemorse = null
+            if (page.status !== PageStatus.Active || !Qt.application.active) {
+                return
+            }
+            action()
+        })
+    }
+
+    // The picture at full size, under a key of its own so both stay cached. A
+    // profile picture is never encrypted, so a bare `url` source is enough.
+    function openAvatar() {
+        if (!loaded || !profile.avatar) {
+            return
+        }
+        var key = page.userId + "/avatar-full"
+        var known = matrix.mediaPath(key)
+        // Full size, but an avatar's ceiling, not an attachment's: the same
+        // limit `requestAvatar` uses. Without it this path fetched a profile
+        // picture of up to a hundred megabytes on a tap.
+        matrix.requestMedia(key, { "url": profile.avatar }, false, 0,
+                            matrix.maximumAvatarBytes)
+        pageStack.push(Qt.resolvedUrl("ImageViewPage.qml"), {
+                           mediaKey: key,
+                           source: known.length > 0 ? "file://" + known : "",
+                           fileName: "",
+                           mimeType: "image/jpeg"
+                       })
+    }
+
+    // A copy, so assigning it back counts as a change: QML compares by
+    // reference, and mutating the object in place updates no binding.
+    function withField(key, value) {
+        var copy = {}
+        for (var name in profile) {
+            copy[name] = profile[name]
+        }
+        copy[key] = value
+        return copy
+    }
+
+    // 0 member, 50 moderator, 100 admin — the same reading as the list rows.
+    function roleText() {
+        if (!loaded) {
+            return ""
+        }
+        if (profile.power >= 100) {
+            return qsTr("Admin")
+        }
+        if (profile.power >= 50) {
+            return qsTr("Moderator")
+        }
+        return qsTr("Member")
+    }
+
+    function membershipText() {
+        if (!loaded) {
+            return ""
+        }
+        if (profile.membership === "invite") {
+            return qsTr("invited")
+        }
+        if (profile.membership === "ban") {
+            return qsTr("banned")
+        }
+        if (profile.membership === "leave") {
+            return qsTr("left the room")
+        }
+        return ""
+    }
+
+    Connections {
+        target: matrix
+
+        onMemberProfileReady: {
+            if (profileData.roomId === page.roomId
+                    && profileData.userId === page.userId) {
+                page.profile = profileData
+                page.error = ""
+            }
+        }
+
+        onMemberProfileFailed: page.error = message
+
+        // Applied from the answer, never by re-reading: the store learns of the state
+        // event on a later sync and would hand back the values from before.
+        onMemberActionDone: {
+            if (!page.loaded || result.userId !== page.userId) {
+                return
+            }
+            if (action === "ban") {
+                page.profile = page.withField("membership", "ban")
+                page.profile = page.withField("canBan", false)
+                page.profile = page.withField("canRemove", false)
+                page.profile = page.withField("canUnban", true)
+            } else if (action === "unban") {
+                page.profile = page.withField("membership", "leave")
+                page.profile = page.withField("canUnban", false)
+                page.profile = page.withField("canBan", true)
+            } else if (action === "setPower") {
+                page.profile = page.withField("power", result.power)
+            } else if (action === "setIgnored") {
+                page.profile = page.withField("ignored", result.ignored)
+            } else if (action === "withdrawVerification") {
+                page.profile = page.withField("verification", "unverified")
+            }
+        }
+    }
+
+    SilicaFlickable {
+        anchors.fill: parent
+        contentHeight: content.height
+
+        // The reload entry has no condition on purpose: without it the pulley is empty
+        // on one's own profile, and an empty pulley is a gesture that does nothing.
+        // Membership stays here; the role changes are buttons under the role.
+        PullDownMenu {
+            MenuItem {
+                text: qsTr("Reload")
+                onClicked: page.reload()
+            }
+
+            MenuItem {
+                text: profile !== null && profile.membership === "invite"
+                      ? qsTr("Revoke invitation") : qsTr("Remove from room")
+                visible: page.loaded && profile.canRemove
+                onClicked: page.guardedRemorse(qsTr("Removing"), function() {
+                    matrix.removeMember(page.roomId, page.userId)
+                    pageStack.pop()
+                })
+            }
+
+            MenuItem {
+                text: qsTr("Ban from room")
+                visible: page.loaded && profile.canBan
+                onClicked: {
+                    var dialog = pageStack.push(
+                                Qt.resolvedUrl("ConfirmDialog.qml"),
+                                {
+                                    question: qsTr("Really ban this member?"),
+                                    subject: profile.displayName || page.userId,
+                                    explanation: qsTr("%1 is removed from the room and cannot come back until the ban is lifted.").arg(page.userId),
+                                    acceptLabel: qsTr("Ban")
+                                })
+                    dialog.accepted.connect(function() {
+                        page.guardedRemorse(qsTr("Banning"), function() {
+                            matrix.banMember(page.roomId, page.userId)
+                        })
+                    })
+                }
+            }
+
+            MenuItem {
+                text: qsTr("Lift ban")
+                visible: page.loaded && profile.canUnban
+                onClicked: matrix.unbanMember(page.roomId, page.userId)
+            }
+        }
+
+        Column {
+            id: content
+
+            width: parent.width
+
+            PageHeader {
+                title: page.loaded && profile.displayName.length > 0
+                       ? profile.displayName : page.userId
+            }
+
+            // Shipwright: who this is in the address book, and how that was decided.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                visible: page.loaded && !!profile && !!profile.contact && !!profile.contact.name
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.secondaryHighlightColor
+                text: !profile || !profile.contact ? ""
+                      : profile.contact.via === "matrix"
+                        ? qsTr("In your contacts as %1").arg(profile.contact.name)
+                        : qsTr("In your contacts as %1 (matched by %2)").arg(profile.contact.name)
+                              .arg(profile.contact.via === "phone" ? qsTr("phone number")
+                                   : profile.contact.via === "email" ? qsTr("e-mail address")
+                                   : qsTr("username"))
+            }
+
+            // Failed actions would otherwise fail silently.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.errorColor
+                textFormat: Text.PlainText
+                visible: page.error.length > 0
+                text: page.error
+            }
+
+            BusyIndicator {
+                anchors.horizontalCenter: parent.horizontalCenter
+                size: BusyIndicatorSize.Large
+                running: !page.loaded && !page.failed
+                visible: running
+            }
+
+            Avatar {
+                id: profileAvatar
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                size: Theme.itemSizeHuge
+                source: page.loaded && profile.avatar ? profile.avatar : ""
+                name: page.loaded && profile.displayName.length > 0
+                      ? profile.displayName : page.userId
+                visible: page.loaded
+
+                MouseArea {
+                    anchors.fill: parent
+                    // Only where there is a picture: the initials have no
+                    // full size to show.
+                    enabled: page.loaded && profile.avatar
+                    onClicked: page.openAvatar()
+                }
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingMedium
+            }
+
+            // Tap copies the address; hint below confirms.
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.min(implicitWidth,
+                                parent.width - 2 * Theme.horizontalPageMargin)
+                truncationMode: TruncationMode.Fade
+                horizontalAlignment: Text.AlignHCenter
+                color: addressArea.pressed ? Theme.secondaryHighlightColor
+                                           : Theme.highlightColor
+                textFormat: Text.PlainText
+                text: page.userId
+                visible: page.loaded
+
+                MouseArea {
+                    id: addressArea
+                    anchors {
+                        fill: parent
+                        margins: -Theme.paddingLarge
+                    }
+                    onClicked: {
+                        Clipboard.text = page.userId
+                        copiedHint.opacity = 1.0
+                        copiedTimer.restart()
+                    }
+                }
+            }
+
+            Label {
+                id: copiedHint
+                anchors.horizontalCenter: parent.horizontalCenter
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryHighlightColor
+                text: qsTr("Address copied")
+                opacity: 0.0
+                visible: opacity > 0
+                Behavior on opacity { FadeAnimation { } }
+
+                Timer {
+                    id: copiedTimer
+                    interval: 2000
+                    onTriggered: copiedHint.opacity = 0.0
+                }
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingLarge
+            }
+
+            DetailItem {
+                label: qsTr("Role")
+                value: page.membershipText().length > 0
+                       ? page.roleText() + " · " + page.membershipText()
+                       : page.roleText()
+                visible: page.loaded
+            }
+
+            // The role changes, under the role they change. Not in the pull-down:
+            // with removing and banning it held seven entries. Shown on one's own
+            // profile too, where stepping down is the one that applies.
+            Column {
+                id: roleActions
+
+                readonly property real buttonWidth: Math.min(
+                        Theme.buttonWidthLarge,
+                        width - 2 * Theme.horizontalPageMargin)
+
+                width: parent.width
+                spacing: Theme.paddingMedium
+                visible: page.loaded && profile.canSetPower
+
+                Item {
+                    width: 1
+                    height: Theme.paddingSmall
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: roleActions.buttonWidth
+                    label: qsTr("Make moderator")
+                    visible: page.loaded && profile.canSetPower && profile.power < 50
+                             && profile.ownPower >= 50
+                    onClicked: matrix.setMemberPower(page.roomId, page.userId, 50)
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: roleActions.buttonWidth
+                    label: qsTr("Make admin")
+                    visible: page.loaded && profile.canSetPower && profile.power < 100
+                             && profile.ownPower >= 100
+                    onClicked: {
+                        var dialog = pageStack.push(
+                                    Qt.resolvedUrl("ConfirmDialog.qml"),
+                                    {
+                                        question: qsTr("Really make this member an admin?"),
+                                        subject: profile.displayName || page.userId,
+                                        explanation: qsTr("This cannot be taken back: only they themselves can step down afterwards."),
+                                        acceptLabel: qsTr("Make admin")
+                                    })
+                        dialog.accepted.connect(function() {
+                            matrix.setMemberPower(page.roomId, page.userId, 100)
+                        })
+                    }
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: roleActions.buttonWidth
+                    label: qsTr("Demote to member")
+                    visible: page.loaded && profile.canSetPower && profile.power > 0
+                    onClicked: matrix.setMemberPower(page.roomId, page.userId, 0)
+                }
+
+                Item {
+                    width: 1
+                    height: Theme.paddingSmall
+                }
+            }
+
+            DetailItem {
+                label: qsTr("Member since")
+                value: page.loaded && profile.sinceMs > 0
+                       ? Format.formatDate(new Date(profile.sinceMs), Formatter.DateLong)
+                       : ""
+                visible: page.loaded && profile.sinceMs > 0
+            }
+
+            DetailItem {
+                label: qsTr("Invited by")
+                value: page.loaded ? profile.invitedBy : ""
+                visible: page.loaded && profile.invitedBy.length > 0
+            }
+
+            DetailItem {
+                label: qsTr("Devices")
+                value: page.loaded ? profile.devices : 0
+                visible: page.loaded && profile.devices > 0
+            }
+
+            // The same row as the rest: a section of its own for one line, left
+            // where everything else is centred, read as three loose texts.
+            DetailItem {
+                label: qsTr("Identity")
+                visible: page.loaded && !profile.isSelf
+                         && profile.verification !== "unknown"
+                // The value carries the state, so it carries the colour.
+                palette.highlightColor: {
+                    // Evaluated while the profile is still loading (null).
+                    if (!page.loaded) {
+                        return Theme.secondaryColor
+                    }
+                    if (profile.verification === "violation") {
+                        return Theme.errorColor
+                    }
+                    if (profile.verification === "verified") {
+                        return Theme.highlightColor
+                    }
+                    return Theme.secondaryColor
+                }
+                value: {
+                    if (!page.loaded) {
+                        return ""
+                    }
+                    if (profile.verification === "verified") {
+                        return qsTr("verified")
+                    }
+                    if (profile.verification === "violation") {
+                        return qsTr("changed since you verified it. Verify again or withdraw")
+                    }
+                    return qsTr("not verified")
+                }
+            }
+
+            // Rooms this account and that one are both in. Display only,
+            // deliberately not tappable.
+            DetailItem {
+                label: qsTr("Shared rooms")
+                visible: page.loaded && !profile.isSelf
+                value: page.loaded && profile.sharedRooms.length > 0
+                       ? profile.sharedRooms.join(", ")
+                       : qsTr("none")
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingMedium
+                visible: page.loaded && !profile.isSelf
+            }
+
+            // A Column, not `ButtonLayout`: that one gives every child one
+            // line's height, and a wrapping label then overlaps its neighbour.
+            Column {
+                id: actions
+
+                readonly property real buttonWidth: Math.min(
+                        Theme.buttonWidthLarge,
+                        width - 2 * Theme.horizontalPageMargin)
+
+                width: parent.width
+                spacing: Theme.paddingMedium
+                visible: page.loaded && !profile.isSelf
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: actions.buttonWidth
+                    label: qsTr("Send direct message")
+                    enabled: !matrix.startingDirectChat
+                    onClicked: matrix.startDirectChat(page.userId)
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: actions.buttonWidth
+                    label: qsTr("Mention")
+                    // Somebody who has left the room is addressed by nothing.
+                    visible: page.loaded && (profile.membership === "join"
+                                             || profile.membership === "invite")
+                    onClicked: matrix.mentions.requestInsert(
+                                   page.roomId, page.userId, profile.displayName)
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: actions.buttonWidth
+                    label: qsTr("Verify")
+                    visible: page.loaded
+                             && (profile.verification === "unverified"
+                                 || profile.verification === "violation")
+                    onClicked: {
+                        matrix.requestVerification(page.userId)
+                        pageStack.push(Qt.resolvedUrl("VerificationPage.qml"))
+                    }
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: actions.buttonWidth
+                    label: qsTr("Withdraw verification")
+                    // Also where the identity still holds: that is the state
+                    // this undoes, and it had no action of its own at all.
+                    visible: page.loaded && (profile.verification === "violation"
+                                             || profile.verification === "verified")
+                    onClicked: matrix.withdrawMemberVerification(page.userId)
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: actions.buttonWidth
+                    // The allow list from the privacy page. Kept on this
+                    // device, unlike ignoring, which is the account's.
+                    label: matrix.callerAllowed(page.userId)
+                          ? qsTr("Forbid calls") : qsTr("Allow calls")
+                    visible: page.loaded && !profile.isSelf
+                    onClicked: {
+                        if (matrix.callerAllowed(page.userId)) {
+                            matrix.forbidCaller(page.userId)
+                        } else {
+                            matrix.allowCaller(page.userId)
+                        }
+                    }
+                }
+
+                WrapButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: actions.buttonWidth
+                    // Ignoring is account-wide.
+                    label: page.loaded && profile.ignored
+                          ? qsTr("Stop ignoring") : qsTr("Ignore")
+                    onClicked: {
+                        if (profile.ignored) {
+                            matrix.setMemberIgnored(page.userId, false)
+                        } else {
+                            page.guardedRemorse(qsTr("Ignoring"), function() {
+                                matrix.setMemberIgnored(page.userId, true)
+                            })
+                        }
+                    }
+                }
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingLarge
+            }
+        }
+
+        VerticalScrollDecorator { }
+    }
+}

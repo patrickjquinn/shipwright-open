@@ -1,0 +1,324 @@
+// SPDX-FileCopyrightText: 2026 Patrick Quinn
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Headless smoke test harness, loaded by ../smoke-test.sh as the main QML
+// file (`shipwright-reef --qml`). The @NAME@ placeholders are filled in by
+// the script. It instantiates the real UI (reef/client/ui/qml), waits for the
+// start-up check and the refresh it triggers, then checks the `Reef` object
+// against the catalogue the script generated with gen-catalogue.py.
+// Prints "SMOKE ok: ..." per check and exits 0 on success, 1 on failure.
+
+import QtQuick
+import Sailfish.Silica 1.0
+import Shipwright.Reef 1.0
+
+QtObject {
+    id: h
+
+    readonly property string uiDir: "@UI_DIR@"
+    readonly property string mode: "@MODE@"          // "pinned" or "drifted"
+    property var win: null
+    property int ticks: 0
+    property bool failed: false
+    property bool repairDone: false
+    property bool repairOk: false
+    property bool sawInstall: false
+
+    function fail(msg) {
+        if (failed)
+            return
+        failed = true
+        timer.running = false
+        console.log("SMOKE FAIL: " + msg)
+        h.quit(1)
+    }
+
+    function check(cond, msg) {
+        if (failed)
+            return false
+        if (!cond) {
+            fail(msg)
+            return false
+        }
+        console.log("SMOKE ok: " + msg)
+        return true
+    }
+
+    function eq(actual, expected, what) {
+        return check(actual === expected, what + " = " + JSON.stringify(actual)
+                     + (actual === expected ? "" : " (expected " + JSON.stringify(expected) + ")"))
+    }
+
+    property Timer timer: Timer {
+        interval: 100
+        repeat: true
+        running: true
+        onTriggered: h.tick()
+    }
+
+    property Connections reefSignals: Connections {
+        target: Reef
+        function onOperationFinished(name, ok, message) {
+            console.log("SMOKE operationFinished name=" + JSON.stringify(name) + " ok=" + ok
+                        + " message=" + JSON.stringify(message))
+            h.repairDone = true
+            h.repairOk = ok
+        }
+    }
+
+    Component.onCompleted: {
+        var c = Qt.createComponent(uiDir + "/shipwright-reef.qml")
+        if (c.status !== Component.Ready) {
+            fail("UI did not compile: " + c.errorString())
+            return
+        }
+        win = c.createObject(null)
+        if (!win)
+            fail("UI did not instantiate")
+    }
+
+    property int stage: 0
+
+    function tick() {
+        if (failed)
+            return
+        if (++ticks > 600) {
+            fail("timeout in stage " + stage + ": busy=" + Reef.busy + " count="
+                 + Reef.catalogueModel.count + " lastError=" + JSON.stringify(Reef.lastError))
+            return
+        }
+        if (Reef.busy)
+            return
+        if (stage === 0) {
+            if (Reef.catalogueModel.count === 0)
+                return
+            stage = 1
+            verifyCatalogue()
+            if (failed)
+                return
+            // Both runs wait for the failed install's operationFinished.
+            return
+        } else if (stage === 1 && repairDone && mode === "pinned") {
+            // operationFinished of the install started in verifyCatalogue.
+            stage = 2
+            check(!repairOk, "install without PackageKit reports failure")
+            verifyOperationError()
+            startPurchase()
+        } else if (stage === 1 && repairDone) {
+            // The drifted run: the failed install's signal came first.
+            if (!sawInstall) {
+                sawInstall = true
+                check(!repairOk, "install without PackageKit reports failure")
+                verifyOperationError()
+                repairDone = false
+                Reef.repairRepository()
+                check(Reef.busy, "repairRepository() returns at once and runs in the background")
+                check(Reef.busyText === "repairing", "busyText while repairing")
+                return
+            }
+            stage = 2
+            check(repairOk, "repair finished ok")
+            eq(Reef.repoState, "pinned", "repoState after repair")
+            eq(Reef.registeredRepoUrl, "@PINNED_URL@", "registeredRepoUrl after repair")
+            eq(Reef.repairCommands().length, 0, "repairCommands() after repair")
+            startPurchase()
+        } else if (stage === 3) {
+            // The licence refresh checkPurchases() started has ended: the
+            // licence service (unreachable here) was asked for the code,
+            // and the code itself is never shown.
+            check(Reef.lastError.indexOf("smoke-bridge: ") >= 0
+                  && Reef.lastError.indexOf("/v1/claims/") >= 0,
+                  "the pending claim was asked for: " + JSON.stringify(Reef.lastError))
+            check(Reef.lastError.indexOf(claimCode) < 0, "lastError does not show the claim code")
+            finish()
+        }
+    }
+
+    // Buy: the purchase URL with a fresh claim code, then a licence
+    // refresh because a claim is pending (what the window does on
+    // becoming active). The script checks the pending claim file.
+    property string claimCode
+    function startPurchase() {
+        if (failed)
+            return
+        stage = 3
+        eq(Reef.buyUrl("harbour-smoke-notes"), "", "buyUrl of a free package")
+        var url = Reef.buyUrl("harbour-smoke-bridge")
+        var m = /^https:\/\/example\.invalid\/buy\?claim=([0-9a-f]{32})$/.exec(url)
+        if (!check(m !== null, "buyUrl adds a claim code: " + JSON.stringify(url)))
+            return
+        claimCode = m[1]
+        check(findIn(packagePage, "buyButton") !== null, "PackagePage has the Buy button")
+        Reef.checkPurchases()
+        check(Reef.busy && Reef.busyText === "refreshing_licences",
+              "checkPurchases() refreshes licences while a claim is pending")
+    }
+
+    function verifyCatalogue() {
+        eq(Reef.installedRelease, "5.2.0.17", "installedRelease")
+        eq(Reef.arch, "@ARCH@", "arch")
+        eq(Reef.repoAlias, "shipwright-reef", "repoAlias")
+        eq(Reef.repoState, mode, "repoState")
+        eq(Reef.registeredRepoUrl, mode === "pinned" ? "@PINNED_URL@" : "@DRIFTED_URL@",
+           "registeredRepoUrl")
+        eq(Reef.progress, -1, "progress when idle")
+        eq(Reef.busyPackage, "", "busyPackage when idle")
+        console.log("SMOKE info: lastError = " + JSON.stringify(Reef.lastError))
+
+        // Three packages published; the subscription app is tested only on
+        // 5.2.0.18, so it is hidden. Rows are sorted by category, then title.
+        var m = Reef.catalogueModel
+        eq(m.count, 2, "catalogueModel.count")
+        var a = m.get(0), b = m.get(1)
+        eq(a.name, "harbour-smoke-bridge", "row 0 name")
+        eq(a.title, "Bridge", "row 0 title")
+        eq(a.category, "Audio", "row 0 category")
+        eq(a.version, "1.0.0-1", "row 0 version")
+        eq(a.licenceModel, "one_off", "row 0 licenceModel")
+        eq(a.licensed, false, "row 0 licensed")
+        eq(a.installState, "not_installed", "row 0 installState")
+        eq(a.installedVersion, "", "row 0 installedVersion")
+        eq(b.name, "harbour-smoke-notes", "row 1 name")
+        eq(b.summary, "Plain notes", "row 1 summary")
+        eq(b.licenceModel, "free", "row 1 licenceModel")
+        eq(Reef.installedModel.count, 0, "installedModel.count (no PackageKit here)")
+        eq(Reef.licenceModel.count, 0, "licenceModel.count")
+        eq(Reef.updateCount, 0, "updateCount")
+        eq(a.publisher, "Smoke Co", "row 0 publisher")
+        eq(a.isNew, false, "row 0 isNew (added long ago)")
+        check(/assets__smoke-bridge-[0-9a-f]+\.png$/.test(a.iconPath), "row 0 iconPath cached: " + JSON.stringify(a.iconPath))
+        eq(b.iconPath, "", "row 1 iconPath (none published)")
+        eq(Reef.featuredModel.count, 1, "featuredModel.count")
+        eq(Reef.featuredModel.get(0).name, "harbour-smoke-notes", "featured row")
+
+        // The search box narrows catalogueModel; blank shows everything.
+        Reef.searchText = "NOTES"
+        eq(m.count, 1, "catalogueModel.count while searching")
+        eq(m.get(0).name, "harbour-smoke-notes", "search hit")
+        Reef.searchText = "zebra"
+        eq(m.count, 0, "catalogueModel.count with no match")
+        Reef.searchText = ""
+        eq(m.count, 2, "catalogueModel.count after clearing the search")
+
+        var d = Reef.packageDetails("harbour-smoke-bridge")
+        eq(d.title, "Bridge", "packageDetails title")
+        eq(d.description, "Battery and noise modes.", "packageDetails description")
+        eq(JSON.stringify(d.testedOn), JSON.stringify(["5.2.0.17", "5.2.0.18"]), "packageDetails testedOn")
+        eq(JSON.stringify(d.permissions), JSON.stringify(["Bluetooth"]), "packageDetails permissions")
+        eq(d.sandboxed, true, "packageDetails sandboxed")
+        eq(d.purchaseUrl, "https://example.invalid/buy", "packageDetails purchaseUrl")
+        eq(d.spdx, "MIT", "packageDetails spdx")
+        check(/^[0-9.]+ (B|kB)$/.test(d.sizeText), "packageDetails sizeText = " + JSON.stringify(d.sizeText))
+        eq(d.publisher, "Smoke Co", "packageDetails publisher")
+        eq(d.added, "2026-01-02", "packageDetails added")
+        eq(d.screenshotPaths.length, 1, "packageDetails screenshotPaths (one cached, one not an image)")
+        check(/assets__shots__bridge-1-[0-9a-f]+\.png$/.test(d.screenshotPaths[0]), "screenshot path: " + JSON.stringify(d.screenshotPaths[0]))
+        eq(Reef.packageDetails("harbour-smoke-messages").name, undefined,
+           "packageDetails of a package hidden on this release is empty")
+
+        var cmds = Reef.repairCommands()
+        if (mode === "pinned") {
+            eq(cmds.length, 0, "repairCommands() when pinned")
+        } else {
+            check(cmds.length === 4 && cmds[0].indexOf("ssu rr shipwright-reef") === 0
+                  && cmds[1].indexOf("ssu ar shipwright-reef") === 0,
+                  "repairCommands() when drifted = " + JSON.stringify(cmds))
+        }
+
+        check(Reef.checkLicenceToken("v1.garbage.token").length > 0, "checkLicenceToken rejects garbage")
+        eq(Reef.licenceTokenApp("v1.garbage.token"), "", "licenceTokenApp of garbage")
+        check(Reef.addLicenceToken("v1.garbage.token").length > 0, "addLicenceToken refuses garbage")
+
+        // Settings: written through, and normalised to 0, 1 or 7.
+        Reef.backgroundCheckDays = 3
+        eq(Reef.backgroundCheckDays, 1, "backgroundCheckDays normalised")
+        Reef.licenceServer = "https://licences.smoke.invalid"
+
+        // Every page instantiates against the real object.
+        // Keel loads the cover when keel-shell asks for it; load it here.
+        var cover = win._loadCover()
+        check(cover !== null && cover !== undefined, "cover instantiated")
+        var actions = cover._actionLists.filter(function(l) { return l.objectName === "coverActions" })
+        check(actions.length === 1, "the cover has a refresh action")
+        eq(win.pageStack.depth, 1, "initial page on the stack")
+        var p = createPage("PackagePage.qml", { packageName: "harbour-smoke-bridge" })
+        check(p !== null && p.pkg.title === "Bridge", "PackagePage shows the package")
+        // An operation that fails is shown on the page (no PackageKit here).
+        Reef.install("harbour-smoke-bridge")
+        h.packagePage = p
+    }
+
+    property var packagePage: null
+
+    // Pages are created directly, not through the page stack: what is
+    // checked is that each page instantiates against Keel and the real
+    // object, whatever the stack's transition timing.
+    function createPage(file, props) {
+        var c = Qt.createComponent(uiDir + "/pages/" + file)
+        if (c.status !== Component.Ready) {
+            fail(file + " did not compile: " + c.errorString())
+            return null
+        }
+        var page = c.createObject(win, props || {})
+        if (page)
+            created.push(page)
+        return page
+    }
+
+    // After the failed install: the page shows why, and lastError has it.
+    function verifyOperationError() {
+        check(packagePage.error.length > 0, "PackagePage shows the failed install: "
+              + JSON.stringify(packagePage.error))
+        check(Reef.lastError.length > 0, "lastError set by the failed install")
+        // Error recovery on the page: the reason, and the install button
+        // turned into "Try again".
+        var err = findIn(packagePage, "operationError")
+        check(err !== null && !packagePage.working && err.text.indexOf(packagePage.error) > 0, "the failure is shown on the page")
+        var btn = findIn(packagePage, "installButton")
+        check(btn !== null && btn.text === "Try again", "install offers to try again: " + (btn ? btn.text : "none"))
+        var pages = ["InstalledPage.qml", "LicencesPage.qml", "SettingsPage.qml", "AddLicenceDialog.qml"]
+        for (var i = 0; i < pages.length; ++i)
+            check(createPage(pages[i]) !== null, pages[i] + " instantiated")
+    }
+
+    function findIn(item, name) {
+        if (!item)
+            return null
+        if (item.objectName === name)
+            return item
+        var kids = item.children || []
+        for (var i = 0; i < kids.length; ++i) {
+            var r = findIn(kids[i], name)
+            if (r)
+                return r
+        }
+        if (item.contentItem && item.contentItem !== item)
+            return findIn(item.contentItem, name)
+        return null
+    }
+
+    // Destroys the window this harness created (owned by JavaScript, with
+    // the pages and the cover it holds) before quitting, so the engine is
+    // not left to collect it while the app deletes it after exec().
+    property var created: []
+    function quit(code) {
+        // Pages first: destroyed with the window, their bindings would
+        // see a parent that is going away.
+        for (var i = 0; i < created.length; ++i)
+            created[i].destroy()
+        created = []
+        if (win) {
+            win.destroy()
+            win = null
+        }
+        Qt.callLater(function() { Qt.exit(code) })
+    }
+
+    function finish() {
+        if (failed)
+            return
+        timer.running = false
+        console.log("SMOKE PASS")
+        h.quit(0)
+    }
+}

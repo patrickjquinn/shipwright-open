@@ -1,0 +1,335 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Wed, 30 Sep 2026 22:43:41 +0000
+Subject: [PATCH] Report connected hosts and allow taking over the audio route
+
+With Apple's Device ID on both hosts, AirPods stay connected to two
+hosts at once and hand audio to the one that asks. Add the multiDevice
+capability:
+
+- hosts: the hosts the headphones report as connected (packet 0x2E);
+- ownsConnection: whether this host has the audio route (control
+  command 0x06);
+- {"takeOver": true} asks for the audio route (control command 0x06,
+  value 1).
+
+Like the hearing features, it is listed as {"unavailable": "needs Apple
+Device ID"} while the host lacks Apple's Device ID.
+
+Protocol reference: LibrePods (https://github.com/librepods-org/librepods),
+README "Multi-device Connectivity", docs/control_commands.md,
+docs/opcodes.md and the Android AACPManager.kt.
+
+The control command 0x06 (OwnsConnection) and the 0x2E packet parser
+(AapConnectedHosts) are added here, with their self-tests in
+TestsAapAppleGated.
+---
+ CMakeLists.txt                                |  1 +
+ api-reference.md                              | 25 ++++++++
+ src/device/AapDevice.cpp                      |  2 +
+ .../aap/AapMultiDeviceCapability.cpp          | 57 +++++++++++++++++++
+ .../aap/AapMultiDeviceCapability.h            | 37 ++++++++++++
+ src/sdk/aap/AapControlCommand.cpp             | 19 +++++++
+ src/sdk/aap/AapControlCommand.h               | 12 ++++
+ src/tests/TestsAapAppleGated.cpp              | 21 +++++++
+ src/tests/TestsAapAppleGated.h                |  2 +
+ 9 files changed, 176 insertions(+)
+ create mode 100644 src/device/capabilities/aap/AapMultiDeviceCapability.cpp
+ create mode 100644 src/device/capabilities/aap/AapMultiDeviceCapability.h
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ccdaa8c..5a0477f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -94,6 +94,7 @@ add_executable(magicpodscore
+     src/device/capabilities/aap/AapHearingAidAdjustmentsCapability.cpp
+     src/device/capabilities/aap/AapTransparencyCustomCapability.cpp
+     src/device/capabilities/aap/AapLoudSoundReductionCapability.cpp
++    src/device/capabilities/aap/AapMultiDeviceCapability.cpp
+     src/device/capabilities/aap/AppAnimationCapability.cpp
+ 
+     src/device/capabilities/sgb/GalaxyBudsCapability.cpp
+diff --git a/api-reference.md b/api-reference.md
+index a8f8231..2e6eef3 100644
+--- a/api-reference.md
++++ b/api-reference.md
+@@ -883,6 +883,31 @@ daemon reads it back after every write.
+ ```
+ 
+ 
++##### Multi-device
++
++Listed for all AirPods and Beats; which models keep two hosts at once is not
++verified. With Apple's Device ID on both hosts, the headphones
++stay connected to two hosts at once, for audio and control, and hand audio to
++the one that asks. `hosts` lists the hosts connected to the headphones, as the
++headphones report them (they send it when it changes); `ownsConnection` says
++whether this host currently has the audio route. Set `takeOver` to `true` to
++ask for the audio route (control command 0x06, "owns connection").
++
++```json
++{
++  "multiDevice": {
++    "readonly": false,
++    "hosts": ["AA:BB:CC:DD:EE:FF", "11:22:33:44:55:66"],
++    "ownsConnection": false
++  }
++}
++```
++
++```json
++{"method":"SetCapabilities","arguments":{"address":"AA:BB:CC:DD:EE:FF","capabilities":{"multiDevice":{"takeOver":true}}}}
++```
++
++
+ ## Settings
+ 
+ A general settings storage. Settings are stored in containers in TOML format. Container names must use only Latin characters; the names must not include magicpods or MAC addresses. Allowed separators are _, -, or camelCase. Supported types are bool, string, int, and float.
+diff --git a/src/device/AapDevice.cpp b/src/device/AapDevice.cpp
+index cfbdf55..6c486f9 100644
+--- a/src/device/AapDevice.cpp
++++ b/src/device/AapDevice.cpp
+@@ -26,6 +26,7 @@
+ #include "capabilities/aap/AapHearingAidAdjustmentsCapability.h"
+ #include "capabilities/aap/AapTransparencyCustomCapability.h"
+ #include "capabilities/aap/AapLoudSoundReductionCapability.h"
++#include "capabilities/aap/AapMultiDeviceCapability.h"
+ #include "HostDeviceId.h"
+ 
+ #include <thread>
+@@ -166,6 +167,7 @@ namespace MagicPodsCore
+             device->capabilities.push_back(std::make_unique<AapTransparencyCustomCapability>(*device));
+         if (hasLoudSoundReduction)
+             device->capabilities.push_back(std::make_unique<AapLoudSoundReductionCapability>(*device));
++        device->capabilities.push_back(std::make_unique<AapMultiDeviceCapability>(*device));
+ 
+         if (device->_att) {
+             device->_attClientStateEventId = device->GetClientStateChangedEvent().Subscribe([raw = device.get()](size_t id, ClientState state) {
+diff --git a/src/device/capabilities/aap/AapMultiDeviceCapability.cpp b/src/device/capabilities/aap/AapMultiDeviceCapability.cpp
+new file mode 100644
+index 0000000..d93a406
+--- /dev/null
++++ b/src/device/capabilities/aap/AapMultiDeviceCapability.cpp
+@@ -0,0 +1,57 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#include "AapMultiDeviceCapability.h"
++#include "sdk/aap/AapControlCommand.h"
++
++namespace MagicPodsCore
++{
++    AapMultiDeviceCapability::AapMultiDeviceCapability(AapDevice &device)
++        : AapAppleGatedCapability("multiDevice", false, device)
++    {
++    }
++
++    void AapMultiDeviceCapability::ResetData()
++    {
++        hosts.clear();
++        ownsConnection = false;
++    }
++
++    nlohmann::json AapMultiDeviceCapability::CreateAvailableJsonBody()
++    {
++        return nlohmann::json{{"hosts", hosts}, {"ownsConnection", ownsConnection}};
++    }
++
++    void AapMultiDeviceCapability::OnReceivedData(const std::vector<unsigned char> &data)
++    {
++        if (auto command = AapControlCommand::Parse(data);
++            command.has_value() && command->identifier == static_cast<unsigned char>(AapControlId::OwnsConnection)) {
++            const bool owns = command->data1 == 0x01;
++            if (owns != ownsConnection) {
++                ownsConnection = owns;
++                Logger::Info("%s: owns connection %d", name.c_str(), ownsConnection);
++                DataUpdated();
++            }
++            return;
++        }
++
++        if (auto connected = AapConnectedHosts::Parse(data); connected.has_value()) {
++            if (connected->addresses != hosts) {
++                hosts = connected->addresses;
++                Logger::Info("%s: %zu connected hosts", name.c_str(), hosts.size());
++                DataUpdated();
++            }
++        }
++    }
++
++    void AapMultiDeviceCapability::SetAvailableFromJson(const nlohmann::json &body)
++    {
++        if (!body.contains("takeOver") || !body["takeOver"].is_boolean()) {
++            Logger::Error("Error: %s::SetFromJson expects takeOver: true", name.c_str());
++            return;
++        }
++        if (body["takeOver"].get<bool>())
++            SendData(AapSetControl(AapControlId::OwnsConnection, 0x01));
++    }
++}
+diff --git a/src/device/capabilities/aap/AapMultiDeviceCapability.h b/src/device/capabilities/aap/AapMultiDeviceCapability.h
+new file mode 100644
+index 0000000..1358b93
+--- /dev/null
++++ b/src/device/capabilities/aap/AapMultiDeviceCapability.h
+@@ -0,0 +1,37 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include "AapAppleGatedCapability.h"
++
++#include <string>
++#include <vector>
++
++namespace MagicPodsCore
++{
++    // "multiDevice": AirPods stay connected to two hosts at once (audio and
++    // control) only if both present Apple's Device ID.
++    //   {"hosts": [addresses], "ownsConnection": bool}
++    // Setting {"takeOver": true} asks the AirPods to route audio here
++    // (control command 0x06, "owns connection"). Needs Apple's Device ID.
++    class AapMultiDeviceCapability : public AapAppleGatedCapability
++    {
++    private:
++        std::vector<std::string> hosts{};
++        bool ownsConnection{};
++
++    protected:
++        nlohmann::json CreateAvailableJsonBody() override;
++        void SetAvailableFromJson(const nlohmann::json &body) override;
++        void OnReceivedData(const std::vector<unsigned char> &data) override;
++        // Shown as soon as the AirPods are connected: they report hosts and
++        // ownership only when something changes.
++        bool HasData() const override { return true; }
++        void ResetData() override;
++
++    public:
++        explicit AapMultiDeviceCapability(AapDevice &device);
++    };
++}
+diff --git a/src/sdk/aap/AapControlCommand.cpp b/src/sdk/aap/AapControlCommand.cpp
+index 7d2e4bc..e8ad116 100644
+--- a/src/sdk/aap/AapControlCommand.cpp
++++ b/src/sdk/aap/AapControlCommand.cpp
+@@ -5,6 +5,8 @@
+ #include "AapControlCommand.h"
+ #include "sdk/aap/enums/AapCmd.h"
+ 
++#include <cstdio>
++
+ namespace MagicPodsCore
+ {
+     std::optional<AapControlCommand> AapControlCommand::Parse(const std::vector<unsigned char> &data)
+@@ -24,4 +26,21 @@ namespace MagicPodsCore
+         return std::vector<unsigned char>{0x04, 0x00, 0x04, 0x00, static_cast<unsigned char>(AapCmd::Settings), 0x00,
+                                           _command.identifier, _command.data1, _command.data2, 0x00, 0x00};
+     }
++
++    std::optional<AapConnectedHosts> AapConnectedHosts::Parse(const std::vector<unsigned char> &data)
++    {
++        if (data.size() < 9 || data[4] != 0x2E)
++            return std::nullopt;
++
++        AapConnectedHosts hosts{};
++        const size_t count = data[8];
++        size_t offset = 9;
++        for (size_t i = 0; i < count && offset + 8 <= data.size(); ++i, offset += 8) {
++            char address[18];
++            std::snprintf(address, sizeof(address), "%02X:%02X:%02X:%02X:%02X:%02X",
++                          data[offset], data[offset + 1], data[offset + 2], data[offset + 3], data[offset + 4], data[offset + 5]);
++            hosts.addresses.emplace_back(address);
++        }
++        return hosts;
++    }
+ }
+diff --git a/src/sdk/aap/AapControlCommand.h b/src/sdk/aap/AapControlCommand.h
+index 90a40d9..73954da 100644
+--- a/src/sdk/aap/AapControlCommand.h
++++ b/src/sdk/aap/AapControlCommand.h
+@@ -7,6 +7,7 @@
+ #include "sdk/aap/setters/AapRequest.h"
+ 
+ #include <optional>
++#include <string>
+ #include <vector>
+ 
+ namespace MagicPodsCore
+@@ -17,6 +18,7 @@ namespace MagicPodsCore
+     //   04 00 04 00 09 00 <identifier> <data1> <data2> <data3> <data4>
+     enum class AapControlId : unsigned char
+     {
++        OwnsConnection = 0x06, // data1: 1 owns, 0 does not
+         HearingAid = 0x2C,     // data1: enrolled, data2: enabled; 1 yes, 2 no
+         HearingAssist = 0x33,  // data1: 1 on, 2 off
+     };
+@@ -39,4 +41,14 @@ namespace MagicPodsCore
+         AapSetControl(AapControlId identifier, unsigned char data1, unsigned char data2 = 0x00);
+         std::vector<unsigned char> Request() const override;
+     };
++
++    // Packet type 0x2E: the hosts the AirPods are connected to.
++    //   04 00 04 00 2E 00 xx xx <count> then per host 6 address bytes and 2
++    //   bytes of unknown meaning.
++    struct AapConnectedHosts
++    {
++        std::vector<std::string> addresses{};
++
++        static std::optional<AapConnectedHosts> Parse(const std::vector<unsigned char> &data);
++    };
+ }
+diff --git a/src/tests/TestsAapAppleGated.cpp b/src/tests/TestsAapAppleGated.cpp
+index 30a49f0..1bab91f 100644
+--- a/src/tests/TestsAapAppleGated.cpp
++++ b/src/tests/TestsAapAppleGated.cpp
+@@ -366,6 +366,25 @@ bool TestsAapAppleGated::TestParseHearingAidCommand()
+            !AapControlCommand::Parse({0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x2C, 0x01, 0x02}).has_value();
+ }
+ 
++bool TestsAapAppleGated::TestSetOwnsConnection()
++{
++    return AapSetControl(AapControlId::OwnsConnection, 0x01).Request() ==
++           std::vector<unsigned char>{0x04, 0x00, 0x04, 0x00, 0x09, 0x00, 0x06, 0x01, 0x00, 0x00, 0x00};
++}
++
++bool TestsAapAppleGated::TestParseConnectedHosts()
++{
++    std::vector<unsigned char> data{0x04, 0x00, 0x04, 0x00, 0x2E, 0x00, 0x00, 0x00, 0x02,
++                                    0xAA, 0xBB, 0xCC, 0x00, 0x11, 0x22, 0x01, 0x00,
++                                    0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x02, 0x00};
++    auto hosts = AapConnectedHosts::Parse(data);
++    // A truncated list returns what is complete.
++    data.resize(data.size() - 1);
++    auto truncated = AapConnectedHosts::Parse(data);
++    return hosts.has_value() && hosts->addresses.size() == 2 && hosts->addresses[0] == "AA:BB:CC:00:11:22" &&
++           hosts->addresses[1] == "10:20:30:40:50:60" && truncated.has_value() && truncated->addresses.size() == 1;
++}
++
+ bool TestsAapAppleGated::TestChannelMatchesResponses()
+ {
+     auto owned = std::make_unique<FakeAttTransport>();
+@@ -471,6 +490,8 @@ TestsAapAppleGated::TestsAapAppleGated()
+     Test("TestAdjustmentsFromJsonRejects", TestAdjustmentsFromJsonRejects());
+     Test("TestSetHearingAid", TestSetHearingAid());
+     Test("TestParseHearingAidCommand", TestParseHearingAidCommand());
++    Test("TestSetOwnsConnection", TestSetOwnsConnection());
++    Test("TestParseConnectedHosts", TestParseConnectedHosts());
+     Test("TestChannelMatchesResponses", TestChannelMatchesResponses());
+     Test("TestChannelTimeoutClosesChannel", TestChannelTimeoutClosesChannel());
+     Test("TestChannelStartChecksWanted", TestChannelStartChecksWanted());
+diff --git a/src/tests/TestsAapAppleGated.h b/src/tests/TestsAapAppleGated.h
+index e97bba4..3813f7b 100644
+--- a/src/tests/TestsAapAppleGated.h
++++ b/src/tests/TestsAapAppleGated.h
+@@ -28,6 +28,8 @@ namespace MagicPodsCore
+         bool TestAdjustmentsFromJsonRejects();
+         bool TestSetHearingAid();
+         bool TestParseHearingAidCommand();
++        bool TestSetOwnsConnection();
++        bool TestParseConnectedHosts();
+         bool TestChannelMatchesResponses();
+         bool TestChannelTimeoutClosesChannel();
+         bool TestChannelStartChecksWanted();

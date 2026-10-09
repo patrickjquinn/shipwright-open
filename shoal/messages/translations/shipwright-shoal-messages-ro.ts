@@ -1,0 +1,3980 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modified by Shipwright, 2026: rebranded as Shoal Messages; see CHANGES-FROM-UPSTREAM.md. -->
+<!DOCTYPE TS>
+<TS version="2.1" language="ro">
+<context>
+    <name>AboutPage</name>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Despre Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Versiunea %1</translation>
+    </message>
+    <message>
+        <source>A native Matrix client for Sailfish OS: encrypted rooms, spaces, voice and video calls.</source>
+        <translation>Un client Matrix nativ pentru Sailfish OS: camere criptate, spații, apeluri vocale și video.</translation>
+    </message>
+    <message>
+        <source>License: Apache 2.0</source>
+        <translation>Licență: Apache 2.0</translation>
+    </message>
+    <message>
+        <source>Source code</source>
+        <translation>Cod sursă</translation>
+    </message>
+</context>
+<context>
+    <name>AccountPage</name>
+    <message>
+        <source>Signed in</source>
+        <translation>Autentificat</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Cont</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Dispozitiv</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Nucleu</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Display name</source>
+        <translation>Nume afișat</translation>
+    </message>
+    <message>
+        <source>Save name</source>
+        <translation>Salvează numele</translation>
+    </message>
+    <message>
+        <source>Change avatar</source>
+        <translation>Schimbă avatarul</translation>
+    </message>
+    <message>
+        <source>Set avatar</source>
+        <translation>Setează avatarul</translation>
+    </message>
+    <message>
+        <source>An avatar is set. Other people see it next to your name.</source>
+        <translation>Un avatar este setat. Ceilalți îl văd lângă numele tău.</translation>
+    </message>
+    <message>
+        <source>This app</source>
+        <translation>Această aplicație</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Aspect</translation>
+    </message>
+    <message>
+        <source>Ignored users</source>
+        <translation>Utilizatori ignorați</translation>
+    </message>
+    <message>
+        <source>Reset send warnings</source>
+        <translation>Resetează avertismentele la trimitere</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n recipient(s) will warn again</source>
+        <translation>
+            <numerusform>%n destinatar va avertiza din nou</numerusform>
+            <numerusform>%n destinatari vor avertiza din nou</numerusform>
+            <numerusform>%n de destinatari vor avertiza din nou</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No suppressed warnings</source>
+        <translation>Niciun avertisment suprimat</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Deconectare</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Criptare</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Limbă</translation>
+    </message>
+    <message>
+        <source>Privacy</source>
+        <translation>Confidențialitate</translation>
+    </message>
+    <message>
+        <source>Session and message database lie on this device unencrypted. Tap to encrypt them.</source>
+        <translation>Sesiunea și baza de date cu mesaje sunt necriptate pe acest dispozitiv. Atinge ca să le criptezi.</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Jurnal de erori</translation>
+    </message>
+    <message>
+        <source>Push notifications</source>
+        <translation>Notificări push</translation>
+    </message>
+</context>
+<context>
+    <name>AddDirectoryServerDialog</name>
+    <message>
+        <source>Add</source>
+        <translation>Adaugă</translation>
+    </message>
+    <message>
+        <source>Directory server</source>
+        <translation>Server de director</translation>
+    </message>
+    <message>
+        <source>For example matrix.org</source>
+        <translation>De exemplu matrix.org</translation>
+    </message>
+</context>
+<context>
+    <name>AddToSpacePage</name>
+    <message>
+        <source>Add rooms</source>
+        <translation>Adaugă camere</translation>
+    </message>
+    <message>
+        <source>Press and hold a room to add it to the space.</source>
+        <translation>Ține apăsată o cameră pentru a o adăuga în spațiu.</translation>
+    </message>
+    <message>
+        <source>Add to space</source>
+        <translation>Adaugă în spațiu</translation>
+    </message>
+    <message>
+        <source>Adding to space</source>
+        <translation>Se adaugă în spațiu</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Nicio cameră</translation>
+    </message>
+    <message>
+        <source>Join or start a chat first, then add it to a space.</source>
+        <translation>Intră mai întâi într-o conversație sau începe una, apoi adaug-o într-un spațiu.</translation>
+    </message>
+</context>
+<context>
+    <name>AppearancePage</name>
+    <message>
+        <source>Reset to defaults</source>
+        <translation>Revino la valorile implicite</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Aspect</translation>
+    </message>
+    <message>
+        <source>Somebody</source>
+        <comment>sample sender on the appearance page</comment>
+        <translation>Cineva</translation>
+    </message>
+    <message>
+        <source>A received message looks like this.</source>
+        <translation>Un mesaj primit arată așa.</translation>
+    </message>
+    <message>
+        <source>And one of my own like this.</source>
+        <translation>Iar unul de-al meu așa.</translation>
+    </message>
+    <message>
+        <source>Colouring</source>
+        <translation>Culori</translation>
+    </message>
+    <message>
+        <source>Their bubble</source>
+        <translation>Bula lor</translation>
+    </message>
+    <message>
+        <source>My bubble</source>
+        <translation>Bula mea</translation>
+    </message>
+    <message>
+        <source>Sender name</source>
+        <translation>Numele expeditorului</translation>
+    </message>
+    <message>
+        <source>Their text</source>
+        <translation>Textul lor</translation>
+    </message>
+    <message>
+        <source>My text</source>
+        <translation>Textul meu</translation>
+    </message>
+    <message>
+        <source>Follow the ambience</source>
+        <translation>Urmează ambianța</translation>
+    </message>
+    <message>
+        <source>Off, the colour below applies</source>
+        <translation>Dezactivat, se aplică culoarea de mai jos</translation>
+    </message>
+    <message>
+        <source>Bubble opacity</source>
+        <translation>Opacitatea bulelor</translation>
+    </message>
+    <message>
+        <source>Off, a reaction is drawn as the character it is - always right and free. On, Shoal Messages looks for a picture of your own for it in %1, named after its code points (1f44d.svg). Nothing is shipped and nothing is downloaded. Weigh it up: a picture file is opened by an image decoder, which is where an app of this kind is most exposed.</source>
+        <translation>Dezactivat, o reacție este desenată ca semnul care este — mereu corect și gratuit. Activat, Shoal Messages caută pentru ea o imagine proprie în %1, denumită după punctele ei de cod (1f44d.svg). Nu se livrează și nu se descarcă nimic. Cântărește: un fișier imagine este deschis de un decodor de imagini, iar acolo o aplicație de acest fel este cea mai expusă.</translation>
+    </message>
+    <message>
+        <source>Reading the pictures…</source>
+        <translation>Se citesc imaginile…</translation>
+    </message>
+    <message>
+        <source>%1 taken over, %2 refused</source>
+        <translation>%1 preluate, %2 respinse</translation>
+    </message>
+    <message>
+        <source>The pictures have changed since they were read in and are not shown.</source>
+        <translation>Imaginile s-au schimbat de la citire și nu sunt afișate.</translation>
+    </message>
+    <message>
+        <source>Reset colours to defaults</source>
+        <translation>Resetează culorile</translation>
+    </message>
+    <message>
+        <source>Hide the keyboard after sending</source>
+        <translation>Ascunde tastatura după trimitere</translation>
+    </message>
+    <message>
+        <source>On, the keyboard closes once a message is out and the conversation is back in full. Off, it stays up for the next one.</source>
+        <translation>Activat, tastatura se închide de îndată ce mesajul a plecat și conversația se vede din nou întreagă. Dezactivat, rămâne deschisă pentru următorul mesaj.</translation>
+    </message>
+    <message>
+        <source>Open a room where you stopped reading</source>
+        <translation>Deschide camera acolo unde ai rămas cu cititul</translation>
+    </message>
+    <message>
+        <source>Read in an emoji pack</source>
+        <translation>Încarcă un pachet de emoji</translation>
+    </message>
+    <message>
+        <source>Remove the emoji pack</source>
+        <translation>Elimină pachetul de emoji</translation>
+    </message>
+    <message>
+        <source>No pictures read in yet - emoji stay the characters they are, in black and white.</source>
+        <translation>Încă nu au fost încărcate imagini - emoji rămân caracterele care sunt, alb-negru.</translation>
+    </message>
+    <message>
+        <source>Pictures ready: %1</source>
+        <translation>Imagini pregătite: %1</translation>
+    </message>
+    <message>
+        <source>Unpack the pack anywhere in your own folders - Downloads or Public, say. This opens at your home folder; tap through to the pack, and the folder holding the pictures is read in as soon as you tap it. They have to lie directly in it, not in subfolders. Reading runs in the background and copies them into Shoal Messages' own storage, so your folder is not needed afterwards.</source>
+        <translation>Dezarhivează pachetul oriunde în dosarele tale - Downloads sau Public, de exemplu. Aici se deschide dosarul tău personal; atinge până la pachet, iar dosarul cu imaginile este citit de îndată ce îl atingi. Imaginile trebuie să se afle direct în el, nu în subdosare. Citirea se face în fundal și le copiază în spațiul propriu al Shoal Messages, așa că dosarul tău nu mai e necesar după aceea.</translation>
+    </message>
+    <message>
+        <source>Reactions as pictures (emoji)</source>
+        <translation>Reacții ca imagini (emoji)</translation>
+    </message>
+    <message>
+        <source>Send with the return key</source>
+        <translation>Trimite cu tasta Enter</translation>
+    </message>
+    <message>
+        <source>On, the return key sends the message; the arrow beside the field keeps working. A line break then comes from holding that arrow, or from shift and the return key on a hardware keyboard. Off, the return key makes a line break and only the arrow sends.</source>
+        <translation>Pornit, tasta Enter trimite mesajul; săgeata de lângă câmp funcționează în continuare. O linie nouă se obține atunci ținând apăsată acea săgeată, sau cu Shift și Enter pe o tastatură fizică. Oprit, tasta Enter face o linie nouă și trimite doar săgeata.</translation>
+    </message>
+    <message>
+        <source>Mark the space on the picture</source>
+        <translation>Marchează spațiul pe imagine</translation>
+    </message>
+    <message>
+        <source>On, the chat list draws the initial of a room&apos;s space over its picture, in that space&apos;s colour. The colour is set in the space list, by holding the space.</source>
+        <translation>Pornit, lista de conversații desenează inițiala spațiului camerei peste imaginea ei, în culoarea acelui spațiu. Culoarea se stabilește în lista de spații, ținând apăsat pe spațiu.</translation>
+    </message>
+    <message>
+        <source>On, entering a room takes you to your last read message, with the new ones below it — and back to the place you were at if you left the room in the middle of its history. That place is kept until the app is closed. Off, the room opens at its newest message and the line marking where you stopped is found by scrolling up.</source>
+        <translation>Activat: când intri într-o cameră ajungi la ultimul mesaj citit, cele noi fiind sub el — și înapoi în locul în care erai, dacă ai părăsit camera în mijlocul istoricului. Locul este reținut până la închiderea aplicației. Dezactivat: camera se deschide la cel mai recent mesaj, iar linia care marchează unde te-ai oprit o găsești derulând în sus.</translation>
+    </message>
+</context>
+<context>
+    <name>AttachmentPickerPage</name>
+    <message>
+        <source>All</source>
+        <translation>Toate</translation>
+    </message>
+    <message>
+        <source>Pictures</source>
+        <translation>Imagini</translation>
+    </message>
+    <message>
+        <source>Downloads</source>
+        <translation>Descărcări</translation>
+    </message>
+    <message>
+        <source>%1 selected</source>
+        <translation>%1 selectate</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Atașament</translation>
+    </message>
+    <message>
+        <source>Gallery</source>
+        <translation>Galerie</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>Fișiere</translation>
+    </message>
+    <message>
+        <source>Home folder</source>
+        <translation>Dosar personal</translation>
+    </message>
+    <message>
+        <source>Other files</source>
+        <translation>Alte fișiere</translation>
+    </message>
+    <message>
+        <source>No pictures here</source>
+        <translation>Nu sunt imagini aici</translation>
+    </message>
+    <message>
+        <source>Nothing here</source>
+        <translation>Nu e nimic aici</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Videoclipuri</translation>
+    </message>
+    <message>
+        <source>Send text as a file</source>
+        <translation>Trimite textul ca fișier</translation>
+    </message>
+</context>
+<context>
+    <name>CallEngine</name>
+    <message>
+        <source>the camera did not start — continuing without video</source>
+        <translation>camera nu a pornit — continuăm fără video</translation>
+    </message>
+    <message>
+        <source>GStreamer could not be started: %1</source>
+        <translation>GStreamer nu a putut porni: %1</translation>
+    </message>
+    <message>
+        <source>This device has no WebRTC support.</source>
+        <translation>Acest dispozitiv nu are suport WebRTC.</translation>
+    </message>
+    <message>
+        <source>ready</source>
+        <translation>gata</translation>
+    </message>
+    <message>
+        <source>pipeline failed: %1</source>
+        <translation>conducta a eșuat: %1</translation>
+    </message>
+    <message>
+        <source>webrtcbin is missing</source>
+        <translation>lipsește webrtcbin</translation>
+    </message>
+    <message>
+        <source>no camera — placing a voice call</source>
+        <translation>fără cameră — se sună vocal</translation>
+    </message>
+    <message>
+        <source>the microphone could not be opened</source>
+        <translation>microfonul nu a putut fi deschis</translation>
+    </message>
+    <message>
+        <source>the session description could not be read</source>
+        <translation>descrierea sesiunii nu a putut fi citită</translation>
+    </message>
+    <message>
+        <source>the other side sent an unreadable session description</source>
+        <translation>cealaltă parte a trimis o descriere de sesiune ilizibilă</translation>
+    </message>
+    <message>
+        <source>the other side hung up</source>
+        <translation>cealaltă parte a închis</translation>
+    </message>
+    <message>
+        <source>the connection was lost</source>
+        <translation>conexiunea s-a pierdut</translation>
+    </message>
+    <message>
+        <source>connected</source>
+        <translation>conectat</translation>
+    </message>
+    <message>
+        <source>the call could not be carried on</source>
+        <translation>apelul nu a putut continua</translation>
+    </message>
+    <message>
+        <source>answered on another device</source>
+        <translation>răspuns pe alt dispozitiv</translation>
+    </message>
+</context>
+<context>
+    <name>CallPage</name>
+    <message>
+        <source>Call</source>
+        <translation>Apel</translation>
+    </message>
+    <message>
+        <source>Ringing…</source>
+        <translation>Sună…</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Apel primit</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Se conectează…</translation>
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation>Conectat</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Răspunde</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Respinge</translation>
+    </message>
+    <message>
+        <source>Hang up</source>
+        <translation>Închide</translation>
+    </message>
+    <message>
+        <source>Accept without camera</source>
+        <translation>Acceptă fără cameră</translation>
+    </message>
+    <message>
+        <source>Accept with camera</source>
+        <translation>Acceptă cu camera</translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Apel video primit</translation>
+    </message>
+    <message>
+        <source>Video calls are switched off in Privacy; this one is answered as a voice call.</source>
+        <translation>Apelurile video sunt oprite în Confidențialitate; acesta este preluat ca apel vocal.</translation>
+    </message>
+</context>
+<context>
+    <name>CameraCapturePage</name>
+    <message>
+        <source>The photo could not be saved.</source>
+        <translation>Fotografia nu a putut fi salvată.</translation>
+    </message>
+    <message>
+        <source>The photo could not be taken.</source>
+        <translation>Fotografia nu a putut fi făcută.</translation>
+    </message>
+    <message>
+        <source>The camera is not available.</source>
+        <translation>Camera nu este disponibilă.</translation>
+    </message>
+    <message>
+        <source>The camera is in use by the call.</source>
+        <translation>Camera este folosită de apel.</translation>
+    </message>
+    <message>
+        <source>Keep in the gallery</source>
+        <translation>Păstrează în galerie</translation>
+    </message>
+    <message>
+        <source>Otherwise the photo is deleted once it is sent.</source>
+        <translation>Altfel fotografia este ștearsă după trimitere.</translation>
+    </message>
+    <message>
+        <source>Retake</source>
+        <translation>Refă</translation>
+    </message>
+    <message>
+        <source>Use</source>
+        <translation>Folosește</translation>
+    </message>
+</context>
+<context>
+    <name>ColorField</name>
+    <message>
+        <source>Hex code</source>
+        <translation>Cod hexazecimal</translation>
+    </message>
+</context>
+<context>
+    <name>ConfirmDialog</name>
+    <message>
+        <source>Keep</source>
+        <translation>Păstrează</translation>
+    </message>
+</context>
+<context>
+    <name>CoverPage</name>
+    <message>
+        <source>signing in…</source>
+        <translation>se autentifică…</translation>
+    </message>
+    <message>
+        <source>not signed in</source>
+        <translation>neautentificat</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Deconectat — se așteaptă rețeaua</translation>
+    </message>
+    <message>
+        <source>no connection</source>
+        <translation>fără conexiune</translation>
+    </message>
+</context>
+<context>
+    <name>CreatePollDialog</name>
+    <message>
+        <source>Create poll</source>
+        <translation>Creează un sondaj</translation>
+    </message>
+    <message>
+        <source>Question</source>
+        <translation>Întrebare</translation>
+    </message>
+    <message>
+        <source>What are you asking?</source>
+        <translation>Ce vrei să întrebi?</translation>
+    </message>
+    <message>
+        <source>Answer %1</source>
+        <translation>Răspunsul %1</translation>
+    </message>
+    <message>
+        <source>Add answer</source>
+        <translation>Adaugă un răspuns</translation>
+    </message>
+    <message>
+        <source>Allow several answers</source>
+        <translation>Permite mai multe răspunsuri</translation>
+    </message>
+    <message>
+        <source>Everyone can then pick more than one answer.</source>
+        <translation>Atunci fiecare poate alege mai mult de un răspuns.</translation>
+    </message>
+    <message>
+        <source>Hide results until the poll ends</source>
+        <translation>Ascunde rezultatele până la încheierea sondajului</translation>
+    </message>
+    <message>
+        <source>A poll is not a secret ballot: who voted for what stays readable in the room.</source>
+        <translation>Un sondaj nu este vot secret: cine ce a votat rămâne vizibil în cameră.</translation>
+    </message>
+    <message>
+        <source>Clients keep the counts hidden until the poll ends, yours included. A convention every common client follows, not a lock.</source>
+        <translation>Clienții țin numărătoarea ascunsă până la încheierea sondajului, și al tău. O convenție pe care o respectă clienții obișnuiți, nu un lacăt.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateRoomDialog</name>
+    <message>
+        <source>Create room</source>
+        <translation>Creează cameră</translation>
+    </message>
+    <message>
+        <source>Room name</source>
+        <translation>Numele camerei</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Subiect</translation>
+    </message>
+    <message>
+        <source>What the room is about</source>
+        <translation>Despre ce este camera</translation>
+    </message>
+    <message>
+        <source>Public room</source>
+        <translation>Cameră publică</translation>
+    </message>
+    <message>
+        <source>Listed in your homeserver&apos;s room directory, and anyone who finds it can join. Off means invitation only.</source>
+        <translation>Apare în directorul de camere al serverului tău și oricine o găsește poate intra. Dezactivat înseamnă doar pe bază de invitație.</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adresă</translation>
+    </message>
+    <message>
+        <source>Reachable as %1</source>
+        <translation>Accesibilă ca %1</translation>
+    </message>
+    <message>
+        <source>The name people can use to find the room, without # and without the server part. Optional.</source>
+        <translation>Numele după care poate fi găsită camera, fără # și fără partea de server. Opțional.</translation>
+    </message>
+    <message>
+        <source>Readable history</source>
+        <translation>Istoric lizibil</translation>
+    </message>
+    <message>
+        <source>Everyone, without joining</source>
+        <translation>Toată lumea, fără a intra</translation>
+    </message>
+    <message>
+        <source>Members, including earlier messages</source>
+        <translation>Membrii, inclusiv mesajele anterioare</translation>
+    </message>
+    <message>
+        <source>Members, from their invitation</source>
+        <translation>Membrii, de la invitația lor</translation>
+    </message>
+    <message>
+        <source>Members, from their join</source>
+        <translation>Membrii, de la intrarea lor</translation>
+    </message>
+    <message>
+        <source>End-to-end encryption</source>
+        <translation>Criptare cap-coadă</translation>
+    </message>
+    <message>
+        <source>Unusual for a public room: everyone joining later reads along from their join onwards, and nothing before it.</source>
+        <translation>Neobișnuit pentru o cameră publică: cine intră mai târziu citește de la intrarea sa încolo și nimic dinainte.</translation>
+    </message>
+    <message>
+        <source>Can only be decided now — encryption cannot be turned off again later.</source>
+        <translation>Se poate decide doar acum — criptarea nu mai poate fi oprită ulterior.</translation>
+    </message>
+    <message>
+        <source>Only moderators may write</source>
+        <translation>Doar moderatorii pot scrie</translation>
+    </message>
+    <message>
+        <source>For an announcement room. Everyone else can read, but not write and not react.</source>
+        <translation>Pentru o cameră de anunțuri. Ceilalți pot citi, dar nu pot scrie și nu pot reacționa.</translation>
+    </message>
+    <message>
+        <source>Invited people get my rights</source>
+        <translation>Cei invitați primesc drepturile mele</translation>
+    </message>
+    <message>
+        <source>Everyone invited below starts as an administrator. Later members do not.</source>
+        <translation>Toți cei invitați mai jos încep ca administratori. Membrii de mai târziu, nu.</translation>
+    </message>
+    <message>
+        <source>Keep on this server</source>
+        <translation>Păstrează pe acest server</translation>
+    </message>
+    <message>
+        <source>People on other servers cannot join, not even by invitation. Cannot be changed later.</source>
+        <translation>Persoanele de pe alte servere nu pot intra, nici măcar pe bază de invitație. Nu se poate schimba ulterior.</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Invită</translation>
+    </message>
+    <message>
+        <source>Matrix addresses, separated by commas</source>
+        <translation>Adrese Matrix, separate prin virgule</translation>
+    </message>
+    <message>
+        <source>Invited as the room is created. You can invite more people later from the room&apos;s pulldown menu.</source>
+        <translation>Sunt invitați la crearea camerei. Poți invita mai multe persoane mai târziu din meniul derulant al camerei.</translation>
+    </message>
+    <message>
+        <source>The room opens right away.</source>
+        <translation>Camera se deschide imediat.</translation>
+    </message>
+</context>
+<context>
+    <name>CreateSpaceDialog</name>
+    <message>
+        <source>Create space</source>
+        <translation>Creează spațiu</translation>
+    </message>
+    <message>
+        <source>Space name</source>
+        <translation>Numele spațiului</translation>
+    </message>
+    <message>
+        <source>The space appears in the overview right away. It is private and holds no messages — it is a folder for rooms.</source>
+        <translation>Spațiul apare imediat în privire de ansamblu. Este privat și nu conține mesaje — este un dosar pentru camere.</translation>
+    </message>
+</context>
+<context>
+    <name>DirectoryPage</name>
+    <message>
+        <source>Remove this server</source>
+        <translation>Elimină acest server</translation>
+    </message>
+    <message>
+        <source>Add directory server</source>
+        <translation>Adaugă server de director</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Descoperă camere</translation>
+    </message>
+    <message>
+        <source>Directory</source>
+        <translation>Director</translation>
+    </message>
+    <message>
+        <source>Search the room directory</source>
+        <translation>Caută în directorul de camere</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n membru</numerusform>
+            <numerusform>%n membri</numerusform>
+            <numerusform>%n de membri</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Intră</translation>
+    </message>
+    <message>
+        <source>Join (invitation required)</source>
+        <translation>Intră (necesită invitație)</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Se intră</translation>
+    </message>
+    <message>
+        <source>No rooms found</source>
+        <translation>Nicio cameră găsită</translation>
+    </message>
+    <message>
+        <source>Public rooms of the chosen directory show up here.</source>
+        <translation>Camerele publice ale directorului ales apar aici.</translation>
+    </message>
+</context>
+<context>
+    <name>EmojiFolderPage</name>
+    <message>
+        <source>Where is the pack?</source>
+        <translation>Unde este pachetul?</translation>
+    </message>
+    <message>
+        <source>Take this folder</source>
+        <translation>Ia acest dosar</translation>
+    </message>
+    <message>
+        <source>One level up</source>
+        <translation>Un nivel mai sus</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Aici nu sunt dosare</translation>
+    </message>
+    <message>
+        <source>The pull-down takes the folder you are in.</source>
+        <translation>Meniul derulant ia dosarul în care ești.</translation>
+    </message>
+    <message>
+        <source>Pictures in here - tap to read them in</source>
+        <translation>Imagini aici - atinge pentru a le citi</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptStorageDialog</name>
+    <message>
+        <source>Sign out and encrypt</source>
+        <translation>Deconectează-te și criptează</translation>
+    </message>
+    <message>
+        <source>Leave as it is</source>
+        <translation>Lasă așa</translation>
+    </message>
+    <message>
+        <source>An existing database cannot be encrypted in place. It has to be created anew: signing out deletes it, and the next sign-in creates it encrypted.</source>
+        <translation>O bază de date existentă nu poate fi criptată pe loc. Trebuie creată din nou: deconectarea o șterge, iar următoarea autentificare o creează criptată.</translation>
+    </message>
+    <message>
+        <source>You will need your recovery key afterwards to unlock the backup, and this device has to be verified again. Have the recovery key at hand before you continue.</source>
+        <translation>Vei avea nevoie apoi de cheia de recuperare pentru a debloca copia de rezervă, iar acest dispozitiv va trebui verificat din nou. Ține cheia la îndemână înainte să continui.</translation>
+    </message>
+    <message>
+        <source>Not possible yet: there is no key backup on the server. Signing out now would make every encrypted message on this device unreadable for good. Set up the backup first, then come back here.</source>
+        <translation>Încă nu se poate: nu există o copie de rezervă a cheilor pe server. Deconectarea acum ar face fiecare mesaj criptat de pe dispozitiv ilizibil pentru totdeauna. Configurează întâi copia de rezervă, apoi revino aici.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>În această versiune de Sailfish browserul nu poate finaliza autentificarea. Revino cu „Autentificare pe alt dispozitiv” — calea aceea funcționează aici.</translation>
+    </message>
+</context>
+<context>
+    <name>EncryptionPage</name>
+    <message>
+        <source>Encryption</source>
+        <translation>Criptare</translation>
+    </message>
+    <message>
+        <source>Encrypt local storage</source>
+        <translation>Criptează stocarea locală</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Verifică</translation>
+    </message>
+    <message>
+        <source>Unlock backup</source>
+        <translation>Deblochează copia de rezervă</translation>
+    </message>
+    <message>
+        <source>Enter the recovery key from your other client. This device then fetches the room keys it is missing, and older messages become readable.</source>
+        <translation>Introdu cheia de recuperare de la celălalt client al tău. Dispozitivul preia atunci cheile de cameră care îi lipsesc, iar mesajele mai vechi devin lizibile.</translation>
+    </message>
+    <message>
+        <source>Recovery key</source>
+        <translation>Cheie de recuperare</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Deblochează</translation>
+    </message>
+    <message>
+        <source>Set up backup</source>
+        <translation>Configurează copia de rezervă</translation>
+    </message>
+    <message>
+        <source>Creates a backup of your room keys on the server, encrypted with a recovery key that only you hold. Without it, reinstalling loses every encrypted message.</source>
+        <translation>Creează pe server o copie de rezervă a cheilor tale de cameră, criptată cu o cheie de recuperare pe care o ai doar tu. Fără ea, o reinstalare pierde fiecare mesaj criptat.</translation>
+    </message>
+    <message>
+        <source>Your recovery key</source>
+        <translation>Cheia ta de recuperare</translation>
+    </message>
+    <message>
+        <source>Write this down now. It is shown only once and is not stored on this device.</source>
+        <translation>Notează-o acum. Este afișată o singură dată și nu este păstrată pe acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiază</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Verifică acest dispozitiv</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Compară șapte emoji cu celălalt dispozitiv al tău. Ai nevoie de acel dispozitiv în față; după ce amândouă au confirmat, acesta poate citi cheile comune ale camerelor.</translation>
+    </message>
+    <message>
+        <source>Trouble with the key storage?</source>
+        <translation>Probleme cu stocarea cheilor?</translation>
+    </message>
+</context>
+<context>
+    <name>ErrorLogPage</name>
+    <message>
+        <source>Clear</source>
+        <translation>Golește</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>Copiază tot</translation>
+    </message>
+    <message>
+        <source>Error log</source>
+        <translation>Jurnal de erori</translation>
+    </message>
+    <message>
+        <source>Nothing has failed in this run.</source>
+        <translation>În această rulare nu a eșuat nimic.</translation>
+    </message>
+    <message>
+        <source>Newest first, and only this run — nothing is kept on disk. Identifiers are already removed, so this can be passed on as it stands.</source>
+        <translation>Cele mai noi primele, și doar această rulare — nimic nu se păstrează pe disc. Identificatorii sunt deja eliminați, deci asta poate fi transmisă așa cum e.</translation>
+    </message>
+</context>
+<context>
+    <name>ForwardPage</name>
+    <message>
+        <source>Forward to</source>
+        <translation>Redirecționează către</translation>
+    </message>
+</context>
+<context>
+    <name>IgnoredUsersPage</name>
+    <message>
+        <source>Ignored users</source>
+        <translation>Utilizatori ignorați</translation>
+    </message>
+    <message>
+        <source>The list belongs to your account: the server stops delivering these people&apos;s messages, in every client. Tap somebody to stop ignoring them.</source>
+        <translation>Lista aparține contului tău: serverul nu mai livrează mesajele acestor persoane, în niciun client. Atinge pe cineva pentru a nu-l mai ignora.</translation>
+    </message>
+    <message>
+        <source>No longer ignoring</source>
+        <translation>Nu mai este ignorat</translation>
+    </message>
+    <message>
+        <source>Nobody is ignored</source>
+        <translation>Nimeni nu este ignorat</translation>
+    </message>
+    <message>
+        <source>You can ignore somebody from their profile.</source>
+        <translation>Poți ignora pe cineva din profilul său.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageViewPage</name>
+    <message>
+        <source>Forward</source>
+        <translation>Redirecționează</translation>
+    </message>
+    <message>
+        <source>Share</source>
+        <translation>Partajează</translation>
+    </message>
+    <message>
+        <source>Save to gallery</source>
+        <translation>Salvează în galerie</translation>
+    </message>
+    <message>
+        <source>Share picture</source>
+        <translation>Partajează imaginea</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Salvat în galerie</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nu s-a putut salva</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Acest atașament nu a putut fi încărcat</translation>
+    </message>
+</context>
+<context>
+    <name>InviteToRoomDialog</name>
+    <message>
+        <source>Invite</source>
+        <translation>Invită</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>ID utilizator</translation>
+    </message>
+    <message>
+        <source>They appear in the member list as invited until they accept.</source>
+        <translation>Apar în lista de membri ca invitați până acceptă.</translation>
+    </message>
+</context>
+<context>
+    <name>JoinRoomDialog</name>
+    <message>
+        <source>Join</source>
+        <translation>Intră</translation>
+    </message>
+    <message>
+        <source>Room address</source>
+        <translation>Adresa camerei</translation>
+    </message>
+    <message>
+        <source>The room appears in the list once the server has answered. Joining a large public room can take a moment.</source>
+        <translation>Camera apare în listă de îndată ce serverul a răspuns. Intrarea într-o cameră publică mare poate dura un moment.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguagePage</name>
+    <message>
+        <source>Language</source>
+        <translation>Limbă</translation>
+    </message>
+    <message>
+        <source>Takes effect the next time the app starts. Only the German translation has been checked by a native speaker; the others are machine translations, and English is always available here.</source>
+        <translation>Are efect la următoarea pornire a aplicației. Doar traducerea în germană a fost verificată de un vorbitor nativ; celelalte sunt automate, iar engleza este mereu disponibilă aici.</translation>
+    </message>
+</context>
+<context>
+    <name>LanguageSettings</name>
+    <message>
+        <source>Follow the device</source>
+        <translation>Urmează dispozitivul</translation>
+    </message>
+</context>
+<context>
+    <name>LocationActions</name>
+    <message>
+        <source>Location is switched off or not allowed.</source>
+        <translation>Locația este dezactivată sau nepermisă.</translation>
+    </message>
+    <message>
+        <source>The position could not be determined.</source>
+        <translation>Poziția nu a putut fi determinată.</translation>
+    </message>
+    <message>
+        <source>No position yet. Outdoors it usually comes faster.</source>
+        <translation>Încă nicio poziție. Afară merge de obicei mai repede.</translation>
+    </message>
+    <message>
+        <source>This device offers no positioning.</source>
+        <translation>Acest dispozitiv nu oferă localizare.</translation>
+    </message>
+</context>
+<context>
+    <name>LocationBlock</name>
+    <message>
+        <source>Location</source>
+        <translation>Locație</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Locație în timp real</translation>
+    </message>
+    <message>
+        <source>Live location ended</source>
+        <translation>Locația în timp real s-a încheiat</translation>
+    </message>
+    <message>
+        <source>Waiting for the first position</source>
+        <translation>Se așteaptă prima poziție</translation>
+    </message>
+    <message>
+        <source>Updated %1, until %2</source>
+        <translation>Actualizat %1, până la %2</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Oprește partajarea</translation>
+    </message>
+</context>
+<context>
+    <name>LoginPage</name>
+    <message>
+        <source>Sign in</source>
+        <translation>Autentificare</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pentru Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Homeserver</source>
+        <translation>Server de domiciliu</translation>
+    </message>
+    <message>
+        <source>Username</source>
+        <translation>Nume de utilizator</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Parolă</translation>
+    </message>
+    <message>
+        <source>Create account</source>
+        <translation>Creează cont</translation>
+    </message>
+    <message>
+        <source>Sign in on another device</source>
+        <translation>Autentifică-te pe alt dispozitiv</translation>
+    </message>
+    <message>
+        <source>Finish signing in in the browser, then come back.</source>
+        <translation>Finalizează autentificarea în navigator, apoi revino.</translation>
+    </message>
+    <message>
+        <source>Open this address on any other device and sign in there:</source>
+        <translation>Deschide această adresă pe orice alt dispozitiv și autentifică-te acolo:</translation>
+    </message>
+    <message>
+        <source>This page signs in by itself as soon as the login is approved there.</source>
+        <translation>Această pagină se autentifică singură de îndată ce autentificarea este aprobată acolo.</translation>
+    </message>
+    <message>
+        <source>Your password is entered on the homeserver&apos;s own page and never reaches this app.</source>
+        <translation>Parola ta se introduce pe pagina proprie a serverului și nu ajunge niciodată la această aplicație.</translation>
+    </message>
+    <message>
+        <source>This server uses the classic password sign-in. The password is sent only to this server and is never saved on the device.</source>
+        <translation>Acest server folosește autentificarea clasică cu parolă. Parola este trimisă doar acestui server și nu este salvată niciodată pe dispozitiv.</translation>
+    </message>
+    <message>
+        <source>Sign-in did not work</source>
+        <translation>Autentificarea nu a reușit</translation>
+    </message>
+    <message>
+        <source>This is the server&apos;s own web sign-in. Your password is not wrong — the app cannot use this method yet.</source>
+        <translation>Aceasta este autentificarea web proprie a serverului. Parola ta nu este greșită — aplicația nu poate folosi încă această metodă.</translation>
+    </message>
+    <message>
+        <source>Check the server address and your connection.</source>
+        <translation>Verifică adresa serverului și conexiunea ta.</translation>
+    </message>
+    <message>
+        <source>The server expects a sign-in this app does not implement.</source>
+        <translation>Serverul așteaptă o autentificare pe care aplicația nu o implementează.</translation>
+    </message>
+    <message>
+        <source>Cancel sign-in</source>
+        <translation>Anulează autentificarea</translation>
+    </message>
+    <message>
+        <source>This Sailfish version&apos;s browser cannot complete the sign-in of modern homeservers — it returns to the form. Use “Sign in on another device”: Shoal Messages shows an address and a code, you sign in with them on any other device, and this one signs in by itself.</source>
+        <translation>Browserul acestei versiuni de Sailfish nu poate finaliza autentificarea la serverele moderne — revine la formular. Folosește „Autentificare pe alt dispozitiv”: Shoal Messages arată o adresă și un cod, te autentifici cu ele pe orice alt dispozitiv, iar acesta intră singur.</translation>
+    </message>
+    <message>
+        <source>Sign in via browser</source>
+        <translation>Autentificare prin browser</translation>
+    </message>
+</context>
+<context>
+    <name>LogoutDialog</name>
+    <message>
+        <source>Sign out</source>
+        <translation>Deconectare</translation>
+    </message>
+    <message>
+        <source>Stay signed in</source>
+        <translation>Rămâi autentificat</translation>
+    </message>
+    <message>
+        <source>Really sign out?</source>
+        <translation>Chiar te deconectezi?</translation>
+    </message>
+    <message>
+        <source>This device&apos;s keys are deleted along with the session. Encrypted messages stay readable only if they are in a key backup, and this device has to be verified again after signing in.</source>
+        <translation>Cheile acestui dispozitiv sunt șterse odată cu sesiunea. Mesajele criptate rămân lizibile doar dacă se află într-o copie de rezervă a cheilor, iar dispozitivul trebuie verificat din nou după autentificare.</translation>
+    </message>
+    <message>
+        <source>On this Sailfish version the browser cannot complete the sign-in. Come back in with “Sign in on another device” — that route works here.</source>
+        <translation>În această versiune de Sailfish browserul nu poate finaliza autentificarea. Revino cu „Autentificare pe alt dispozitiv” — calea aceea funcționează aici.</translation>
+    </message>
+</context>
+<context>
+    <name>MatrixBridge</name>
+    <message>
+        <source>The protocol core could not be started.</source>
+        <translation>Nucleul de protocol nu a putut porni.</translation>
+    </message>
+    <message>
+        <source>The protocol core is not available.</source>
+        <translation>Nucleul de protocol nu este disponibil.</translation>
+    </message>
+    <message>
+        <source>Enter a homeserver first.</source>
+        <translation>Introdu mai întâi un server.</translation>
+    </message>
+    <message>
+        <source>Enter username and password first.</source>
+        <translation>Introdu mai întâi numele de utilizator și parola.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key first.</source>
+        <translation>Introdu mai întâi cheia ta de recuperare.</translation>
+    </message>
+    <message>
+        <source>The file could not be saved.</source>
+        <translation>Fișierul nu a putut fi salvat.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a login page.</source>
+        <translation>Serverul nu a returnat o pagină de autentificare.</translation>
+    </message>
+    <message>
+        <source>The homeserver did not return a sign-in code.</source>
+        <translation>Serverul nu a returnat un cod de autentificare.</translation>
+    </message>
+    <message>
+        <source>The stored lists cannot be read right now.</source>
+        <translation>Listele salvate nu pot fi citite acum.</translation>
+    </message>
+    <message>
+        <source>Your session has ended. Please sign in again.</source>
+        <translation>Sesiunea ta s-a încheiat. Conectează-te din nou.</translation>
+    </message>
+    <message>
+        <source>Enter a push gateway first.</source>
+        <translation>Introdu mai întâi o poartă push.</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Mesaj nou</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Imagine</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Mesaj vocal</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Fișier</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Locație</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Mesaj criptat</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Invitație</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Sondaj</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Sondaj: %1</translation>
+    </message>
+</context>
+<context>
+    <name>MemberListPage</name>
+    <message>
+        <source>Members</source>
+        <translation>Membri</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>invitat</translation>
+    </message>
+    <message>
+        <source>Admin</source>
+        <translation>Administrator</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderator</translation>
+    </message>
+    <message>
+        <source>No members yet</source>
+        <translation>Încă niciun membru</translation>
+    </message>
+    <message>
+        <source>The people in this room show up here.</source>
+        <translation>Persoanele din această cameră apar aici.</translation>
+    </message>
+</context>
+<context>
+    <name>MemberProfilePage</name>
+    <message>
+        <source>Admin</source>
+        <translation>Administrator</translation>
+    </message>
+    <message>
+        <source>Moderator</source>
+        <translation>Moderator</translation>
+    </message>
+    <message>
+        <source>Member</source>
+        <translation>Membru</translation>
+    </message>
+    <message>
+        <source>invited</source>
+        <translation>invitat</translation>
+    </message>
+    <message>
+        <source>banned</source>
+        <translation>interzis</translation>
+    </message>
+    <message>
+        <source>left the room</source>
+        <translation>a părăsit camera</translation>
+    </message>
+    <message>
+        <source>Reload</source>
+        <translation>Reîncarcă</translation>
+    </message>
+    <message>
+        <source>Make moderator</source>
+        <translation>Fă moderator</translation>
+    </message>
+    <message>
+        <source>Make admin</source>
+        <translation>Fă administrator</translation>
+    </message>
+    <message>
+        <source>Really make this member an admin?</source>
+        <translation>Chiar faci acest membru administrator?</translation>
+    </message>
+    <message>
+        <source>This cannot be taken back: only they themselves can step down afterwards.</source>
+        <translation>Nu se poate anula: doar el însuși poate renunța ulterior.</translation>
+    </message>
+    <message>
+        <source>Demote to member</source>
+        <translation>Retrogradează la membru</translation>
+    </message>
+    <message>
+        <source>Revoke invitation</source>
+        <translation>Retrage invitația</translation>
+    </message>
+    <message>
+        <source>Remove from room</source>
+        <translation>Elimină din cameră</translation>
+    </message>
+    <message>
+        <source>Removing</source>
+        <translation>Se elimină</translation>
+    </message>
+    <message>
+        <source>Ban from room</source>
+        <translation>Interzice în cameră</translation>
+    </message>
+    <message>
+        <source>Really ban this member?</source>
+        <translation>Chiar interzici acest membru?</translation>
+    </message>
+    <message>
+        <source>%1 is removed from the room and cannot come back until the ban is lifted.</source>
+        <translation>%1 este eliminat din cameră și nu poate reveni până când interdicția nu este ridicată.</translation>
+    </message>
+    <message>
+        <source>Ban</source>
+        <translation>Interzice</translation>
+    </message>
+    <message>
+        <source>Banning</source>
+        <translation>Se interzice</translation>
+    </message>
+    <message>
+        <source>Lift ban</source>
+        <translation>Ridică interdicția</translation>
+    </message>
+    <message>
+        <source>Address copied</source>
+        <translation>Adresă copiată</translation>
+    </message>
+    <message>
+        <source>Role</source>
+        <translation>Rol</translation>
+    </message>
+    <message>
+        <source>Member since</source>
+        <translation>Membru din</translation>
+    </message>
+    <message>
+        <source>Invited by</source>
+        <translation>Invitat de</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>Dispozitive</translation>
+    </message>
+    <message>
+        <source>Send direct message</source>
+        <translation>Trimite mesaj direct</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Verifică</translation>
+    </message>
+    <message>
+        <source>Withdraw verification</source>
+        <translation>Retrage verificarea</translation>
+    </message>
+    <message>
+        <source>Stop ignoring</source>
+        <translation>Nu mai ignora</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation>Ignoră</translation>
+    </message>
+    <message>
+        <source>Ignoring</source>
+        <translation>Se ignoră</translation>
+    </message>
+    <message>
+        <source>Shared rooms</source>
+        <translation>Camere comune</translation>
+    </message>
+    <message>
+        <source>Forbid calls</source>
+        <translation>Interzice apelurile</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Permite apelurile</translation>
+    </message>
+    <message>
+        <source>Identity</source>
+        <translation>Identitate</translation>
+    </message>
+    <message>
+        <source>verified</source>
+        <translation>verificată</translation>
+    </message>
+    <message>
+        <source>changed since it was verified — verify again or withdraw</source>
+        <translation>s-a schimbat de la verificare — verific-o din nou sau retrage verificarea</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>neverificată</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>niciuna</translation>
+    </message>
+    <message>
+        <source>Mention</source>
+        <translation>Menționează</translation>
+    </message>
+</context>
+<context>
+    <name>MessageActionsPage</name>
+    <message>
+        <source>Message</source>
+        <translation>Mesaj</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiază</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Răspunde</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Salvează</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Redirecționează</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Editează</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fixează</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Șterge</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Renunță</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Trimite din nou</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reacționează</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Răspunde în fir</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Transformă în text</translation>
+    </message>
+</context>
+<context>
+    <name>MoveToSpacePage</name>
+    <message>
+        <source>Move to space</source>
+        <translation>Mută în spațiu</translation>
+    </message>
+    <message>
+        <source>No other space</source>
+        <translation>Niciun alt spațiu</translation>
+    </message>
+    <message>
+        <source>Create another space first to move rooms between them.</source>
+        <translation>Creează întâi un alt spațiu pentru a muta camere între ele.</translation>
+    </message>
+</context>
+<context>
+    <name>NewChatDialog</name>
+    <message>
+        <source>Start chat</source>
+        <translation>Începe o conversație</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>ID utilizator</translation>
+    </message>
+    <message>
+        <source>The other side receives an invitation and the chat appears in your list right away. Messages are encrypted from the start.</source>
+        <translation>Cealaltă parte primește o invitație, iar conversația apare imediat în lista ta. Mesajele sunt criptate de la început.</translation>
+    </message>
+</context>
+<context>
+    <name>PinnedMessagesPage</name>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Mesaje fixate</translation>
+    </message>
+    <message>
+        <source>Show in conversation</source>
+        <translation>Arată în conversație</translation>
+    </message>
+    <message>
+        <source>Unpin</source>
+        <translation>Anulează fixarea</translation>
+    </message>
+    <message>
+        <source>Pinned messages unavailable</source>
+        <translation>Mesajele fixate nu sunt disponibile</translation>
+    </message>
+    <message>
+        <source>No pinned messages</source>
+        <translation>Niciun mesaj fixat</translation>
+    </message>
+    <message>
+        <source>The server does not hand out these messages. They are older than this server&apos;s copy of the room.</source>
+        <translation>Serverul nu furnizează aceste mesaje. Sunt mai vechi decât copia camerei de pe acest server.</translation>
+    </message>
+    <message>
+        <source>Long-press a message in the conversation to pin it.</source>
+        <translation>Ține apăsat un mesaj din conversație pentru a-l fixa.</translation>
+    </message>
+</context>
+<context>
+    <name>PollBlock</name>
+    <message>
+        <source>The poll has ended.</source>
+        <translation>Sondajul s-a încheiat.</translation>
+    </message>
+    <message>
+        <source>%1 %</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>Results are shown once the poll ends</source>
+        <translation>Rezultatele apar după încheierea sondajului</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n vote(s)</source>
+        <translation>
+            <numerusform>%n vot</numerusform>
+            <numerusform>%n voturi</numerusform>
+            <numerusform>%n de voturi</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Ended</source>
+        <translation>Încheiat</translation>
+    </message>
+    <message>
+        <source>Several answers</source>
+        <translation>Mai multe răspunsuri</translation>
+    </message>
+    <message>
+        <source>End poll</source>
+        <translation>Încheie sondajul</translation>
+    </message>
+</context>
+<context>
+    <name>Preview</name>
+    <message>
+        <source>Picture</source>
+        <translation>Imagine</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Mesaj vocal</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Fișier</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Locație</translation>
+    </message>
+    <message>
+        <source>Poll: %1</source>
+        <translation>Sondaj: %1</translation>
+    </message>
+    <message>
+        <source>Poll</source>
+        <translation>Sondaj</translation>
+    </message>
+    <message>
+        <source>Encrypted message</source>
+        <translation>Mesaj criptat</translation>
+    </message>
+</context>
+<context>
+    <name>PrivacyPage</name>
+    <message>
+        <source>Privacy</source>
+        <translation>Confidențialitate</translation>
+    </message>
+    <message>
+        <source>Who may call you</source>
+        <translation>Cine te poate suna</translation>
+    </message>
+    <message>
+        <source>Everyone</source>
+        <translation>Toată lumea</translation>
+    </message>
+    <message>
+        <source>People you have a direct chat with</source>
+        <translation>Persoane cu care ai o discuție directă</translation>
+    </message>
+    <message>
+        <source>Only my list</source>
+        <translation>Doar lista mea</translation>
+    </message>
+    <message>
+        <source>Calls from group rooms</source>
+        <translation>Apeluri din camere de grup</translation>
+    </message>
+    <message>
+        <source>Video calls</source>
+        <translation>Apeluri video</translation>
+    </message>
+    <message>
+        <source>Send read receipts</source>
+        <translation>Trimite confirmări de citire</translation>
+    </message>
+    <message>
+        <source>Allowed callers</source>
+        <translation>Apelanți permiși</translation>
+    </message>
+    <message>
+        <source>Matrix address</source>
+        <translation>Adresă Matrix</translation>
+    </message>
+    <message>
+        <source>@name:server</source>
+        <translation>@name:server</translation>
+    </message>
+    <message>
+        <source>Allow calls</source>
+        <translation>Permite apelurile</translation>
+    </message>
+    <message>
+        <source>Nobody yet.</source>
+        <translation>Încă nimeni.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Elimină</translation>
+    </message>
+    <message>
+        <source>A call rings past a muted room. Refused calls never ring, and the caller learns nothing.</source>
+        <translation>Un apel sună și într-o cameră amuțită. Cele refuzate nu sună, iar apelantul nu află nimic.</translation>
+    </message>
+    <message>
+        <source>In a group room everybody sees the call. The list does not override this.</source>
+        <translation>Într-o cameră de grup apelul îl văd toți. Lista nu anulează asta.</translation>
+    </message>
+    <message>
+        <source>They may always call. The list stays on this device.</source>
+        <translation>Pot suna oricând. Lista rămâne pe acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>On this device</source>
+        <translation>Pe acest dispozitiv</translation>
+    </message>
+    <message>
+        <source>What others learn</source>
+        <translation>Ce află ceilalți</translation>
+    </message>
+    <message>
+        <source>Message text in notifications</source>
+        <translation>Textul mesajului în notificări</translation>
+    </message>
+    <message>
+        <source>Off, a notification says only how many messages arrived. On, it shows the latest message — also on the lock screen.</source>
+        <translation>Dezactivat, notificarea spune doar câte mesaje au sosit. Activat, arată ultimul mesaj — și pe ecranul blocat.</translation>
+    </message>
+    <message>
+        <source>Show others&apos; read status</source>
+        <translation>Arată starea de citire a celorlalți</translation>
+    </message>
+    <message>
+        <source>Voice messages</source>
+        <translation>Mesaje vocale</translation>
+    </message>
+    <message>
+        <source>Tappable web links</source>
+        <translation>Legături web apăsabile</translation>
+    </message>
+    <message>
+        <source>On, a link in a message opens the browser when tapped. Off, links stay plain text.</source>
+        <translation>Activat, o legătură dintr-un mesaj deschide navigatorul la atingere. Dezactivat, legăturile rămân text simplu.</translation>
+    </message>
+    <message>
+        <source>Delete media now</source>
+        <translation>Șterge media acum</translation>
+    </message>
+    <message>
+        <source>Delete downloaded media</source>
+        <translation>Ștergerea media descărcate</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Niciodată</translation>
+    </message>
+    <message>
+        <source>When the app is closed</source>
+        <translation>La închiderea aplicației</translation>
+    </message>
+    <message>
+        <source>As soon as the app is not in front</source>
+        <translation>De îndată ce aplicația nu mai este în față</translation>
+    </message>
+    <message>
+        <source>By default they are deleted when you sign out, so save what you want to keep.</source>
+        <translation>În mod implicit sunt șterse la deconectare, așa că salvează ce vrei să păstrezi.</translation>
+    </message>
+    <message>
+        <source>&quot;Never&quot; keeps them for good - convenient, and not recommended.</source>
+        <translation>„Niciodată” le păstrează pentru totdeauna — comod și nerecomandat.</translation>
+    </message>
+    <message>
+        <source>Anything deleted is fetched again when you open it.</source>
+        <translation>Ce se șterge este adus din nou când îl deschizi.</translation>
+    </message>
+    <message>
+        <source>When you sign out</source>
+        <translation>La deconectare</translation>
+    </message>
+    <message>
+        <source>Limit repeated calls</source>
+        <translation>Limitează apelurile repetate</translation>
+    </message>
+    <message>
+        <source>On, the same person can only ring again after a short pause. It also delays a second, genuine attempt.</source>
+        <translation>Pornit: aceeași persoană poate suna din nou doar după o scurtă pauză. Întârzie și o a doua încercare autentică.</translation>
+    </message>
+    <message>
+        <source>Messages and keys are stored encrypted.</source>
+        <translation>Mesajele și cheile sunt păstrate criptat.</translation>
+    </message>
+    <message>
+        <source>Messages and keys lie on this device unencrypted - the encryption page says why and what can be done about it.</source>
+        <translation>Mesajele și cheile stau necriptate pe acest dispozitiv — pagina de criptare spune de ce și ce se poate face.</translation>
+    </message>
+    <message>
+        <source>Pictures, videos and documents you opened are not - they lie on the device like the ones in the gallery, readable to anybody who has it.</source>
+        <translation>Imaginile, filmele și documentele pe care le-ai deschis nu — stau pe dispozitiv ca cele din galerie, lizibile pentru oricine îl are.</translation>
+    </message>
+    <message>
+        <source>Off, an offer with video is answered as a voice call: your camera stays shut and no picture is shown. The other side may still send one, which this phone discards.</source>
+        <translation>Dezactivat: o ofertă cu video este preluată ca apel vocal — camera ta rămâne închisă și nu se afișează nicio imagine. Cealaltă parte poate trimite totuși una, pe care acest telefon o aruncă.</translation>
+    </message>
+    <message>
+        <source>Off, nobody is told how far you have read. What others read is the setting below.</source>
+        <translation>Dezactivat: nimeni nu află până unde ai citit. Ce au citit ceilalți ține de setarea de mai jos.</translation>
+    </message>
+    <message>
+        <source>The list is encrypted and its key is not available. It can be read again after the device has been unlocked and the app restarted.</source>
+        <translation>Lista este criptată, iar cheia ei nu este disponibilă. Va putea fi citită din nou după deblocarea dispozitivului și repornirea aplicației.</translation>
+    </message>
+    <message>
+        <source>Load pictures automatically</source>
+        <translation>Încarcă imaginile automat</translation>
+    </message>
+    <message>
+        <source>On, a picture or video loads as soon as its message appears. Off, it loads when you tap it — scrolling past one is a request to the sender&apos;s server.</source>
+        <translation>Pornit: imaginea sau videoclipul se încarcă imediat ce apare mesajul. Oprit: se încarcă la atingere — a derula pe lângă el este o cerere către serverul expeditorului.</translation>
+    </message>
+    <message>
+        <source>Link previews</source>
+        <translation>Previzualizarea linkurilor</translation>
+    </message>
+    <message>
+        <source>Your homeserver fetches the page and shows its title. It learns every link it is asked about; in an encrypted room that is content it otherwise never sees.</source>
+        <translation>Serverul tău descarcă pagina și îi arată titlul. Astfel află fiecare link despre care este întrebat; într-o cameră criptată acesta este conținut pe care altfel nu îl vede niciodată.</translation>
+    </message>
+    <message>
+        <source>Only in unencrypted rooms</source>
+        <translation>Doar în camerele necriptate</translation>
+    </message>
+    <message>
+        <source>Always</source>
+        <translation>Întotdeauna</translation>
+    </message>
+    <message>
+        <source>Voice messages as text</source>
+        <translation>Mesaje vocale ca text</translation>
+    </message>
+    <message>
+        <source>Convert voice messages to text</source>
+        <translation>Transformă mesajele vocale în text</translation>
+    </message>
+    <message>
+        <source>On, a long press on a voice message offers to convert it. Nothing is converted unless you ask, and the recording never leaves this phone.</source>
+        <translation>Activat, o apăsare lungă pe un mesaj vocal oferă să îl transformi. Nimic nu este transformat dacă nu ceri, iar înregistrarea nu părăsește niciodată acest telefon.</translation>
+    </message>
+    <message>
+        <source>This needs a program this app does not bring, from OpenRepos, installed by you: &quot;Speech Note&quot; (about 40 MB to download, 104 MB installed), and in it the model &quot;Auto (WhisperCpp Small)&quot; (190 MB), which recognises the language of each message by itself. Only on 64-bit phones.</source>
+        <translation>Pentru asta e nevoie de un program pe care această aplicație nu îl aduce, din OpenRepos, instalat de tine: „Speech Note” (circa 40 MB de descărcat, 104 MB instalat) și în el modelul „Auto (WhisperCpp Small)” (190 MB), care recunoaște singur limba fiecărui mesaj. Doar pe telefoane pe 64 de biți.</translation>
+    </message>
+    <message>
+        <source>Check</source>
+        <translation>Verifică</translation>
+    </message>
+    <message>
+        <source>Checking. The first time can take half a minute.</source>
+        <translation>Se verifică. Prima dată poate dura o jumătate de minut.</translation>
+    </message>
+    <message>
+        <source>On, a microphone sits next to the message field: hold it to record, let go to send - or tap it to record hands-free, and a second tap or seven seconds of silence sends. Off, it is not there.</source>
+        <translation>Activat, lângă câmpul de mesaj este un microfon: ține apăsat pentru a înregistra, dă drumul pentru a trimite – sau atinge-l pentru a înregistra fără mâini, iar o a doua atingere sau șapte secunde de liniște trimit. Dezactivat, nu este acolo.</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Locație</translation>
+    </message>
+    <message>
+        <source>Share your location</source>
+        <translation>Partajează-ți locația</translation>
+    </message>
+    <message>
+        <source>On, a room&apos;s pull-down menu offers to send your position, once or live for a while. Nothing is sent unless you choose it there.</source>
+        <translation>Activat, meniul derulant al unei camere oferă trimiterea poziției tale, o dată sau în timp real pentru o vreme. Nimic nu se trimite dacă nu alegi acolo.</translation>
+    </message>
+    <message>
+        <source>Maps for locations</source>
+        <translation>Hărți pentru locații</translation>
+    </message>
+    <message>
+        <source>Map pieces come from OpenStreetMap. Its server learns your IP address and roughly where the location lies; in an encrypted room that is content it otherwise never sees. Without a map the coordinates are shown.</source>
+        <translation>Bucățile de hartă vin de la OpenStreetMap. Serverul său află adresa ta IP și aproximativ unde se află locația; într-o cameră criptată, acesta e conținut pe care altfel nu îl vede niciodată. Fără hartă se afișează coordonatele.</translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation>Cameră</translation>
+    </message>
+    <message>
+        <source>Live picture in the attachment picker</source>
+        <translation>Imagine live în selectorul de atașamente</translation>
+    </message>
+    <message>
+        <source>On, the camera cell shows what the camera sees while the picker is open. Off, the camera only runs once you tap the cell.</source>
+        <translation>Activat, căsuța camerei arată ce vede camera cât timp selectorul e deschis. Dezactivat, camera pornește abia când atingi căsuța.</translation>
+    </message>
+    <message>
+        <source>Off, who read what is neither tracked nor shown, which also keeps the conversation smoother. On, your own messages say how many people have read them.</source>
+        <translation>Dezactivat, nu se urmărește și nu se afișează cine ce a citit, ceea ce păstrează conversația mai fluidă. Activat, mesajele tale arată câți oameni le-au citit.</translation>
+    </message>
+</context>
+<context>
+    <name>PushPage</name>
+    <message>
+        <source>Push notifications</source>
+        <translation>Notificări push</translation>
+    </message>
+    <message>
+        <source>Shoal Messages has no background service, so messages arrive only while it runs. A push distributor is a separate app that holds one connection for every app on the device and wakes them when something comes in.</source>
+        <translation>Shoal Messages nu are serviciu în fundal, așa că mesajele ajung doar cât timp rulează. Un distribuitor push este o aplicație separată care ține o conexiune pentru toate aplicațiile de pe dispozitiv și le trezește când sosește ceva.</translation>
+    </message>
+    <message>
+        <source>Receive push notifications</source>
+        <translation>Primește notificări push</translation>
+    </message>
+    <message>
+        <source>Distributor</source>
+        <translation>Distribuitor</translation>
+    </message>
+    <message>
+        <source>No push distributor is installed. Without one there is nothing to hold the connection, and this stays off.</source>
+        <translation>Nu este instalat niciun distribuitor push. Fără el nu există nimic care să țină conexiunea, iar asta rămâne dezactivat.</translation>
+    </message>
+    <message>
+        <source>Registration</source>
+        <translation>Înregistrare</translation>
+    </message>
+    <message>
+        <source>This device has an address to be reached at.</source>
+        <translation>Acest dispozitiv are o adresă la care poate fi contactat.</translation>
+    </message>
+    <message>
+        <source>Waiting for the distributor.</source>
+        <translation>Se așteaptă distribuitorul.</translation>
+    </message>
+    <message>
+        <source>Not registered.</source>
+        <translation>Neînregistrat.</translation>
+    </message>
+    <message>
+        <source>Gateway</source>
+        <translation>Poartă</translation>
+    </message>
+    <message>
+        <source>A Matrix homeserver cannot talk to a push distributor directly, so it posts to a gateway that forwards. There is no default: it is the one thing nobody can guess for you.</source>
+        <translation>Un server Matrix nu poate vorbi direct cu un distribuitor push, deci trimite către o poartă care redirecționează. Nu există o valoare implicită: este singurul lucru pe care nimeni nu îl poate ghici în locul tău.</translation>
+    </message>
+    <message>
+        <source>Push gateway</source>
+        <translation>Poartă push</translation>
+    </message>
+    <message>
+        <source>What leaves this device</source>
+        <translation>Ce părăsește acest dispozitiv</translation>
+    </message>
+    <message>
+        <source>Your homeserver is told an address at the push service, and posts a room and message identifier to the gateway for every notification. No message text: the push carries identifiers only and this device fetches and decrypts the message itself. That address is a secret — whoever holds it can send this phone a notification.</source>
+        <translation>Serverul tău află o adresă la serviciul push și trimite porții un identificator de cameră și de mesaj pentru fiecare notificare. Fără text: push-ul poartă doar identificatori, iar mesajul este preluat și decriptat de acest dispozitiv. Adresa este un secret — cine o are poate trimite o notificare acestui telefon.</translation>
+    </message>
+</context>
+<context>
+    <name>PushWake</name>
+    <message>
+        <source>New message</source>
+        <translation>Mesaj nou</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <source>no session description</source>
+        <translation>nicio descriere de sesiune</translation>
+    </message>
+</context>
+<context>
+    <name>ReactionDialog</name>
+    <message>
+        <source>React</source>
+        <translation>Reacționează</translation>
+    </message>
+    <message>
+        <source>Nothing kept here</source>
+        <translation>Nimic aici</translation>
+    </message>
+    <message>
+        <source>Press and hold an emoji in another tab to keep it here</source>
+        <translation>Ține apăsat un emoji din altă filă ca să-l păstrezi aici</translation>
+    </message>
+    <message>
+        <source>Your own text</source>
+        <translation>Textul tău</translation>
+    </message>
+    <message>
+        <source>Your text as reaction</source>
+        <translation>Textul tău ca reacție</translation>
+    </message>
+</context>
+<context>
+    <name>RoomActionsPage</name>
+    <message>
+        <source>Rooms</source>
+        <translation>Camere</translation>
+    </message>
+    <message>
+        <source>New chat</source>
+        <translation>Conversație nouă</translation>
+    </message>
+    <message>
+        <source>New room</source>
+        <translation>Cameră nouă</translation>
+    </message>
+    <message>
+        <source>Join room</source>
+        <translation>Intră în cameră</translation>
+    </message>
+    <message>
+        <source>Discover rooms</source>
+        <translation>Descoperă camere</translation>
+    </message>
+</context>
+<context>
+    <name>RoomDelegate</name>
+    <message>
+        <source>Invitation</source>
+        <translation>Invitație</translation>
+    </message>
+    <message>
+        <source>Replaced by a new room</source>
+        <translation>Înlocuită de o cameră nouă</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Spațiu</translation>
+    </message>
+</context>
+<context>
+    <name>RoomInfoPage</name>
+    <message>
+        <source>this room</source>
+        <translation>această cameră</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Chiar părăsești această cameră?</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Camera este părăsită și uitată. Dispare din lista de conversații, iar revenirea necesită o invitație nouă sau o adresă publică.</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Părăsește</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Se părăsește camera</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Părăsește camera</translation>
+    </message>
+    <message>
+        <source>Room</source>
+        <translation>Cameră</translation>
+    </message>
+    <message>
+        <source>Replaced — open the new room</source>
+        <translation>Înlocuită — deschide camera nouă</translation>
+    </message>
+    <message>
+        <source>Replaced — join the new room</source>
+        <translation>Înlocuită — intră în camera nouă</translation>
+    </message>
+    <message>
+        <source>Older messages in the previous room</source>
+        <translation>Mesaje mai vechi în camera anterioară</translation>
+    </message>
+    <message>
+        <source>People and messages</source>
+        <translation>Persoane și mesaje</translation>
+    </message>
+    <message>
+        <source>Members: %1 (%2 invited)</source>
+        <translation>Membri: %1 (%2 invitați)</translation>
+    </message>
+    <message>
+        <source>Members: %1</source>
+        <translation>Membri: %1</translation>
+    </message>
+    <message>
+        <source>Pinned messages</source>
+        <translation>Mesaje fixate</translation>
+    </message>
+    <message>
+        <source>Invite</source>
+        <translation>Invită</translation>
+    </message>
+    <message>
+        <source>This room for me</source>
+        <translation>Această cameră pentru mine</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Notificări</translation>
+    </message>
+    <message>
+        <source>Stored with the account, so it holds in every client</source>
+        <translation>Se păstrează cu contul, deci este valabil în orice client</translation>
+    </message>
+    <message>
+        <source>Account default</source>
+        <translation>Implicit pentru cont</translation>
+    </message>
+    <message>
+        <source>Every message</source>
+        <translation>Fiecare mesaj</translation>
+    </message>
+    <message>
+        <source>Only mentions and keywords</source>
+        <translation>Doar mențiuni și cuvinte-cheie</translation>
+    </message>
+    <message>
+        <source>Nothing (muted)</source>
+        <translation>Nimic (fără sunet)</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Favorită</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Prioritate scăzută</translation>
+    </message>
+    <message>
+        <source>Sorts to the bottom of the list and stays quiet</source>
+        <translation>Se sortează la finalul listei și rămâne tăcută</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Detalii</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Criptare</translation>
+    </message>
+    <message>
+        <source>End-to-end encrypted</source>
+        <translation>Criptată cap-coadă</translation>
+    </message>
+    <message>
+        <source>Not encrypted</source>
+        <translation>Necriptată</translation>
+    </message>
+    <message>
+        <source>Turning on encryption</source>
+        <translation>Se activează criptarea</translation>
+    </message>
+    <message>
+        <source>Turn on encryption</source>
+        <translation>Activează criptarea</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption?</source>
+        <translation>Renegociezi criptarea?</translation>
+    </message>
+    <message>
+        <source>The next message starts a new session and hands its key to every device in the room again. Messages already sent stay as they are; nothing of your own history is lost.</source>
+        <translation>Următorul mesaj începe o sesiune nouă și predă cheia ei din nou fiecărui dispozitiv din cameră. Mesajele deja trimise rămân neschimbate; nimic din istoricul tău nu se pierde.</translation>
+    </message>
+    <message>
+        <source>Renegotiate</source>
+        <translation>Renegociază</translation>
+    </message>
+    <message>
+        <source>Renegotiate encryption</source>
+        <translation>Renegociază criptarea</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adresă</translation>
+    </message>
+    <message>
+        <source>Access</source>
+        <translation>Acces</translation>
+    </message>
+    <message>
+        <source>Public</source>
+        <translation>Publică</translation>
+    </message>
+    <message>
+        <source>On invitation</source>
+        <translation>Pe bază de invitație</translation>
+    </message>
+    <message>
+        <source>Room version</source>
+        <translation>Versiunea camerei</translation>
+    </message>
+    <message>
+        <source>Room ID</source>
+        <translation>ID cameră</translation>
+    </message>
+    <message>
+        <source>Room ID copied</source>
+        <translation>ID cameră copiat</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Editează camera</translation>
+    </message>
+</context>
+<context>
+    <name>RoomListPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Chiar refuzi această invitație?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Chiar părăsești această cameră?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Invitația dispare apoi. Vei putea reveni doar dacă cineva te invită din nou.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Camera este părăsită și uitată. Dispare din lista de conversații, iar revenirea necesită o invitație nouă sau o adresă publică.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Respinge</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Părăsește</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Se refuză</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Se părăsește camera</translation>
+    </message>
+    <message>
+        <source>Rooms</source>
+        <translation>Camere</translation>
+    </message>
+    <message>
+        <source>This homeserver is not supported</source>
+        <translation>Acest server nu este acceptat</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Deconectat — se așteaptă rețeaua</translation>
+    </message>
+    <message>
+        <source>Your homeserver does not offer the sync this app needs (simplified sliding sync, MSC4186). Rooms cannot be loaded from it. A newer server version, or an account on a server that supports it, is required.</source>
+        <translation>Serverul tău nu oferă sincronizarea de care aplicația are nevoie (simplified sliding sync, MSC4186). Nu se pot încărca camere de la el. Este necesară o versiune mai nouă de server sau un cont pe un server care o acceptă.</translation>
+    </message>
+    <message>
+        <source>Search rooms</source>
+        <translation>Caută camere</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Elimină de la favorite</translation>
+    </message>
+    <message>
+        <source>Favourite</source>
+        <translation>Favorită</translation>
+    </message>
+    <message>
+        <source>Normal priority</source>
+        <translation>Prioritate normală</translation>
+    </message>
+    <message>
+        <source>Low priority</source>
+        <translation>Prioritate scăzută</translation>
+    </message>
+    <message>
+        <source>Unmute</source>
+        <translation>Reactivează sunetul</translation>
+    </message>
+    <message>
+        <source>Mute</source>
+        <translation>Dezactivează sunetul</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Refuză invitația</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Părăsește camera</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Nicio cameră</translation>
+    </message>
+    <message>
+        <source>Rooms you join show up here once the first sync is through.</source>
+        <translation>Camerele în care intri apar aici imediat ce prima sincronizare s-a încheiat.</translation>
+    </message>
+    <message>
+        <source>About Shoal Messages</source>
+        <translation>Despre Shoal Messages</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Setează ca pagină de start</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Cont</translation>
+    </message>
+    <message>
+        <source>Mark as read</source>
+        <translation>Marchează ca citit</translation>
+    </message>
+    <message>
+        <source>%1 of %2 rooms</source>
+        <translation>%1 din %2 camere</translation>
+    </message>
+    <message>
+        <source>Verify user</source>
+        <translation>Verifică utilizator</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Date locale deteriorate</translation>
+    </message>
+    <message>
+        <source>Part of the data stored on this device cannot be read any more, and Shoal Messages has not been able to put it right while running — so it has stopped syncing rather than meet the same row again. Close the app and start it again. If rooms are still missing afterwards, signing out and in rebuilds the local data — but it replaces this device&apos;s keys, so check on the encryption page that the key backup is on before you do.</source>
+        <translation>O parte dintre datele stocate pe acest dispozitiv nu mai poate fi citită, iar Shoal Messages nu a reușit să remedieze acest lucru în timpul funcționării — de aceea a oprit sincronizarea în loc să întâlnească din nou același rând. Închide aplicația și pornește-o din nou. Dacă după aceea tot lipsesc camere, deconectarea și reconectarea reconstruiesc datele locale — dar înlocuiesc și cheile acestui dispozitiv: verifică mai întâi pe pagina de criptare dacă backupul cheilor este activat.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomPage</name>
+    <message>
+        <source>Really decline this invitation?</source>
+        <translation>Chiar refuzi această invitație?</translation>
+    </message>
+    <message>
+        <source>Really leave this room?</source>
+        <translation>Chiar părăsești această cameră?</translation>
+    </message>
+    <message>
+        <source>The invitation is gone afterwards. You can only get back in if somebody invites you again.</source>
+        <translation>Invitația dispare apoi. Vei putea reveni doar dacă cineva te invită din nou.</translation>
+    </message>
+    <message>
+        <source>The room is left and forgotten. It disappears from the chat list, and getting back in needs a new invitation or a public address.</source>
+        <translation>Camera este părăsită și uitată. Dispare din lista de conversații, iar revenirea necesită o invitație nouă sau o adresă publică.</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Respinge</translation>
+    </message>
+    <message>
+        <source>Leave</source>
+        <translation>Părăsește</translation>
+    </message>
+    <message>
+        <source>Declining</source>
+        <translation>Se refuză</translation>
+    </message>
+    <message>
+        <source>Leaving room</source>
+        <translation>Se părăsește camera</translation>
+    </message>
+    <message>
+        <source>The sender did not share the key: they consider this device insecure. Verify this device.</source>
+        <translation>Expeditorul nu a partajat cheia: consideră acest dispozitiv nesigur. Verifică acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>The sender could not deliver the key to this device.</source>
+        <translation>Expeditorul nu a putut livra cheia către acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s identity has changed since you verified them, so the key was withheld.</source>
+        <translation>Identitatea expeditorului s-a schimbat de când ai verificat-o, așa că cheia a fost reținută.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is not signed by its owner.</source>
+        <translation>Dispozitivul expeditorului nu este semnat de proprietarul său.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s device is unknown here.</source>
+        <translation>Dispozitivul expeditorului este necunoscut aici.</translation>
+    </message>
+    <message>
+        <source>Sent before you joined the room.</source>
+        <translation>Trimis înainte să intri în cameră.</translation>
+    </message>
+    <message>
+        <source>Older than this device, and there is no key backup.</source>
+        <translation>Mai vechi decât acest dispozitiv și nu există o copie de rezervă a cheilor.</translation>
+    </message>
+    <message>
+        <source>Older than this device. Verify this device to read it.</source>
+        <translation>Mai vechi decât acest dispozitiv. Verifică dispozitivul pentru a-l citi.</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Nu poate fi decriptat — acestui dispozitiv îi lipsește cheia</translation>
+    </message>
+    <message>
+        <source>Decline invitation</source>
+        <translation>Refuză invitația</translation>
+    </message>
+    <message>
+        <source>Leave room</source>
+        <translation>Părăsește camera</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <translation>Apel</translation>
+    </message>
+    <message>
+        <source>Video call</source>
+        <translation>Apel video</translation>
+    </message>
+    <message>
+        <source>Back to the call</source>
+        <translation>Înapoi la apel</translation>
+    </message>
+    <message>
+        <source>Go to the new room</source>
+        <translation>Mergi la camera nouă</translation>
+    </message>
+    <message>
+        <source>Join the new room</source>
+        <translation>Intră în camera nouă</translation>
+    </message>
+    <message>
+        <source>Load older messages</source>
+        <translation>Încarcă mesaje mai vechi</translation>
+    </message>
+    <message>
+        <source>Room info</source>
+        <translation>Informații cameră</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Deconectat — se așteaptă rețeaua</translation>
+    </message>
+    <message>
+        <source>Invitation</source>
+        <translation>Invitație</translation>
+    </message>
+    <message>
+        <source>This room has been replaced</source>
+        <translation>Această cameră a fost înlocuită</translation>
+    </message>
+    <message>
+        <source>Switching to the new room…</source>
+        <translation>Se trece la camera nouă…</translation>
+    </message>
+    <message>
+        <source>Tap to open the new room</source>
+        <translation>Atinge pentru a deschide camera nouă</translation>
+    </message>
+    <message>
+        <source>Tap to join the new room</source>
+        <translation>Atinge pentru a intra în camera nouă</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pinned message(s)</source>
+        <translation>
+            <numerusform>%n mesaj fixat</numerusform>
+            <numerusform>%n mesaje fixate</numerusform>
+            <numerusform>%n de mesaje fixate</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Beginning of the conversation</source>
+        <translation>Începutul conversației</translation>
+    </message>
+    <message>
+        <source>Call</source>
+        <comment>timeline system line, a noun</comment>
+        <translation>Apel</translation>
+    </message>
+    <message>
+        <source>%1 joined</source>
+        <translation>%1 a intrat</translation>
+    </message>
+    <message>
+        <source>%1 left</source>
+        <translation>%1 a plecat</translation>
+    </message>
+    <message>
+        <source>%1 declined the invitation</source>
+        <translation>%1 a refuzat invitația</translation>
+    </message>
+    <message>
+        <source>%1 asked to join</source>
+        <translation>%1 a cerut să intre</translation>
+    </message>
+    <message>
+        <source>%1 changed membership</source>
+        <translation>%1 și-a schimbat apartenența</translation>
+    </message>
+    <message>
+        <source>%1 changed their profile</source>
+        <translation>%1 și-a modificat profilul</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiază</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Răspunde</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Salvează</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Redirecționează</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Editează</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fixează</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Șterge</translation>
+    </message>
+    <message>
+        <source>More…</source>
+        <translation>Mai mult…</translation>
+    </message>
+    <message>
+        <source>The quoted message cannot be loaded: it no longer exists or you are not allowed to see it.</source>
+        <translation>Mesajul citat nu poate fi încărcat: nu mai există sau nu ai voie să-l vezi.</translation>
+    </message>
+    <message>
+        <source>Voice message</source>
+        <translation>Mesaj vocal</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Mesaj șters</translation>
+    </message>
+    <message>
+        <source>Thread · %1</source>
+        <translation>Fir · %1</translation>
+    </message>
+    <message>
+        <source>In thread</source>
+        <translation>În fir</translation>
+    </message>
+    <message>
+        <source>not sent</source>
+        <translation>netrimis</translation>
+    </message>
+    <message>
+        <source>edited</source>
+        <translation>editat</translation>
+    </message>
+    <message>
+        <source>No messages</source>
+        <translation>Niciun mesaj</translation>
+    </message>
+    <message>
+        <source>Accept invitation</source>
+        <translation>Acceptă invitația</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s</source>
+        <translation>Se înregistrează… %1 s</translation>
+    </message>
+    <message>
+        <source>Reply to %1</source>
+        <translation>Răspuns către %1</translation>
+    </message>
+    <message>
+        <source>Editing message</source>
+        <translation>Se editează mesajul</translation>
+    </message>
+    <message>
+        <source>New text</source>
+        <translation>Text nou</translation>
+    </message>
+    <message>
+        <source>Message</source>
+        <translation>Mesaj</translation>
+    </message>
+    <message>
+        <source>That message is not in the loaded history</source>
+        <translation>Acel mesaj nu se află în istoricul încărcat</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Renunță</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Trimite din nou</translation>
+    </message>
+    <message>
+        <source>React</source>
+        <translation>Reacționează</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Răspunde în fir</translation>
+    </message>
+    <message>
+        <source>Copy room link</source>
+        <translation>Copiază linkul camerei</translation>
+    </message>
+    <message>
+        <source>Room link copied</source>
+        <translation>Linkul camerei a fost copiat</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Trimis necriptat</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Nu a fost trimis de contul indicat</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Cheile expeditorului s-au schimbat</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>De pe un dispozitiv neverificat</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>De la o persoană neverificată</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Autenticitate neconfirmată</translation>
+    </message>
+    <message>
+        <source>Discarding</source>
+        <translation>Se renunță</translation>
+    </message>
+    <message>
+        <source>Deleting</source>
+        <translation>Se șterge</translation>
+    </message>
+    <message>
+        <source>This reaction hides text and was not sent</source>
+        <translation>Această reacție ascunde text și nu a fost trimisă</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Imagine</translation>
+    </message>
+    <message>
+        <source>Search messages</source>
+        <translation>Caută în mesaje</translation>
+    </message>
+    <message>
+        <source>What do these marks mean?</source>
+        <translation>Ce înseamnă aceste semne?</translation>
+    </message>
+    <message>
+        <source>Verify contact</source>
+        <translation>Verifică contactul</translation>
+    </message>
+    <message>
+        <source>The conversation could not be loaded</source>
+        <translation>Conversația nu a putut fi încărcată</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Deschideți această adresă?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Deschide</translation>
+    </message>
+    <message>
+        <source>Select files</source>
+        <translation>Alege fișiere</translation>
+    </message>
+    <message>
+        <source>New poll</source>
+        <translation>Sondaj nou</translation>
+    </message>
+    <message>
+        <source>Voting failed</source>
+        <translation>Votarea a eșuat</translation>
+    </message>
+    <message>
+        <source>The poll could not be ended</source>
+        <translation>Sondajul nu a putut fi încheiat</translation>
+    </message>
+    <message>
+        <source>The poll could not be sent</source>
+        <translation>Sondajul nu a putut fi trimis</translation>
+    </message>
+    <message>
+        <source>Your vote was not sent</source>
+        <translation>Votul tău nu a fost trimis</translation>
+    </message>
+    <message>
+        <source>%1 invited %2</source>
+        <translation>%1 a invitat pe %2</translation>
+    </message>
+    <message>
+        <source>%1 removed %2</source>
+        <translation>%1 a eliminat pe %2</translation>
+    </message>
+    <message>
+        <source>%1 banned %2</source>
+        <translation>%1 a interzis accesul pentru %2</translation>
+    </message>
+    <message>
+        <source>%1 unbanned %2</source>
+        <translation>%1 a ridicat interdicția pentru %2</translation>
+    </message>
+    <message>
+        <source>%1 withdrew the invitation for %2</source>
+        <translation>%1 a retras invitația pentru %2</translation>
+    </message>
+    <message>
+        <source>%1: %2</source>
+        <comment>system line and the reason given for it</comment>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <source>Convert to text</source>
+        <translation>Transformă în text</translation>
+    </message>
+    <message>
+        <source>Converting to text…</source>
+        <translation>Se transformă în text…</translation>
+    </message>
+    <message>
+        <source>Recognised automatically, may contain mistakes</source>
+        <translation>Recunoscut automat, poate conține greșeli</translation>
+    </message>
+    <message>
+        <source>Recording… %1 s. Tap the microphone to send.</source>
+        <translation>Se înregistrează… %1 s. Atinge microfonul pentru a trimite.</translation>
+    </message>
+    <message>
+        <source>Nothing was said, so nothing was sent.</source>
+        <translation>Nu s-a spus nimic, așa că nu s-a trimis nimic.</translation>
+    </message>
+    <message>
+        <source>Saved to gallery</source>
+        <translation>Salvat în galerie</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nu s-a putut salva</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Salvat în Descărcări</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Afișează mai puțin</translation>
+    </message>
+    <message>
+        <source>Show more</source>
+        <translation>Afișează mai mult</translation>
+    </message>
+    <message>
+        <source>The text could not be written as a file</source>
+        <translation>Textul nu a putut fi scris ca fișier</translation>
+    </message>
+    <message>
+        <source>Share location</source>
+        <translation>Partajează locația</translation>
+    </message>
+    <message>
+        <source>deletion not sent</source>
+        <translation>ștergere netrimisă</translation>
+    </message>
+    <message>
+        <source>edit not sent</source>
+        <translation>editare netrimisă</translation>
+    </message>
+    <message>
+        <source>That did not work. Try again in a moment.</source>
+        <translation>Nu a mers. Încearcă din nou peste o clipă.</translation>
+    </message>
+    <message>
+        <source>Back to the latest messages</source>
+        <translation>Înapoi la cele mai noi mesaje</translation>
+    </message>
+    <message>
+        <source>Live location could not be started</source>
+        <translation>Locația în timp real nu a putut fi pornită</translation>
+    </message>
+    <message>
+        <source>It is no longer waiting to be sent.</source>
+        <translation>Nu mai așteaptă să fie trimis.</translation>
+    </message>
+</context>
+<context>
+    <name>RoomSettingsPage</name>
+    <message>
+        <source>Change it on the other network as well?</source>
+        <translation>Schimbi și în cealaltă rețea?</translation>
+    </message>
+    <message>
+        <source>The bridge passes the change on. Everyone in the chat there sees it, including people who do not use Matrix.</source>
+        <translation>Puntea transmite schimbarea mai departe. O văd toți cei din chatul de acolo, inclusiv oamenii care nu folosesc Matrix.</translation>
+    </message>
+    <message>
+        <source>Change</source>
+        <translation>Schimbă</translation>
+    </message>
+    <message>
+        <source>The name could not be changed: %1</source>
+        <translation>Numele nu a putut fi schimbat: %1</translation>
+    </message>
+    <message>
+        <source>The topic could not be changed: %1</source>
+        <translation>Subiectul nu a putut fi schimbat: %1</translation>
+    </message>
+    <message>
+        <source>The picture could not be changed: %1</source>
+        <translation>Imaginea nu a putut fi schimbată: %1</translation>
+    </message>
+    <message>
+        <source>Edit room</source>
+        <translation>Editează camera</translation>
+    </message>
+    <message>
+        <source>Your role in this room does not allow changing its name, topic or picture.</source>
+        <translation>Rolul tău în această cameră nu îți permite să îi schimbi numele, subiectul sau imaginea.</translation>
+    </message>
+    <message>
+        <source>This room is bridged to another network. The bridge usually passes a new name, topic or picture on, and there it changes for everyone in the chat, including people who do not use Matrix.</source>
+        <translation>Această cameră este legată printr-o punte de o altă rețea. De obicei, puntea transmite mai departe un nume, un subiect sau o imagine nouă, iar acolo se schimbă pentru toți cei din chat, inclusiv pentru oamenii care nu folosesc Matrix.</translation>
+    </message>
+    <message>
+        <source>This chat is bridged to another network. There, name and picture belong to the contact: the bridge usually passes nothing on, and it can overwrite a name set here whenever the contact changes theirs. Which contact name the bridge shows is part of its own configuration.</source>
+        <translation>Acest chat este legat printr-o punte de o altă rețea. Acolo, numele și imaginea aparțin contactului: de obicei puntea nu transmite nimic și poate suprascrie un nume setat aici oricând contactul și-l schimbă pe al său. Ce nume de contact arată puntea depinde de propria ei configurație.</translation>
+    </message>
+    <message>
+        <source>Name, topic and picture belong to the room: everyone in it sees the change.</source>
+        <translation>Numele, subiectul și imaginea aparțin camerei: toți cei din ea văd schimbarea.</translation>
+    </message>
+    <message>
+        <source>Bridged to</source>
+        <translation>Punte către</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Imagine</translation>
+    </message>
+    <message>
+        <source>Change picture</source>
+        <translation>Schimbă imaginea</translation>
+    </message>
+    <message>
+        <source>Set picture</source>
+        <translation>Setează o imagine</translation>
+    </message>
+    <message>
+        <source>Remove picture</source>
+        <translation>Elimină imaginea</translation>
+    </message>
+    <message>
+        <source>Name and topic</source>
+        <translation>Nume și subiect</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nume</translation>
+    </message>
+    <message>
+        <source>No name set</source>
+        <translation>Niciun nume setat</translation>
+    </message>
+    <message>
+        <source>Without a name, the room is shown under the names of its members.</source>
+        <translation>Fără nume, camera este afișată cu numele membrilor ei.</translation>
+    </message>
+    <message>
+        <source>Topic</source>
+        <translation>Subiect</translation>
+    </message>
+    <message>
+        <source>No topic set</source>
+        <translation>Niciun subiect setat</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Salvează</translation>
+    </message>
+    <message>
+        <source>Saving…</source>
+        <translation>Se salvează…</translation>
+    </message>
+    <message>
+        <source>Saved</source>
+        <translation>Salvat</translation>
+    </message>
+    <message>
+        <source>Whether this room is bridged to another network could not be checked. If it is, the change may apply there for everyone in the chat.</source>
+        <translation>Nu s-a putut verifica dacă această cameră este legată printr-o punte de o altă rețea. Dacă este, schimbarea se poate aplica acolo tuturor celor din chat.</translation>
+    </message>
+    <message>
+        <source>Change it anyway?</source>
+        <translation>Schimbi totuși?</translation>
+    </message>
+</context>
+<context>
+    <name>SearchPage</name>
+    <message>
+        <source>Search messages</source>
+        <translation>Caută în mesaje</translation>
+    </message>
+    <message>
+        <source>Search this conversation</source>
+        <translation>Caută în această conversație</translation>
+    </message>
+    <message>
+        <source>Search failed</source>
+        <translation>Căutarea a eșuat</translation>
+    </message>
+    <message>
+        <source>Nothing found</source>
+        <translation>Nu s-a găsit nimic</translation>
+    </message>
+    <message>
+        <source>Whole words only: &quot;test&quot; does not find &quot;test9&quot;. Pictures, files and messages from bots are not searched. And only what this device has already downloaded - load older messages in the conversation to add more.</source>
+        <translation>Doar cuvinte întregi: „test” nu găsește „test9”. Imaginile, fișierele și mesajele de la roboți nu se caută. Și doar ce a descărcat deja acest dispozitiv — încarcă mesaje mai vechi ca să adaugi mai multe.</translation>
+    </message>
+</context>
+<context>
+    <name>SecretsHelpPage</name>
+    <message>
+        <source>Getting in again</source>
+        <translation>Înapoi înăuntru</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys.</source>
+        <translation>Acestui sistem îi lipsește serviciul care păstrează cheile de criptare.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service reports damaged data. Nothing can be unlocked in this state.</source>
+        <translation>Stocarea securizată a dispozitivului raportează date deteriorate. În această stare nu se poate debloca nimic.</translation>
+    </message>
+    <message>
+        <source>The device&apos;s secrets service itself is locked. Every app on this phone that stores secrets is affected, not only Shoal Messages.</source>
+        <translation>Stocarea securizată a dispozitivului este ea însăși blocată. Sunt afectate toate aplicațiile de pe telefon care păstrează secrete, nu doar Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages' own key store is locked and waiting for your confirmation.</source>
+        <translation>Stocarea proprie de chei a Shoal Messages este blocată și așteaptă confirmarea ta.</translation>
+    </message>
+    <message>
+        <source>The secrets service did not hand out a key, and it did not say why.</source>
+        <translation>Stocarea securizată nu a eliberat nicio cheie și nu a spus de ce.</translation>
+    </message>
+    <message>
+        <source>This is a property of the operating system, not a fault in Shoal Messages. The package exists and can be installed; some Sailfish images simply do not ship it.</source>
+        <translation>Este o proprietate a sistemului de operare, nu un defect al Shoal Messages. Pachetul există și poate fi instalat; unele imagini Sailfish pur și simplu nu îl includ.</translation>
+    </message>
+    <message>
+        <source>This is beyond what Shoal Messages can reach. Repairing it means resetting the service&apos;s own data, which affects every app on the device that stores secrets — ask in the Sailfish support channels before doing that.</source>
+        <translation>Asta depășește ceea ce poate atinge Shoal Messages. Repararea înseamnă resetarea datelor proprii ale serviciului, ceea ce afectează toate aplicațiile de pe dispozitiv care păstrează secrete — întreabă mai întâi pe canalele de asistență Sailfish.</translation>
+    </message>
+    <message>
+        <source>The service is unlocked at start-up from your device lock code. Where that hand-off has stopped working, restarting lands in the same state every time — setting the code afresh is what starts it again.</source>
+        <translation>Serviciul este deblocat la pornire cu codul de blocare al dispozitivului. Dacă acea predare a încetat să funcționeze, o repornire ajunge de fiecare dată în aceeași stare — setarea din nou a codului este ceea ce o pune iar în mișcare.</translation>
+    </message>
+    <message>
+        <source>The approval lasts until the device is restarted. If no request appears at all, the system components that draw it may be missing.</source>
+        <translation>Aprobarea ține până la următoarea repornire a dispozitivului. Dacă nu apare nicio cerere, este posibil să lipsească componentele de sistem care o desenează.</translation>
+    </message>
+    <message>
+        <source>Setting the device lock code afresh and restarting is worth trying: it is what unlocks the service at start-up.</source>
+        <translation>Merită să setezi din nou codul de blocare și să repornești: exact asta deblochează serviciul la pornire.</translation>
+    </message>
+    <message>
+        <source>What to do</source>
+        <translation>Ce poți face</translation>
+    </message>
+    <message>
+        <source>1. Switch on Developer mode in the system settings, under Settings › Developer tools.</source>
+        <translation>1. Activează modul dezvoltator în setările sistemului, la Setări › Instrumente pentru dezvoltatori.</translation>
+    </message>
+    <message>
+        <source>2. Open the Terminal app and run the line below — tap it to copy. Then restart the device and start Shoal Messages again.</source>
+        <translation>2. Deschide aplicația Terminal și rulează linia de mai jos — atinge-o pentru a o copia. Apoi repornește dispozitivul și deschide Shoal Messages din nou.</translation>
+    </message>
+    <message>
+        <source>Note down what this page reports below and take it to the Sailfish support channels. Signing out of Shoal Messages does not repair it.</source>
+        <translation>Notează ce raportează această pagină mai jos și du-l pe canalele de asistență Sailfish. Deconectarea din Shoal Messages nu repară asta.</translation>
+    </message>
+    <message>
+        <source>Go back and tap “Try again”, then confirm the system&apos;s request. If nothing appears, install the missing components (tap the line to copy) and restart the device.</source>
+        <translation>Întoarce-te și atinge „Încearcă din nou”, apoi confirmă cererea sistemului. Dacă nu apare nimic, instalează componentele lipsă (atinge linia pentru a o copia) și repornește dispozitivul.</translation>
+    </message>
+    <message>
+        <source>1. Open Settings › Device lock and set a new security code.</source>
+        <translation>1. Deschide Setări › Blocarea dispozitivului și setează un cod de securitate nou.</translation>
+    </message>
+    <message>
+        <source>2. Restart the device.</source>
+        <translation>2. Repornește dispozitivul.</translation>
+    </message>
+    <message>
+        <source>3. Start Shoal Messages again.</source>
+        <translation>3. Deschide Shoal Messages din nou.</translation>
+    </message>
+    <message>
+        <source>Signing out does not help</source>
+        <translation>Deconectarea nu ajută</translation>
+    </message>
+    <message>
+        <source>Signing out deletes this device&apos;s encryption keys along with the local data. You would then have to verify this device again from another one, and older messages would need your recovery key. It does not repair the secrets service.</source>
+        <translation>La deconectare, cheile de criptare ale acestui dispozitiv se șterg împreună cu datele locale. Ar trebui apoi să verifici acest dispozitiv din nou de pe altul, iar mesajele mai vechi ar avea nevoie de cheia ta de recuperare. Stocarea securizată nu se repară astfel.</translation>
+    </message>
+    <message>
+        <source>What this page measured</source>
+        <translation>Ce a măsurat această pagină</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityRows</name>
+    <message>
+        <source>Backup</source>
+        <translation>Copie de rezervă</translation>
+    </message>
+    <message>
+        <source>Your room keys are backed up.</source>
+        <translation>Cheile tale de cameră au copie de siguranță.</translation>
+    </message>
+    <message>
+        <source>The backup is on the server but not unlocked on this device.</source>
+        <translation>Copia este pe server, dar nu este deblocată pe acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>There is no key backup. Without one, messages become unreadable when this device is gone.</source>
+        <translation>Nu există copie de siguranță a cheilor. Fără ea, mesajele devin ilizibile de îndată ce acest dispozitiv dispare.</translation>
+    </message>
+    <message>
+        <source>Recovery</source>
+        <translation>Recuperare</translation>
+    </message>
+    <message>
+        <source>Recovery is set up.</source>
+        <translation>Recuperarea este configurată.</translation>
+    </message>
+    <message>
+        <source>Enter your recovery key to unlock the backup on this device.</source>
+        <translation>Introdu cheia ta de recuperare pentru a debloca copia pe acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>Cross-signing</source>
+        <translation>Semnare încrucișată</translation>
+    </message>
+    <message>
+        <source>This device is signed as yours.</source>
+        <translation>Acest dispozitiv este semnat ca fiind al tău.</translation>
+    </message>
+    <message>
+        <source>Others see this device as unverified. The recovery key or a verification from another device settles it.</source>
+        <translation>Ceilalți văd acest dispozitiv ca neverificat. Cheia de recuperare sau o verificare de pe alt dispozitiv rezolvă asta.</translation>
+    </message>
+    <message>
+        <source>Local storage</source>
+        <translation>Stocare locală</translation>
+    </message>
+    <message>
+        <source>Session and message database are encrypted on this device.</source>
+        <translation>Sesiunea și baza de mesaje sunt criptate pe acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because they were created before this app could encrypt them. An existing database cannot be encrypted in place.</source>
+        <translation>Stau necriptate pentru că au fost create înainte ca această aplicație să le poată cripta. O bază existentă nu poate fi criptată ulterior.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because the system&apos;s secure storage did not hand out a key.</source>
+        <translation>Stau necriptate pentru că stocarea securizată a sistemului nu a eliberat nicio cheie.</translation>
+    </message>
+    <message>
+        <source>They lie unencrypted because this system is missing the service that keeps encryption keys.</source>
+        <translation>Stau necriptate pentru că acestui sistem îi lipsește serviciul care păstrează cheile de criptare.</translation>
+    </message>
+    <message>
+        <source>Recovery key accepted — finishing. This can take a moment.</source>
+        <translation>Cheia de recuperare a fost acceptată — se finalizează. Poate dura un moment.</translation>
+    </message>
+    <message>
+        <source>There is no recovery for this account yet. Set up a key backup to create one.</source>
+        <translation>Pentru acest cont încă nu există recuperare. Configurează o copie a cheilor pentru a crea una.</translation>
+    </message>
+    <message>
+        <source>The server could not be asked whether a backup exists.</source>
+        <translation>Serverul nu a putut fi întrebat dacă există o copie de rezervă.</translation>
+    </message>
+</context>
+<context>
+    <name>SecurityStatusPage</name>
+    <message>
+        <source>Security</source>
+        <translation>Securitate</translation>
+    </message>
+    <message>
+        <source>Something on this device is not in order yet. You can settle it now or later.</source>
+        <translation>Ceva pe acest dispozitiv nu este încă în regulă. Poți rezolva acum sau mai târziu.</translation>
+    </message>
+    <message>
+        <source>Enter recovery key</source>
+        <translation>Introdu cheia de recuperare</translation>
+    </message>
+    <message>
+        <source>Set up backup now</source>
+        <translation>Configurează copia acum</translation>
+    </message>
+    <message>
+        <source>Encrypt storage now</source>
+        <translation>Criptează stocarea acum</translation>
+    </message>
+    <message>
+        <source>Why is that</source>
+        <translation>De ce se întâmplă</translation>
+    </message>
+    <message>
+        <source>Later</source>
+        <translation>Mai târziu</translation>
+    </message>
+    <message>
+        <source>You will find all of this again under Account › Encryption.</source>
+        <translation>Găsești toate acestea din nou la Cont › Criptare.</translation>
+    </message>
+    <message>
+        <source>Everything on this device is in order.</source>
+        <translation>Pe acest dispozitiv totul este în regulă.</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Închide</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Verifică acest dispozitiv</translation>
+    </message>
+</context>
+<context>
+    <name>SendMediaPage</name>
+    <message>
+        <source>Reply</source>
+        <translation>Răspunde</translation>
+    </message>
+    <message>
+        <source>Send</source>
+        <translation>Trimite</translation>
+    </message>
+    <message>
+        <source>Caption</source>
+        <translation>Legendă</translation>
+    </message>
+    <message>
+        <source>Caption (optional)</source>
+        <translation>Legendă (opțională)</translation>
+    </message>
+    <message>
+        <source>%1 files, sent one after another. The caption goes with the first one.</source>
+        <translation>%1 fișiere, trimise unul după altul. Descrierea merge cu primul.</translation>
+    </message>
+    <message>
+        <source>Send at original resolution</source>
+        <translation>Trimite la rezoluția originală</translation>
+    </message>
+    <message>
+        <source>Off, the picture is made smaller before it goes out and its metadata - the place it was taken, among them - does not travel with it.</source>
+        <translation>Oprit, imaginea este micșorată înainte de a pleca, iar metadatele ei – printre care locul unde a fost făcută – nu călătoresc cu ea.</translation>
+    </message>
+</context>
+<context>
+    <name>SendQueueBanner</name>
+    <message>
+        <source>A message could not be sent.</source>
+        <translation>Un mesaj nu a putut fi trimis.</translation>
+    </message>
+    <message>
+        <source>An edit could not be sent.</source>
+        <translation>O editare nu a putut fi trimisă.</translation>
+    </message>
+    <message>
+        <source>A deletion could not be sent. The message is still there for everyone else.</source>
+        <translation>O ștergere nu a putut fi trimisă. Pentru toți ceilalți, mesajul este încă acolo.</translation>
+    </message>
+    <message>
+        <source>A reaction could not be sent.</source>
+        <translation>O reacție nu a putut fi trimisă.</translation>
+    </message>
+    <message>
+        <source>A poll vote could not be sent.</source>
+        <translation>Un vot într-un sondaj nu a putut fi trimis.</translation>
+    </message>
+    <message>
+        <source>A change could not be sent.</source>
+        <translation>O modificare nu a putut fi trimisă.</translation>
+    </message>
+    <message>
+        <source>Someone you verified has a new identity. Withdraw the verification on their profile, then send again.</source>
+        <translation>O persoană pe care ai verificat-o are o identitate nouă. Retrage verificarea din profilul ei, apoi trimite din nou.</translation>
+    </message>
+    <message>
+        <source>This device has to be verified first.</source>
+        <translation>Mai întâi trebuie verificat acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>Some devices in this room are not verified.</source>
+        <translation>Unele dispozitive din această cameră nu sunt verificate.</translation>
+    </message>
+    <message>
+        <source>Everything sent after it in this room waits behind it.</source>
+        <translation>Tot ce a fost trimis după ea în această cameră așteaptă în spatele ei.</translation>
+    </message>
+    <message>
+        <source>Send again</source>
+        <translation>Trimite din nou</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Renunță</translation>
+    </message>
+    <message>
+        <source>A poll could not be sent.</source>
+        <translation>Un sondaj nu a putut fi trimis.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionLockedPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Deconectează-te și șterge datele locale</translation>
+    </message>
+    <message>
+        <source>Locked</source>
+        <translation>Blocat</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pentru Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your session is stored encrypted, and the key was not available when Shoal Messages started.</source>
+        <translation>Sesiunea ta este stocată criptat, iar cheia nu a fost disponibilă când Shoal Messages a pornit.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Încearcă din nou</translation>
+    </message>
+    <message>
+        <source>The key lives in the device&apos;s secrets storage. Try again and confirm the system&apos;s request; the approval lasts until the next restart of the device. If no request appears at all, the secrets service itself is at fault rather than your account.</source>
+        <translation>Cheia se află în stocarea securizată a dispozitivului. Încearcă din nou și confirmă cererea sistemului; aprobarea ține până la următoarea repornire a dispozitivului. Dacă nu apare nicio cerere, vina este a stocării securizate, nu a contului tău.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Ai nevoie de ajutor?</translation>
+    </message>
+</context>
+<context>
+    <name>SessionNewerPage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Deconectează-te și șterge datele locale</translation>
+    </message>
+    <message>
+        <source>Newer version needed</source>
+        <translation>Este necesară o versiune mai nouă</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pentru Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Încearcă din nou</translation>
+    </message>
+    <message>
+        <source>Your session was saved in a format this version does not know, most likely by a newer version of Shoal Messages.</source>
+        <translation>Sesiunea ta a fost salvată într-un format pe care această versiune nu îl cunoaște, cel mai probabil de o versiune mai nouă a Shoal Messages.</translation>
+    </message>
+    <message>
+        <source>If a newer version of Shoal Messages was installed before, installing it again opens everything as before. Signing out instead deletes the data and keys this device holds.</source>
+        <translation>Dacă înainte era instalată o versiune mai nouă a Shoal Messages, după reinstalarea ei totul se va deschide ca înainte. Deconectarea, în schimb, șterge datele și cheile acestui dispozitiv.</translation>
+    </message>
+</context>
+<context>
+    <name>SessionOfflinePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Deconectează-te și șterge datele locale</translation>
+    </message>
+    <message>
+        <source>No connection</source>
+        <translation>Fără conexiune</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pentru Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Your homeserver could not be reached. You are still signed in, and nothing on this device has changed.</source>
+        <translation>Serverul tău de domiciliu nu a putut fi contactat. Sesiunea ta este încă activă și nimic nu s-a schimbat pe acest dispozitiv.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages keeps trying on its own. Do not sign in again: that would start a new device and cost the keys to your encrypted history.</source>
+        <translation>Shoal Messages continuă să încerce singur. Nu te autentifica din nou: asta ar crea un dispozitiv nou și s-ar pierde cheile istoricului tău criptat.</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Încearcă din nou</translation>
+    </message>
+</context>
+<context>
+    <name>ShareLocationPage</name>
+    <message>
+        <source>Share location</source>
+        <translation>Partajează locația</translation>
+    </message>
+    <message>
+        <source>Finding your position…</source>
+        <translation>Se caută poziția ta…</translation>
+    </message>
+    <message>
+        <source>Try again</source>
+        <translation>Încearcă din nou</translation>
+    </message>
+    <message>
+        <source>Send this position</source>
+        <translation>Trimite această poziție</translation>
+    </message>
+    <message>
+        <source>Live location</source>
+        <translation>Locație în timp real</translation>
+    </message>
+    <message>
+        <source>Your position goes to this room when you move, while the app is open, until the time is up or you stop it. When the app is closed, the others see the last position until the end of the time.</source>
+        <translation>Poziția ta merge în această cameră când te miști, cât timp aplicația e deschisă, până expiră timpul sau o oprești. Cu aplicația închisă, ceilalți văd ultima poziție până la sfârșitul timpului.</translation>
+    </message>
+    <message>
+        <source>For</source>
+        <translation>Pentru</translation>
+    </message>
+    <message>
+        <source>1 hour</source>
+        <translation>1 oră</translation>
+    </message>
+    <message>
+        <source>Share live location</source>
+        <translation>Partajează locația în timp real</translation>
+    </message>
+    <message>
+        <source>Sharing your live location until %1.</source>
+        <translation>Îți partajezi locația în timp real până la %1.</translation>
+    </message>
+    <message>
+        <source>Stop sharing</source>
+        <translation>Oprește partajarea</translation>
+    </message>
+    <message>
+        <source>6 hours</source>
+        <translation>6 ore</translation>
+    </message>
+    <message>
+        <source>1 day</source>
+        <translation>1 zi</translation>
+    </message>
+</context>
+<context>
+    <name>ShareToRoomPage</name>
+    <message>
+        <source>Send to</source>
+        <translation>Trimite către</translation>
+    </message>
+    <message>
+        <source>No rooms</source>
+        <translation>Nicio cameră</translation>
+    </message>
+</context>
+<context>
+    <name>ShieldGlossaryPage</name>
+    <message>
+        <source>Message marks</source>
+        <translation>Semne la mesaje</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Trimis necriptat</translation>
+    </message>
+    <message>
+        <source>The message went out without encryption although the room uses it. Anybody who can read the server&apos;s copy can read the message.</source>
+        <translation>Mesajul a plecat necriptat deși camera folosește criptare. Oricine poate citi copia de pe server poate citi mesajul.</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Nu a fost trimis de contul indicat</translation>
+    </message>
+    <message>
+        <source>The message was encrypted by a device that does not belong to the account it claims to come from - somebody is sending under another name. Some bridges work this way and produce it harmlessly; anywhere else it is the one sign of an actual impersonation this app has.</source>
+        <translation>Mesajul a fost criptat de un dispozitiv care nu aparține contului din care pretinde că vine — cineva trimite sub alt nume. Unele punți funcționează așa și o fac inofensiv; oriunde altundeva este singurul semn de uzurpare reală pe care îl are această aplicație.</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Cheile expeditorului s-au schimbat</translation>
+    </message>
+    <message>
+        <source>This person&apos;s cryptographic identity is no longer the one that was verified. Either they set up their account again, or somebody else is using it.</source>
+        <translation>Identitatea criptografică a acestei persoane nu mai este cea verificată. Ori și-a configurat contul din nou, ori îl folosește altcineva.</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>De pe un dispozitiv neverificat</translation>
+    </message>
+    <message>
+        <source>The device that sent this has not been confirmed by the account it belongs to. That is normal for a device somebody has just started using.</source>
+        <translation>Dispozitivul care a trimis asta nu a fost confirmat de contul căruia îi aparține. La un dispozitiv abia pus în folosință este normal.</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>De la o persoană neverificată</translation>
+    </message>
+    <message>
+        <source>This person&apos;s identity has never been verified, so there is nothing to check the message against.</source>
+        <translation>Identitatea acestei persoane nu a fost niciodată verificată, așa că nu există cu ce să compari mesajul.</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Autenticitate neconfirmată</translation>
+    </message>
+    <message>
+        <source>The message could not be checked at all. It is not necessarily wrong - only unproven.</source>
+        <translation>Mesajul nu a putut fi verificat deloc. Nu este neapărat fals — doar nedovedit.</translation>
+    </message>
+    <message>
+        <source>A mark beside a message means its authenticity could not be fully confirmed. A red triangle says the message is not what it claims to be. An orange dot says something about it could not be checked. Tap a mark in the conversation to see which of the cases below it is.</source>
+        <translation>Un semn lângă un mesaj înseamnă că autenticitatea lui nu a putut fi confirmată pe deplin. Un triunghi roșu spune că mesajul nu este ceea ce pretinde. Un punct portocaliu spune că ceva nu a putut fi verificat. Atinge un semn în conversație ca să vezi despre care dintre cazurile de mai jos este vorba.</translation>
+    </message>
+</context>
+<context>
+    <name>SpaceColourPage</name>
+    <message>
+        <source>Colour</source>
+        <translation>Culoare</translation>
+    </message>
+    <message>
+        <source>Automatic colour</source>
+        <translation>Culoare automată</translation>
+    </message>
+    <message>
+        <source>Taken from the space itself, a different one for each</source>
+        <translation>Luată din spațiul însuși, alta pentru fiecare</translation>
+    </message>
+    <message>
+        <source>Marking the space on a room&apos;s picture is switched off under Account, Appearance. Until it is on, this colour is drawn nowhere.</source>
+        <translation>Marcarea Space pe imaginea camerei este dezactivată în Cont, Aspect. Cât timp este dezactivată, această culoare nu este desenată nicăieri.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacePage</name>
+    <message>
+        <source>Space</source>
+        <translation>Spațiu</translation>
+    </message>
+    <message>
+        <source>Add rooms</source>
+        <translation>Adaugă camere</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Reîmprospătează</translation>
+    </message>
+    <message>
+        <source>Move to space</source>
+        <translation>Mută în spațiu</translation>
+    </message>
+    <message>
+        <source>Remove from space</source>
+        <translation>Elimină din spațiu</translation>
+    </message>
+    <message>
+        <source>Linked, not joined</source>
+        <translation>Legată, fără a intra</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n member(s)</source>
+        <translation>
+            <numerusform>%n membru</numerusform>
+            <numerusform>%n membri</numerusform>
+            <numerusform>%n de membri</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Join</source>
+        <translation>Intră</translation>
+    </message>
+    <message>
+        <source>Joining</source>
+        <translation>Se intră</translation>
+    </message>
+    <message>
+        <source>No rooms in this space</source>
+        <translation>Nicio cameră în acest spațiu</translation>
+    </message>
+    <message>
+        <source>Add rooms with the pulldown menu, or rooms of this space that you have joined show up here.</source>
+        <translation>Adaugă camere cu meniul derulant, sau camerele din acest spațiu în care ai intrat apar aici.</translation>
+    </message>
+</context>
+<context>
+    <name>SpacesPage</name>
+    <message>
+        <source>Really delete this space?</source>
+        <translation>Chiar ștergi acest spațiu?</translation>
+    </message>
+    <message>
+        <source>The space is left and forgotten. The rooms in it are not touched — they stay in the chat list.</source>
+        <translation>Spațiul este părăsit și uitat. Camerele din el nu sunt atinse — rămân în lista de conversații.</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Șterge</translation>
+    </message>
+    <message>
+        <source>Deleting space</source>
+        <translation>Se șterge spațiul</translation>
+    </message>
+    <message>
+        <source>Spaces</source>
+        <translation>Spații</translation>
+    </message>
+    <message>
+        <source>Offline — waiting for the network</source>
+        <translation>Deconectat — se așteaptă rețeaua</translation>
+    </message>
+    <message>
+        <source>Create space</source>
+        <translation>Creează spațiu</translation>
+    </message>
+    <message>
+        <source>Make start page</source>
+        <translation>Setează ca pagină de start</translation>
+    </message>
+    <message>
+        <source>Delete space</source>
+        <translation>Șterge spațiul</translation>
+    </message>
+    <message>
+        <source>No spaces</source>
+        <translation>Niciun spațiu</translation>
+    </message>
+    <message>
+        <source>Spaces you are a member of show up here. Spaces group rooms together.</source>
+        <translation>Spațiile în care ești membru apar aici. Spațiile grupează camere.</translation>
+    </message>
+    <message>
+        <source>Local data damaged</source>
+        <translation>Date locale deteriorate</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Culoare</translation>
+    </message>
+</context>
+<context>
+    <name>StorageBlockedPage</name>
+    <message>
+        <source>Encryption not possible</source>
+        <translation>Criptarea nu este posibilă</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pentru Sailfish OS</translation>
+    </message>
+    <message>
+        <source>The secure storage did not hand out a key, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Stocarea securizată nu a eliberat nicio cheie, așa că Shoal Messages nu poate crea o bază criptată.</translation>
+    </message>
+    <message>
+        <source>This system is missing the service that keeps encryption keys, so Shoal Messages cannot create an encrypted database.</source>
+        <translation>Acestui sistem îi lipsește serviciul care păstrează cheile de criptare, așa că Shoal Messages nu poate crea o bază criptată.</translation>
+    </message>
+    <message>
+        <source>Check again</source>
+        <translation>Verifică din nou</translation>
+    </message>
+    <message>
+        <source>Messages stay end-to-end encrypted on their way through the network either way. This is only about what lies on the device.</source>
+        <translation>Mesajele rămân oricum criptate cap la cap pe drumul lor prin rețea. Aici este vorba doar despre ce se află pe dispozitiv.</translation>
+    </message>
+    <message>
+        <source>Need help?</source>
+        <translation>Ai nevoie de ajutor?</translation>
+    </message>
+    <message>
+        <source>Checked — the secure storage still will not hand out a key.</source>
+        <translation>Verificat — stocarea securizată tot nu eliberează nicio cheie.</translation>
+    </message>
+</context>
+<context>
+    <name>StoreUnreadablePage</name>
+    <message>
+        <source>Sign out and delete local data</source>
+        <translation>Deconectează-te și șterge datele locale</translation>
+    </message>
+    <message>
+        <source>Local data unreadable</source>
+        <translation>Datele locale nu pot fi citite</translation>
+    </message>
+    <message>
+        <source>Matrix for Sailfish OS</source>
+        <translation>Matrix pentru Sailfish OS</translation>
+    </message>
+    <message>
+        <source>Shoal Messages could not read back part of the data it keeps on this device. Your account, this device and its encryption keys are not affected.</source>
+        <translation>Shoal Messages nu a putut reciti o parte din datele pe care le păstrează pe acest dispozitiv. Contul tău, acest dispozitiv și cheile sale de criptare nu sunt afectate.</translation>
+    </message>
+    <message>
+        <source>Rebuilding deletes the rooms and messages stored on this device and loads them again from your homeserver. This device and its keys stay; messages that were not sent yet are lost.</source>
+        <translation>Reconstruirea șterge camerele și mesajele stocate pe acest dispozitiv și le încarcă din nou de pe serverul tău de domiciliu. Acest dispozitiv și cheile sale rămân; mesajele încă netrimise se pierd.</translation>
+    </message>
+    <message>
+        <source>Rebuild local data</source>
+        <translation>Reconstruiește datele locale</translation>
+    </message>
+</context>
+<context>
+    <name>ThreadPage</name>
+    <message>
+        <source>Load older posts</source>
+        <translation>Încarcă postări mai vechi</translation>
+    </message>
+    <message>
+        <source>Thread</source>
+        <translation>Fir</translation>
+    </message>
+    <message>
+        <source>Event</source>
+        <translation>Eveniment</translation>
+    </message>
+    <message>
+        <source>Cannot be decrypted — this device is missing the key</source>
+        <translation>Nu poate fi decriptat — acestui dispozitiv îi lipsește cheia</translation>
+    </message>
+    <message>
+        <source>Message deleted</source>
+        <translation>Mesaj șters</translation>
+    </message>
+    <message>
+        <source>Attachment</source>
+        <translation>Atașament</translation>
+    </message>
+    <message>
+        <source>Thread unavailable</source>
+        <translation>Firul nu este disponibil</translation>
+    </message>
+    <message>
+        <source>Loading thread</source>
+        <translation>Se încarcă firul</translation>
+    </message>
+    <message>
+        <source>Reply in thread</source>
+        <translation>Răspunde în fir</translation>
+    </message>
+    <message>
+        <source>Sent unencrypted</source>
+        <translation>Trimis necriptat</translation>
+    </message>
+    <message>
+        <source>Not sent by the account it names</source>
+        <translation>Nu a fost trimis de contul indicat</translation>
+    </message>
+    <message>
+        <source>The sender&apos;s keys changed</source>
+        <translation>Cheile expeditorului s-au schimbat</translation>
+    </message>
+    <message>
+        <source>From an unverified device</source>
+        <translation>De pe un dispozitiv neverificat</translation>
+    </message>
+    <message>
+        <source>From an unverified person</source>
+        <translation>De la o persoană neverificată</translation>
+    </message>
+    <message>
+        <source>Authenticity not confirmed</source>
+        <translation>Autenticitate neconfirmată</translation>
+    </message>
+    <message>
+        <source>Open this address?</source>
+        <translation>Deschideți această adresă?</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Deschide</translation>
+    </message>
+</context>
+<context>
+    <name>UnverifiedRecipientsDialog</name>
+    <message>
+        <source>Send anyway</source>
+        <translation>Trimite oricum</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n unverified device(s)</source>
+        <translation>
+            <numerusform>%n dispozitiv neverificat</numerusform>
+            <numerusform>%n dispozitive neverificate</numerusform>
+            <numerusform>%n de dispozitive neverificate</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Do not warn about this user again</source>
+        <translation>Nu mai avertiza despre acest utilizator</translation>
+    </message>
+    <message>
+        <source>Do not warn about these users again</source>
+        <translation>Nu mai avertiza despre acești utilizatori</translation>
+    </message>
+    <message>
+        <source>Applies until you verify or clear it.</source>
+        <translation>Valabil până verifici sau resetezi.</translation>
+    </message>
+    <message>
+        <source>keys changed since you verified them</source>
+        <translation>cheile s-au schimbat de când le-ai verificat</translation>
+    </message>
+    <message>
+        <source>not verified</source>
+        <translation>neverificată</translation>
+    </message>
+    <message>
+        <source>This device is not verified</source>
+        <translation>Acest dispozitiv nu este verificat</translation>
+    </message>
+    <message>
+        <source>Unverified recipients</source>
+        <translation>Destinatari neverificați</translation>
+    </message>
+    <message>
+        <source>The message will be encrypted for recipients you have not verified. Verify them for real certainty, or send anyway.</source>
+        <translation>Mesajul va fi criptat pentru destinatari pe care nu i-ai verificat. Verifică-i pentru certitudine reală sau trimite oricum.</translation>
+    </message>
+    <message>
+        <source>Do not warn again</source>
+        <translation>Nu mai avertiza</translation>
+    </message>
+    <message>
+        <source>As long as this device is unverified, no other device can be shown as verified — not even one that is. Verify it under Account → Encryption, or send anyway.</source>
+        <translation>Cât timp acest dispozitiv nu este verificat, niciun alt dispozitiv nu poate fi arătat ca verificat — nici măcar unul care este. Verifică-l în Cont → Criptare sau trimite oricum.</translation>
+    </message>
+</context>
+<context>
+    <name>VerificationPage</name>
+    <message>
+        <source>Verification</source>
+        <translation>Verificare</translation>
+    </message>
+    <message>
+        <source>Another one of your devices</source>
+        <translation>Încă unul dintre dispozitivele tale</translation>
+    </message>
+    <message>
+        <source>Your answer is in. Waiting for the other device.</source>
+        <translation>Răspunsul tău a fost înregistrat. Se așteaptă celălalt dispozitiv.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other device to accept.</source>
+        <translation>Se așteaptă ca celălalt dispozitiv să accepte.</translation>
+    </message>
+    <message>
+        <source>Waiting for the other side to accept the request on their device.</source>
+        <translation>Se așteaptă ca cealaltă parte să accepte cererea pe dispozitivul său.</translation>
+    </message>
+    <message>
+        <source>Confirm that this is really your other device. Once verified, both can share room keys and older messages become readable.</source>
+        <translation>Confirmă că acesta este într-adevăr celălalt dispozitiv al tău. Odată verificate, ambele pot partaja chei de cameră, iar mesajele mai vechi devin lizibile.</translation>
+    </message>
+    <message>
+        <source>Confirm that you are really talking to this person and not to someone in between.</source>
+        <translation>Confirmă că vorbești într-adevăr cu această persoană și nu cu cineva aflat la mijloc.</translation>
+    </message>
+    <message>
+        <source>Both devices must show the same emoji, in the same order.</source>
+        <translation>Ambele dispozitive trebuie să arate aceleași emoji, în aceeași ordine.</translation>
+    </message>
+    <message>
+        <source>Verified.</source>
+        <translation>Verificat.</translation>
+    </message>
+    <message>
+        <source>The verification was cancelled.</source>
+        <translation>Verificarea a fost anulată.</translation>
+    </message>
+    <message>
+        <source>They do not match</source>
+        <translation>Nu se potrivesc</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation>Respinge</translation>
+    </message>
+    <message>
+        <source>They match</source>
+        <translation>Se potrivesc</translation>
+    </message>
+    <message>
+        <source>Accept</source>
+        <translation>Răspunde</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Anulează</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Închide</translation>
+    </message>
+</context>
+<context>
+    <name>VerifyUserPage</name>
+    <message>
+        <source>Verify user</source>
+        <translation>Verifică utilizator</translation>
+    </message>
+    <message>
+        <source>Both sides then compare seven emoji. That is what says nobody is sitting in between — and it holds for every room you share with this person.</source>
+        <translation>Apoi ambele părți compară șapte emoji. Tocmai asta spune că nimeni nu stă la mijloc — și este valabil pentru fiecare cameră pe care o împarți cu această persoană.</translation>
+    </message>
+    <message>
+        <source>User ID</source>
+        <translation>ID utilizator</translation>
+    </message>
+    <message>
+        <source>For example @anna:example.org or @tom:example.net</source>
+        <translation>De exemplu @anna:example.org sau @tom:example.net</translation>
+    </message>
+    <message>
+        <source>Verify</source>
+        <translation>Verifică</translation>
+    </message>
+    <message>
+        <source>Your own device</source>
+        <translation>Propriul tău dispozitiv</translation>
+    </message>
+    <message>
+        <source>Compares seven emoji with your other device. It needs that other device in front of you, and once both have confirmed, this one can read the shared room keys.</source>
+        <translation>Compară șapte emoji cu celălalt dispozitiv al tău. Ai nevoie de acel dispozitiv în față; după ce amândouă au confirmat, acesta poate citi cheile comune ale camerelor.</translation>
+    </message>
+    <message>
+        <source>Verify this device</source>
+        <translation>Verifică acest dispozitiv</translation>
+    </message>
+</context>
+<context>
+    <name>VideoPage</name>
+    <message>
+        <source>Save</source>
+        <translation>Salvează</translation>
+    </message>
+    <message>
+        <source>This attachment could not be loaded</source>
+        <translation>Acest atașament nu a putut fi încărcat</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads</source>
+        <translation>Salvat în Descărcări</translation>
+    </message>
+    <message>
+        <source>Could not save</source>
+        <translation>Nu s-a putut salva</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>Redirecționează</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceRecorder</name>
+    <message>
+        <source>Nothing was recorded.</source>
+        <translation>Nu s-a înregistrat nimic.</translation>
+    </message>
+</context>
+<context>
+    <name>VoiceTranscripts</name>
+    <message>
+        <source>This voice message has no file.</source>
+        <translation>Acest mesaj vocal nu are fișier.</translation>
+    </message>
+    <message>
+        <source>The voice message is too long to convert.</source>
+        <translation>Mesajul vocal este prea lung pentru a fi transformat.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be downloaded.</source>
+        <translation>Mesajul vocal nu a putut fi descărcat.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be read.</source>
+        <translation>Mesajul vocal nu a putut fi citit.</translation>
+    </message>
+    <message>
+        <source>This is not a voice message that can be converted.</source>
+        <translation>Acesta nu este un mesaj vocal care poate fi transformat.</translation>
+    </message>
+    <message>
+        <source>The voice message could not be decoded.</source>
+        <translation>Mesajul vocal nu a putut fi decodat.</translation>
+    </message>
+    <message>
+        <source>Converting took too long and was stopped.</source>
+        <translation>Transformarea a durat prea mult și a fost oprită.</translation>
+    </message>
+    <message>
+        <source>Speech Note is not installed, or its service does not start.</source>
+        <translation>Speech Note nu este instalat sau serviciul său nu pornește.</translation>
+    </message>
+    <message>
+        <source>Speech Note has no model that recognises the language by itself. Download &quot;Auto (WhisperCpp Small)&quot; in Speech Note.</source>
+        <translation>Speech Note nu are niciun model care să recunoască singur limba. Descarcă „Auto (WhisperCpp Small)” în Speech Note.</translation>
+    </message>
+    <message>
+        <source>The speech service is busy. Try again in a moment.</source>
+        <translation>Serviciul de vorbire este ocupat. Încearcă din nou peste o clipă.</translation>
+    </message>
+    <message>
+        <source>The speech service refused the voice message.</source>
+        <translation>Serviciul de vorbire a refuzat mesajul vocal.</translation>
+    </message>
+    <message>
+        <source>The speech service reported an error.</source>
+        <translation>Serviciul de vorbire a raportat o eroare.</translation>
+    </message>
+    <message>
+        <source>Everything works: voice messages can be converted.</source>
+        <translation>Totul funcționează: mesajele vocale pot fi transformate.</translation>
+    </message>
+    <message>
+        <source>No speech was recognised.</source>
+        <translation>Nu a fost recunoscută nicio vorbire.</translation>
+    </message>
+    <message>
+        <source>Shoal Messages may not talk to the speech service. Reinstalling Shoal Messages puts the permission back.</source>
+        <translation>Shoal Messages nu are voie să comunice cu serviciul de vorbire. Reinstalarea Shoal Messages readuce permisiunea.</translation>
+    </message>
+    <message>
+        <source>The speech service does not answer.</source>
+        <translation>Serviciul de vorbire nu răspunde.</translation>
+    </message>
+</context>
+<context>
+    <name>shipwright-shoal-messages</name>
+    <message numerus="yes">
+        <source>%n mention(s)</source>
+        <translation>
+            <numerusform>%n mențiune</numerusform>
+            <numerusform>%n mențiuni</numerusform>
+            <numerusform>%n de mențiuni</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new message(s)</source>
+        <translation>
+            <numerusform>%n mesaj nou</numerusform>
+            <numerusform>%n mesaje noi</numerusform>
+            <numerusform>%n de mesaje noi</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Incoming video call</source>
+        <translation>Apel video primit</translation>
+    </message>
+    <message>
+        <source>Incoming call</source>
+        <translation>Apel primit</translation>
+    </message>
+    <message>
+        <source>New message</source>
+        <translation>Mesaj nou</translation>
+    </message>
+</context>
+</TS>
