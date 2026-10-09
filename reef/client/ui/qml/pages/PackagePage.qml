@@ -323,10 +323,13 @@ Page {
                 wrapMode: Text.Wrap
                 color: Theme.secondaryHighlightColor
                 font.pixelSize: Theme.fontSizeSmall
-                text: qsTr("Reef only offers versions tested on this phone's Sailfish OS (%1).").arg(Reef.installedRelease)
+                text: page.pkg.deviceTested === false
+                      ? qsTr("Built for this phone's Sailfish OS (%1), but not yet tested on a phone running it. "
+                             + "If something doesn't work, please report it.").arg(Reef.installedRelease)
+                      : qsTr("Reef only offers versions tested on this phone's Sailfish OS (%1).").arg(Reef.installedRelease)
             }
             Repeater {
-                model: page.pkg.testedOn || []
+                model: page.pkg.deviceTested === false ? [] : (page.pkg.testedOn || [])
                 DetailItem {
                     required property string modelData
                     label: qsTr("Sailfish OS")

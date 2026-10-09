@@ -56,6 +56,11 @@ pub struct Package {
     pub category: String,
     /// Full release strings (`5.2.0.17`) this exact build was tested on.
     pub tested_on: Vec<String>,
+    /// False when this release's build is offered without having been run
+    /// on a phone with that release: built for it, tested on another one.
+    /// Absent (older catalogues): true.
+    #[serde(default = "default_true")]
+    pub device_tested: bool,
     /// Sailjail permissions the app requests, by name (for example
     /// `Bluetooth`, `Audio`), shown before install.
     #[serde(default)]
@@ -416,6 +421,18 @@ pub(crate) mod tests {
              "licence":{"model":"free"}}]}"#;
         let cat = Catalogue::parse(old.as_bytes(), "aarch64").unwrap();
         assert_eq!(cat.packages[0].keel_tier, None);
+        // So does one from before device_tested: tested, as it said.
+        assert!(cat.packages[0].device_tested);
+        let built = old.replace(
+            r#""tested_on":["5.2.0.17"],"#,
+            r#""tested_on":["5.2.0.17"],"device_tested":false,"#,
+        );
+        assert!(
+            !Catalogue::parse(built.as_bytes(), "aarch64")
+                .unwrap()
+                .packages[0]
+                .device_tested
+        );
         // Every value the portal writes today, and a future one, parse.
         for tier in ["A", "B", "none", "not-applicable", "C"] {
             let json = old.replace(
