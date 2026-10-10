@@ -20,7 +20,7 @@ Name:           shipwright-reef-installer
 # The client obsoletes installers below 1 (reef/rpm/shipwright-reef.spec):
 # raise that bound before this version reaches 1.
 Version:        0.1.0
-Release:        6
+Release:        7
 Summary:        Installs the Reef store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -44,7 +44,13 @@ Requires:       util-linux
 Requires(posttrans): util-linux
 # killall
 Requires:       psmisc
-# Reef publishes for 5.1 (Xperias) and 5.2 (Jolla Phone) onwards.
+# The release check (curl), and its notification when there is nothing for
+# the release (gdbus, as the user: runuser and getent).
+Requires:       curl
+Requires:       glib2
+Requires:       glibc-common
+# Installs on 5.1 onwards; on a release Reef publishes nothing for (5.1
+# today), the detached script says so and removes the installer again.
 Requires:       sailfish-version >= 5.1.0
 
 %define reef_key_file_default reef/installer/RPM-GPG-KEY-shipwright-reef
@@ -143,6 +149,9 @@ exit 0
 %{reef_share}/RPM-GPG-KEY-shipwright-reef
 
 %changelog
+* Sat Oct 10 2026 Shipwright - 0.1.0-7
+- On a Sailfish OS release Reef has no apps for (5.1, for now), the installer says so in a notification and removes itself, instead of failing to reach the repository four times, restarting PackageKit and failing the install with nothing on the screen.
+
 * Fri Oct 09 2026 Shipwright - 0.1.0-6
 - The detached steps read from /dev/null: rpm on Sailfish OS cannot open its database with no standard input, so removing the installer left its signing key.
 

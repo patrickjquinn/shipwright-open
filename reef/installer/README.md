@@ -1,19 +1,20 @@
 # shipwright-reef-installer
 
-The one RPM a user downloads from the Reef website and installs by hand, after enabling "Allow untrusted software". It does four things (docs/plan.md, "Reef: Install flow"):
+The one RPM a user downloads from the Reef website and installs by hand, after enabling "Allow untrusted software". It does five things (docs/plan.md, "Reef: Install flow"):
 
 1. Detects the installed Sailfish OS release from `/etc/sailfish-release`, then `/etc/os-release`, then `version`. It never uses `ssu re`.
 2. Registers the repository with `ssu ar shipwright-reef 'https://reefstore.app/sailfishos/<release>/%(arch)/'`, then `ssu ur`.
-3. Trusts the Reef signing key with `rpm --import`.
-4. Installs the Reef client unattended through PackageKit (`pkcon -y install shipwright-reef`). The client obsoletes the installer, so the installer disappears once the client is installed.
+3. Checks that Reef publishes for that release (`shipwright-reef-repo check`: the repository's `repodata/repomd.xml` is there). When it is not (a 404, as for Sailfish OS 5.1 today), it shows a notification saying so and removes itself, which unregisters the repository; offline, it carries on.
+4. Trusts the Reef signing key with `rpm --import`.
+5. Installs the Reef client unattended through PackageKit (`pkcon -y install shipwright-reef`). The client obsoletes the installer, so the installer disappears once the client is installed.
 
 | File | Installed as | Role |
 | --- | --- | --- |
 | `repo.conf` | `/usr/share/shipwright-reef-installer/repo.conf` | **The one place to configure the repository**: alias, URL template, release granularity, client package name, key file, key user id |
-| `bin/shipwright-reef-repo` | `/usr/bin/shipwright-reef-repo` | `release`, `url`, `add` (`ssu rr`, `ssu ar`, `ssu ur`), `remove`, `import-key`, `remove-key`. POSIX sh. The Reef client package should ship it too (see below) |
-| `bin/shipwright-reef-installer` | `/usr/bin/shipwright-reef-installer` | The detached post-transaction step: key import, repository refresh, client install |
+| `bin/shipwright-reef-repo` | `/usr/bin/shipwright-reef-repo` | `release`, `url`, `check`, `add` (`ssu rr`, `ssu ar`, `ssu ur`), `remove`, `import-key`, `remove-key`. POSIX sh. The Reef client package should ship it too (see below) |
+| `bin/shipwright-reef-installer` | `/usr/bin/shipwright-reef-installer` | The detached post-transaction step: release check, key import, repository refresh, client install |
 | `rpm/shipwright-reef-installer.spec` | | The package |
-| `tests/test-repo.sh` | | Tests the scripts against stub `ssu`/`rpm`/`version` and fixture release files |
+| `tests/test-repo.sh` | | Tests the scripts against stub `ssu`/`rpm`/`version`/`curl` and fixture release files |
 
 The repository URL is `REEF_URL_TEMPLATE` in `repo.conf`, with `{release}` substituted literally and `%(arch)` left for ssu to expand. The production host is `reefstore.app` (the website's host, where the reef-web Worker serves `/sailfishos/`). A build with `REEF_URL_TEMPLATE` set in the environment replaces it (`rpm/prebuild.sh`); [`tools/build/reef/lan-test-repo.sh`](../../tools/build/reef/README.md#lan-test-repository) does this for a repository on the local network.
 

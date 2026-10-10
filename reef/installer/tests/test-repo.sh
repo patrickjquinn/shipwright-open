@@ -126,6 +126,37 @@ REEF_CONF="$here/repo.conf" REEF_ROOT="$work/root" RPM="$work/bin/rpm-fails" \
   sh "$tool" import-key 2>/dev/null || status=$?
 check "import-key fails when rpm --import fails" "1" "$status"
 
+# check: the repository metadata for this release and architecture, by HTTP
+# status. curl and rpm stubs: rpm prints the architecture, curl records the
+# URL and answers with $CODE (000 and exit 28 for a timeout).
+printf '#!/bin/sh\necho aarch64\n' >"$work/bin/rpm-arch"
+cat >"$work/bin/curl" <<EOF
+#!/bin/sh
+for a; do last=\$a; done
+echo "\$last" >> "$work/probes"
+printf '%s' "\$CODE"
+[ "\$CODE" = 000 ] && exit 28
+exit 0
+EOF
+chmod +x "$work/bin/rpm-arch" "$work/bin/curl"
+check_status() {
+  status=0
+  CODE=$1 REEF_CONF="$here/repo.conf" REEF_ROOT="$work/root" RPM="$work/bin/rpm-arch" \
+    CURL="$work/bin/curl" sh "$tool" check >/dev/null 2>&1 || status=$?
+  echo "$status"
+}
+: >"$work/probes"
+check "check: published release" "0" "$(check_status 200)"
+check "check: probes this release's metadata" \
+  "https://reefstore.app/sailfishos/5.2.0.17/aarch64/repodata/repomd.xml" "$(cat "$work/probes")"
+check "check: no repository (404)" "4" "$(check_status 404)"
+check "check: offline (timeout)" "5" "$(check_status 000)"
+check "check: server error" "5" "$(check_status 503)"
+status=0
+REEF_CONF="$here/repo.conf" REEF_ROOT="$work/root" RPM="$work/bin/rpm-arch" \
+  CURL="$work/bin/no-such-curl" sh "$tool" check >/dev/null 2>&1 || status=$?
+check "check: no curl" "5" "$status"
+
 # No release anywhere: fail rather than register a wrong URL.
 rm "$work/root/etc/sailfish-release" "$work/root/etc/os-release"
 printf '#!/bin/sh\necho unknown\n' >"$work/bin/version"

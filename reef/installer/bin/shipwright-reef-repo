@@ -12,7 +12,8 @@
 # The command sequence mirrors reef/client/backend/src/repo.rs.
 #
 # Test hooks (never set on a phone): REEF_CONF, REEF_ROOT (prefix for /etc
-# files), SSU, RPM, VERSION_CMD (commands to call instead of the real ones).
+# files), SSU, RPM, VERSION_CMD, CURL (commands to call instead of the real
+# ones).
 
 # -e as well as -u: a command that fails stops the script with a non-zero
 # status, so a failed `ssu ar` is never reported as "registered". The ssu
@@ -28,6 +29,7 @@ REEF_ROOT=${REEF_ROOT:-}
 SSU=${SSU:-ssu}
 RPM=${RPM:-rpm}
 VERSION_CMD=${VERSION_CMD:-version}
+CURL=${CURL:-curl}
 
 if [ ! -r "$REEF_CONF" ]; then
   echo "shipwright-reef-repo: cannot read $REEF_CONF" >&2
@@ -46,6 +48,8 @@ usage() {
 usage: shipwright-reef-repo <command>
   release     print the installed Sailfish OS release (not \`ssu re\`)
   url         print the repository URL for the installed release
+  check       whether Reef has a repository for the installed release:
+              exit 0 yes, 4 no (none published), 5 cannot tell (offline)
   add         register (or re-pin) the repository: ssu rr, ssu ar, ssu ur
   remove      unregister the repository: ssu rr, ssu ur
   import-key  rpm --import the Reef signing key (not inside an RPM transaction)
@@ -89,12 +93,47 @@ repo_url() {
   printf '%s\n' "$REEF_URL_TEMPLATE" | sed "s|{release}|$component|"
 }
 
+# The package architecture ssu puts in %(arch): rpm's, as ssu takes it.
+package_arch() {
+  a=$($RPM --eval '%{_arch}' 2>/dev/null) || a=""
+  case "$a" in
+    '' | *%*) uname -m ;;
+    *) echo "$a" ;;
+  esac
+}
+
 case "${1:-}" in
   release)
     installed_release
     ;;
   url)
     repo_url
+    ;;
+  check)
+    # A release Reef publishes nothing for (Sailfish 5.1, say) has no
+    # repository: its metadata is a 404. Anything else (no network, a
+    # timeout, a server error) cannot tell, and the caller carries on.
+    url=$(repo_url) || exit 1
+    probe="$(printf '%s\n' "$url" | sed "s|%(arch)|$(package_arch)|")repodata/repomd.xml"
+    if ! command -v "$CURL" >/dev/null 2>&1; then
+      echo "cannot check $probe: no $CURL"
+      exit 5
+    fi
+    code=$($CURL -s -o /dev/null -w '%{http_code}' --max-time 20 "$probe" 2>/dev/null) || code="${code:-000}"
+    case "$code" in
+      200)
+        echo "available $probe"
+        exit 0
+        ;;
+      404 | 403)
+        echo "none for this release: $probe ($code)"
+        exit 4
+        ;;
+      *)
+        echo "cannot check $probe (HTTP $code)"
+        exit 5
+        ;;
+    esac
     ;;
   add)
     url=$(repo_url) || exit 1

@@ -49,6 +49,26 @@ logfile=$2
 umask 022
 cd /
 
+# A notification on the phone's screen, from root: sent on the session bus
+# of the user logged in on the seat (the first one at uid 100000 or above).
+notify_user() {
+  for dir in /run/user/*; do
+    uid=${dir##*/}
+    case "$uid" in '' | *[!0-9]*) continue ;; esac
+    [ "$uid" -ge 100000 ] && [ -S "$dir/dbus/user_bus_socket" ] || continue
+    user=$(getent passwd "$uid" | cut -d : -f 1)
+    [ -n "$user" ] || continue
+    runuser -u "$user" -- env DBUS_SESSION_BUS_ADDRESS="unix:path=$dir/dbus/user_bus_socket" \
+      gdbus call --session --dest org.freedesktop.Notifications \
+      --object-path /org/freedesktop/Notifications \
+      --method org.freedesktop.Notifications.Notify -- \
+      "Reef" 0 "icon-lock-information" "$1" "$2" "[]" \
+      "{\"x-nemo-preview-summary\": <\"$1\">, \"x-nemo-preview-body\": <\"$2\">}" \
+      -1 >/dev/null 2>&1 && return 0
+  done
+  return 1
+}
+
 log() {
   # $1 priority (syslog number), rest message. To the log file and journal.
   prio=$1
@@ -76,14 +96,45 @@ sleep 1
 # a synchronisation point (the Chum installer uses `pkcon search name`).
 pkcon -p search name "$called" >/dev/null 2>&1
 
-# 2. Trust the Reef signing key.
+# 2. Is there anything for this release? Sailfish OS 5.1, for one, has no
+# repository: refreshing it failed four times over ("Can't access the given
+# URL"), PackageKit was restarted and the install failed anyway, with nothing
+# on the screen to say why. Instead: say so, and remove this package (its
+# %preun unregisters the repository; the key is not imported yet).
+# Offline or unsure (5): carry on as before, the refresh retries.
+release=$($REPO_TOOL release 2>/dev/null) || release="?"
+check=5
+for attempt in 1 2 3; do
+  out=$($REPO_TOOL check 2>&1)
+  check=$?
+  log 6 "release check: $out"
+  [ $check = 5 ] || break
+  sleep $((attempt * 5))
+done
+if [ $check = 4 ]; then
+  log 3 "no Reef repository for Sailfish OS $release; removing $REEF_INSTALLER_PACKAGE"
+  notify_user "Reef cannot be installed" \
+    "Reef has no apps for Sailfish OS $release yet. reefstore.app/install lists the releases it supports." ||
+    log 4 "could not show the notification"
+  # Detached, after this script: the removal deletes this file.
+  # shellcheck disable=SC2016 # expanded by the inner shell
+  setsid --fork sh -c '
+    sleep 2
+    printf "%s [%s] %s\n" "$(date -Iseconds)" "$2" "pkcon -py remove $1"
+    pkcon -py remove "$1"
+    printf "%s [%s] removal exited %s\n" "$(date -Iseconds)" "$2" "$?"
+  ' sh_reef_remove "$REEF_INSTALLER_PACKAGE" "$called" >>"$logfile" 2>&1 </dev/null
+  exit 4
+fi
+
+# 3. Trust the Reef signing key.
 if $REPO_TOOL import-key; then
   log 6 "imported $REEF_KEY_FILE"
 else
   log 3 "rpm --import $REEF_KEY_FILE failed; packages from $REEF_ALIAS will not verify"
 fi
 
-# 3. Refresh our repository only, retrying as the Chum installer does.
+# 4. Refresh our repository only, retrying as the Chum installer does.
 refresh="pkcon -pv repo-set-data $REEF_ALIAS refresh-now true"
 retc=1
 for attempt in 1 2 3 4; do
@@ -114,7 +165,7 @@ for attempt in 1 2 3 4; do
   sleep $wait_s
 done
 
-# 4. Install the client, detached: installing it removes this script.
+# 5. Install the client, detached: installing it removes this script.
 install="pkcon -pvy install $REEF_CLIENT_PACKAGE"
 # shellcheck disable=SC2016 # expanded by the inner shell, from its arguments
 setsid --fork sh -c '
