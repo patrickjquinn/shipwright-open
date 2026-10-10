@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT-0
+#
+# {{title}} on Keel. It starts in its own booster inside its sandbox
+# (`invoker --type=keel -A`: booster-keel@{{name}}, which the package starts
+# with the session); its windows are Lipstick windows (Keel's direct mode).
+# keel-shell is the opt-in fallback: Exec=/usr/bin/keel-shell --
+# /usr/bin/{{name}} with X-Nemo-Application-Type=no-invoker. Sandboxed by
+# Sailjail. Permissions: none yet. Add what a feature needs
+# (Internet, Pictures, Location, ...; see /etc/sailjail/permissions on a
+# phone), each with a comment saying why. The app's private directories,
+# from OrganizationName/ApplicationName, are
+# ~/.local/share/{{org}}/{{app_name}} and ~/.config/{{org}}/{{app_name}}.
+[Desktop Entry]
+Type=Application
+Name={{title}}
+Comment={{summary}}
+Icon={{name}}
+Exec=/usr/bin/invoker --type=keel -A -- /usr/bin/{{name}}
+X-Nemo-Single-Instance=yes
+Categories=Utility;
+
+[X-Sailjail]
+OrganizationName={{org}}
+ApplicationName={{app_name}}
+Permissions=

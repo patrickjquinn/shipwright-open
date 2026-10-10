@@ -25,6 +25,16 @@ SPDX-FileCopyrightText = "2026 Patrick Quinn"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
+path = ["tools/keel-dev/**", "tools/keel-compat/**"]
+SPDX-FileCopyrightText = "2026 Patrick Quinn"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["tools/keel-dev/templates/**"]
+SPDX-FileCopyrightText = "2026 Patrick Quinn"
+SPDX-License-Identifier = "MIT-0"
+
+[[annotations]]
 path = ["shoal/bridge-airpods/daemon/**"]
 SPDX-FileCopyrightText = "2026 Patrick Quinn"
 SPDX-License-Identifier = "GPL-3.0-only"

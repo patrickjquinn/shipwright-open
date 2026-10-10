@@ -15,12 +15,13 @@ Shipwright is a mix of open-source and proprietary parts. The parts people must 
 | Shoal Keys (`shoal/keys/`) | GPL-3.0-or-later | Free, with an optional paid supporter licence. |
 | Shoal Messages (`shoal/messages/`) | Apache-2.0 | A fork of harbour-xmatic, which is Apache-2.0. |
 | AirPods daemon (`shoal/bridge-airpods/daemon/`, `shoal/bridge-airpods/rpm/shipwright-shoal-bridge-airpods.spec`, `shoal/bridge-airpods/rpm/make-sources.sh`) | GPL-3.0-only | Its own licence, as before, including its build and vendoring scripts and tests; the paid UI talks to it over D-Bus. `daemon/tests/tst_ui_link.qml` loads the paid UI and stays proprietary. |
+| Keel developer tools: the `keel` command (`tools/keel-dev/`) and `keel-compat` (`tools/keel-compat/`) | MIT; the app templates (`tools/keel-dev/templates/`) MIT-0 | So anyone can create, port, build and package a Keel app. A generated app is its author's to license: `keel new` writes their licence in place of the templates' MIT-0. |
 | Keel launcher (`tools/keel-launcher/`) | MIT | `include!`d into the GPL and paid apps at build time, so it carries Keel's licence. |
 | Build scripts for the open packages (`tools/build/sdk/`, `tools/build/native/`, `rust-toolchain.toml`, `shoal/messages/rpm/prebuild.sh`) | MIT (the Messages hook: Apache-2.0) | The scripts that control compiling and packaging the GPL apps belong to their corresponding source. |
 | This file and `TRADEMARKS.md` | CC-BY-4.0 | |
 | Developer documentation (`docs/developers/`) | CC-BY-4.0 | |
 | The Reef and Shoal Keys app icons (`icons/hicolor/*/apps/shipwright-reef.png`, `shipwright-shoal-keys.png`) | CC-BY-4.0 | The names and logos remain trademarks (`TRADEMARKS.md`). |
-| Paid apps (Shoal Bridge UI, Mail, Camera, Pilot and the rest), hosted services, the other tools (including the `keel` developer CLI in `tools/keel-dev/`), the other app icons and everything else | LicenseRef-Shipwright-Proprietary | All rights reserved. |
+| Paid apps (Shoal Bridge UI, Mail, Camera, Pilot and the rest), hosted services, the other tools, the other app icons and everything else | LicenseRef-Shipwright-Proprietary | All rights reserved. |
 
 Third-party code keeps its own licence; see `LICENSES/` and the `PROVENANCE.md` and `upstream-licenses/` files next to it. Apps under a proprietary licence that load the LGPL Nemo compatibility libraries allow reverse engineering of those libraries for debugging, as LGPL-2.1 section 6 requires.
 

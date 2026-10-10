@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: MIT-0
+-->
+<!-- Placeholder launcher icon for {{title}}: replace it with your own, then
+     run icons/render-icons.sh. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="172" height="172" viewBox="0 0 172 172">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#{{icon_color_a}}"/>
+      <stop offset="1" stop-color="#{{icon_color_b}}"/>
+    </linearGradient>
+  </defs>
+  <circle cx="86" cy="86" r="82" fill="url(#bg)"/>
+  <text x="86" y="86" dy="0.35em" text-anchor="middle" font-family="sans-serif"
+        font-size="84" font-weight="bold" fill="#ffffff">{{initial}}</text>
+</svg>

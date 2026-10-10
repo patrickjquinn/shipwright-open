@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT-0
+
+# Host checks for {{name}}: format, lint, unit tests, and the offscreen smoke
+# test against a Keel build (Qt 6.4 from Ubuntu 24.04). Set SHIPWRIGHT_GIT
+# to the Shipwright repository you build Keel from; a private repository
+# also needs credentials in that URL or a checkout step with a token. The
+# device RPM is built in the Sailfish SDK (rpm/build-in-sdk.sh), not here.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  SHIPWRIGHT_GIT: https://example.invalid/shipwright.git
+  SHIPWRIGHT_REF: foundation
+
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt 6 and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build pkg-config dbus \
+            qt6-base-dev qt6-base-private-dev qt6-declarative-dev \
+            qt6-declarative-private-dev qt6-declarative-dev-tools \
+            qml6-module-qtquick qml6-module-qtquick-window \
+            qml6-module-qtqml-workerscript qml6-module-qttest
+      - name: Build Keel
+        run: |
+          git clone --depth 1 --branch "$SHIPWRIGHT_REF" "$SHIPWRIGHT_GIT" "$RUNNER_TEMP/shipwright"
+          cmake -S "$RUNNER_TEMP/shipwright/keel" -B "$RUNNER_TEMP/keel" -G Ninja -DBUILD_TESTING=OFF
+          cmake --build "$RUNNER_TEMP/keel"
+          # build.rs links Keel's SailfishApp from this tree; the smoke
+          # test loads Keel's QML from it.
+          echo "KEEL_BUILD_DIR=$RUNNER_TEMP/keel" >> "$GITHUB_ENV"
+      # rustup reads rust-toolchain.toml.
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Unit tests
+        run: cargo test --locked
+      - name: Build
+        run: cargo build --locked
+      - name: Smoke test
+        run: tests/smoke-test.sh
+      - name: Shellcheck
+        run: shellcheck tests/*.sh rpm/*.sh icons/*.sh

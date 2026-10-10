@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT-0
+
+# Files that cannot carry a licence header (`reuse lint` checks the tree;
+# .qmlls.ini is written by cxx-qt-build).
+version = 1
+
+[[annotations]]
+path = ["Cargo.lock", "icons/hicolor/**", ".qmlls.ini"]
+SPDX-FileCopyrightText = "{{year}} {{copyright}}"
+SPDX-License-Identifier = "{{license}}"

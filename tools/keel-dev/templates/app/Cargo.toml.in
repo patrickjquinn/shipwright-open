@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT-0
+
+# {{name}}: {{title}}, a Sailfish OS app on Keel (Sailfish.Silica for Qt 6).
+# Rust backend over CXX-Qt; the window comes from Keel's SailfishApp library
+# (cpp/launcher.cpp). Its own Cargo workspace.
+[workspace]
+
+[package]
+name = "{{name}}"
+version = "0.1.0"
+edition = "2021"
+# cxx-qt 0.10 needs 1.85.
+rust-version = "1.85"
+license = "{{license}}"
+publish = false
+
+# The app is a library built as a shared object that is also executable
+# (target/<profile>/lib{{crate}}.so, build.rs): the RPM installs it as
+# /usr/bin/{{name}}, and Keel's booster can load it. Only a cdylib: an rlib
+# next to it would turn off release LTO.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# cxx-qt pinned exactly, as in the Shipwright apps: CXX-Qt's API changes
+# between minor releases. Cargo.lock pins cxx.
+cxx = "1.0.176"
+cxx-qt = "=0.10.0"
+cxx-qt-lib = { version = "=0.10.0", features = ["qt_gui", "qt_qml"] }
+
+[build-dependencies]
+cxx-qt-build = "=0.10.0"
+# Compiles the .interp section that makes the library executable (build.rs).
+cc = "1"
+
+[lints.clippy]
+# Pedantic everywhere; CI runs clippy with -D warnings. Three pedantic lints
+# are off: a #[must_use] on every getter and an "# Errors" section on every
+# fallible function add boilerplate, not safety, and module_name_repetitions
+# fights ordinary Rust naming.
+pedantic = { level = "warn", priority = -1 }
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+
+[profile.release]
+lto = true
+strip = true

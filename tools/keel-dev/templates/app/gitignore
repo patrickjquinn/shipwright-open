@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: MIT-0
+/target/
+/RPMS/
+# Written by cxx-qt-build for the QML language server.
+/.qmlls.ini

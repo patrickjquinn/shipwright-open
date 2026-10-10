@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Regress
+Exec=harbour-regress
+
+[X-Sailjail]
+Permissions=Internet;Pictures
+OrganizationName=org.example
+ApplicationName=harbour-regress

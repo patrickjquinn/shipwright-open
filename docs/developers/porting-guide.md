@@ -13,7 +13,7 @@ Status, October 2026: Keel is in development. The developer programme opens afte
 
 ## 1. Measure: keel-compat
 
-`keel-compat` scans your sources and reports which QML imports, Silica types and `SailfishApp` APIs you use, and whether Keel covers each one.
+`keel-compat` (in [shipwright-open](https://github.com/patrickjquinn/shipwright-open), MIT; clone it and run the commands below from it) scans your sources and reports which QML imports, Silica types and `SailfishApp` APIs you use, and whether Keel covers each one.
 
 ```
 cargo run -p keel-compat -- path/to/your-app              # human-readable report

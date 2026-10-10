@@ -16,7 +16,13 @@ have not been run yet.
 
 ## 1. Prerequisites
 
-A Shipwright checkout, rustup, and Qt 6 with CMake and Ninja:
+The open-source part of Shipwright (Keel and its developer tools, MIT), rustup,
+and Qt 6 with CMake and Ninja:
+
+```
+git clone --recurse-submodules https://github.com/patrickjquinn/shipwright-open.git Shipwright
+```
+
 
 ```
 apt-get install -y cmake ninja-build pkg-config librsvg2-bin rpm \
