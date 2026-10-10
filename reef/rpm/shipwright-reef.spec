@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        21
+Release:        22
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -249,6 +249,9 @@ exit 0
 %{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
 
 %changelog
+* Fri Oct 09 2026 Shipwright - 0.1.0-22
+- Tap a screenshot on an app's page to see it full screen; swipe between the screenshots, tap to show or hide the close button, and close with it or the back swipe.
+
 * Fri Oct 09 2026 Shipwright - 0.1.0-21
 - On a Sailfish release the apps are built for but not yet tested on a phone, an app's page says so instead of listing the release as tested.
 

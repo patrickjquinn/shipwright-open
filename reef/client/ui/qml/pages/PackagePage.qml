@@ -6,6 +6,8 @@
 // from the developer's catalogue entry: it is plain text (the window's
 // default label format), and only https:// links are ever opened.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Sailfish.Silica 1.0
 import Shipwright.Reef 1.0
@@ -231,7 +233,8 @@ Page {
             }
 
             // Screenshots the repository ships (cached files, like the icon);
-            // a horizontal strip, each at the phone's own proportions.
+            // a horizontal strip, each at the phone's own proportions. A tap
+            // opens them full screen (ScreenshotPage).
             SectionHeader { text: qsTr("Screenshots"); visible: shots.count > 0 }
             Flickable {
                 id: shotStrip
@@ -252,15 +255,27 @@ Page {
                     Repeater {
                         id: shots
                         model: page.pkg.screenshotPaths || []
-                        Image {
+                        // Tapped: the screenshots full screen, from this one.
+                        BackgroundItem {
+                            id: shot
                             required property string modelData
+                            required property int index
+                            objectName: "screenshot" + index
                             height: parent.height
                             width: Math.round(height * 9 / 16)
-                            source: "file://" + modelData
-                            sourceSize.height: height
-                            fillMode: Image.PreserveAspectFit
-                            asynchronous: true
-                            smooth: true
+                            onClicked: pageStack.push(Qt.resolvedUrl("ScreenshotPage.qml"), {
+                                paths: page.pkg.screenshotPaths,
+                                startIndex: shot.index
+                            })
+
+                            Image {
+                                anchors.fill: parent
+                                source: "file://" + shot.modelData
+                                sourceSize.height: height
+                                fillMode: Image.PreserveAspectFit
+                                asynchronous: true
+                                smooth: true
+                            }
                         }
                     }
                     Item { width: Theme.horizontalPageMargin - shotRow.spacing; height: 1 }
