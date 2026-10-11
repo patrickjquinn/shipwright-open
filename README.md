@@ -7,7 +7,7 @@ SPDX-License-Identifier: MIT
 
 This repository holds the open-source parts of Shipwright's Sailfish OS software: the Keel toolkit, the Reef installer and store client, Shoal Keys, Shoal Messages, the AirPods daemon, the licence and secrets libraries, and the developer documentation. It is the corresponding source for the open-source apps distributed on [reefstore.app](https://reefstore.app).
 
-It is generated. Development happens in a private monorepo that also holds the paid apps and the hosted services; each release, a script copies the open components here, unchanged, as one commit. This tree is the export of monorepo commit `38e793f573d2` (`Source-Commit: 38e793f573d202d70754bacc9ebfb0af49b2c541` in the commit message). The history here is one commit per export, not the private history.
+It is generated. Development happens in a private monorepo that also holds the paid apps and the hosted services; each release, a script copies the open components here, unchanged, as one commit. This tree is the export of monorepo commit `18a6e0e4ee2e` (`Source-Commit: 18a6e0e4ee2e602b35b5f4e2d84079a64aec82dd` in the commit message). The history here is one commit per export, not the private history.
 
 Shipwright is the trading name of Patrick Quinn, who holds the copyright in everything not marked otherwise.
 
