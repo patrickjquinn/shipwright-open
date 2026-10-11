@@ -11,7 +11,7 @@ Summary:    Private messaging on Matrix
 Version:    0.1.0
 Release:    8
 License:    ASL 2.0 and MIT and MPLv2.0 and BSD and ISC and zlib and Unicode and Boost and CC0 and CDLA-Permissive and Unlicense
-URL:        https://shipwright.example/shoal/messages
+URL:        https://reefstore.app/#app-shipwright-shoal-messages
 Source0:    %{name}-%{version}.tar.bz2
 
 Requires:   sailfishsilica-qt5

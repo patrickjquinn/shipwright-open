@@ -27,7 +27,7 @@ Version:        0.1.0
 Release:        11
 Summary:        Passwords and one-time codes
 License:        GPL-3.0-or-later
-URL:            https://example.invalid/shipwright/shoal-keys
+URL:            https://reefstore.app/#app-shipwright-shoal-keys
 
 # Runtime: Keel (Sailfish.Silica for Qt 6) and its launcher, Chum Qt 6, and
 # the Sailfish Secrets daemon that holds the device key's wrapping key.

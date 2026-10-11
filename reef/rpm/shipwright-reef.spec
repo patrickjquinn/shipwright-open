@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        24
+Release:        25
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -249,6 +249,10 @@ exit 0
 %{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
 
 %changelog
+* Sun Oct 11 2026 Shipwright - 0.1.0-25
+- Apps built for a newer processor than your phone has are not offered (Pacific crashed at start on an Xperia 10 II).
+- An app's link opens its page on reefstore.app (it pointed at placeholder addresses).
+
 * Sun Oct 11 2026 Shipwright - 0.1.0-24
 - Reef checks the store's signed package list itself before installing or updating anything, and refuses one that is altered or older than one it has seen (Sailfish OS does not check it for third-party stores).
 

@@ -15,6 +15,8 @@
 //! untested package or lie about permissions; signing the catalogue is a
 //! follow-up (see the README).
 
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::release::SailfishRelease;
@@ -75,6 +77,12 @@ pub struct Package {
     pub spdx: Option<String>,
     #[serde(default)]
     pub size: Option<u64>,
+    /// CPU features the build needs, as `/proc/cpuinfo` names them
+    /// (`asimddp`, `lrcpc`, `fphp`, `atomics`): a phone without one does not
+    /// see the package (Pacific is built for ARMv8.2 and died with SIGILL on
+    /// an Xperia 10 II). Empty: any phone.
+    #[serde(default)]
+    pub requires_cpu: Vec<String>,
     #[serde(default)]
     pub homepage: Option<String>,
     #[serde(default)]
@@ -264,11 +272,22 @@ impl Catalogue {
     /// package tested on 5.2.0.17 is not shown on 5.2.0.18 until it has been
     /// re-tested there.
     pub fn visible(&self, release: &SailfishRelease) -> Vec<&Package> {
+        self.visible_on(release, cpu_features())
+    }
+
+    /// [`visible`](Self::visible) for a phone with CPU `features` (`None`:
+    /// unknown, nothing is hidden for it).
+    pub fn visible_on(
+        &self,
+        release: &SailfishRelease,
+        features: Option<&BTreeSet<String>>,
+    ) -> Vec<&Package> {
         let full = release.full();
         let mut out: Vec<&Package> = self
             .packages
             .iter()
             .filter(|p| p.tested_on.contains(&full))
+            .filter(|p| features.is_none_or(|f| p.requires_cpu.iter().all(|r| f.contains(r))))
             .collect();
         // `category` was normalised by `parse`, so the sort and the list's
         // sections (which compare the raw string) agree.
@@ -280,6 +299,28 @@ impl Catalogue {
     pub fn visible_package(&self, name: &str, release: &SailfishRelease) -> Option<&Package> {
         self.visible(release).into_iter().find(|p| p.name == name)
     }
+}
+
+/// This phone's CPU features (the `Features` line of `/proc/cpuinfo` on
+/// ARM), read once; `None` where there is no such line (not ARM, or
+/// unreadable), and then nothing is hidden for the CPU.
+pub fn cpu_features() -> Option<&'static BTreeSet<String>> {
+    static FEATURES: std::sync::OnceLock<Option<BTreeSet<String>>> = std::sync::OnceLock::new();
+    FEATURES
+        .get_or_init(|| {
+            std::fs::read_to_string("/proc/cpuinfo")
+                .ok()
+                .and_then(|c| parse_cpu_features(&c))
+        })
+        .as_ref()
+}
+
+/// The features of the first `Features` line of a `/proc/cpuinfo`.
+pub fn parse_cpu_features(cpuinfo: &str) -> Option<BTreeSet<String>> {
+    let line = cpuinfo
+        .lines()
+        .find(|l| l.split(':').next().is_some_and(|k| k.trim() == "Features"))?;
+    Some(line.split_once(':')?.1.split_whitespace().map(str::to_owned).collect())
 }
 
 /// The one display form of a category: trimmed, first letter upper case and
@@ -358,6 +399,34 @@ pub fn is_https_url(url: &str) -> bool {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+
+    #[test]
+    fn builds_a_cpu_cannot_run_are_hidden() {
+        let json = r#"{"schema":1,"release":"5.2.0.18","arch":"aarch64","packages":[
+            {"name":"fast","version":"1-1","title":"Fast","summary":"s","tested_on":["5.2.0.18"],
+             "requires_cpu":["asimddp","lrcpc"],"licence":{"model":"free"}},
+            {"name":"any","version":"1-1","title":"Any","summary":"s","tested_on":["5.2.0.18"],
+             "licence":{"model":"free"}}]}"#;
+        let cat = Catalogue::parse(json.as_bytes(), "aarch64").unwrap();
+        let release = SailfishRelease::parse("5.2.0.18").unwrap();
+        let names = |f: Option<&BTreeSet<String>>| {
+            cat.visible_on(&release, f).iter().map(|p| p.name.clone()).collect::<Vec<_>>()
+        };
+        // An Xperia 10 II (Kryo 260, ARMv8.0) and a Jolla Phone (Cortex-A78).
+        let xperia = parse_cpu_features(
+            "processor\t: 0\nFeatures\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid\nCPU implementer\t: 0x51\n",
+        )
+        .unwrap();
+        let jolla = parse_cpu_features(
+            "Features\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp\n",
+        )
+        .unwrap();
+        assert_eq!(names(Some(&xperia)), ["any"]);
+        assert_eq!(names(Some(&jolla)), ["any", "fast"]);
+        // Unknown CPU (a host without a Features line): nothing hidden.
+        assert_eq!(parse_cpu_features("flags\t: fpu vme\n"), None);
+        assert_eq!(names(None), ["any", "fast"]);
+    }
 
     pub const SAMPLE: &str = r#"{
       "schema": 1,
