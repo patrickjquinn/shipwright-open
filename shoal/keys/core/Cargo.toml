@@ -6,7 +6,8 @@ name = "shoal-keys-core"
 description = "Shoal Keys: KeePass KDBX 4 vault, TOTP, generator, importers, Sailfish Secrets key wrapping"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
+# keepass 0.15 declares rust-version 1.89, above the workspace floor (1.87).
+rust-version = "1.89"
 license = "GPL-3.0-or-later"
 publish.workspace = true
 
@@ -22,7 +23,7 @@ reef-handoff = ["reef-licence/handoff-client"]
 [dependencies]
 # KDBX 4 read and write. Was pinned to =0.14.0 for the workspace's
 # rust-version (1.87); moved to 0.15 on 2026-10-02 (c370c3f2). 0.15 needs
-# Rust 1.89, newer than the declared 1.87; the pinned toolchain
+# Rust 1.89, which this crate declares above; the pinned toolchain
 # (rust-toolchain.toml, 1.94.1) builds it.
 keepass = { version = "0.15", features = ["save_kdbx4"] }
 chacha20poly1305 = "0.11"

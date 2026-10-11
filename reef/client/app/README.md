@@ -75,7 +75,15 @@ The build needs Qt 6 development files (`qmake6` on `PATH`, or `QMAKE=/usr/lib/q
 
 ## Needs device verification
 
-Nothing here has run on a phone, and the binary has not been cross-built for aarch64 yet.
+The list below was written before the phone arrived. Since 5 October Reef has been built for aarch64 (natively, `tools/build/native/native.sh`) and run on the Jolla Phone in direct mode, not under keel-shell, on Sailfish OS 5.2.0.18 only; nothing is recorded on 5.2.0.15 (`d9f22adb`). What the commits record as seen on the phone:
+
+- Reef and an app installed on a phone with nothing of Shipwright's, following reefstore.app/install; the faults found there (pages with a remorse failing to open, apps doing nothing when tapped until their booster ran) were fixed (`89680b57`).
+- Installs from Reef through PackageKit: the progress the phone sent is what the steady progress bar is built on (`85fabfa1`); an installed app at the repository's version showed Install, fixed (`c0560227`).
+- Removing an app with its add-ons through `Store::remove` (Pilot and its gesture patch together) (`5ddc0b33`).
+- Reef verifying the repository's signed `repomd.xml` itself before installs and updates, because ssu sets `gpgcheck=0` on Sailfish (`14c5bcf1`).
+- The screenshot viewer, portrait and landscape (`fc0e6b6a`).
+
+Not recorded on the phone: the `privileged` group check in item 2, an update from Reef, HTTPS behind an intercepting proxy (item 4), drift and repair after an OS update (item 5), and item 6.
 
 1. **Cross build.** `tools/build/sdk/cargo-sailfish.sh build --release --locked --manifest-path reef/client/app/Cargo.toml`, with the result in `target/aarch64-unknown-linux-gnu/release/libshipwright_reef.so` (the app is a shared library that is also executable, see `tools/keel-launcher/link_sailfishapp.rs`). The spec expects it there and installs it as `/usr/bin/shipwright-reef`. cxx-qt-build runs the target's `qmake -query`, `moc` and `qmlcachegen`. How to wrap those for the SDK is still open (`tools/phase0/probe-display.md`, route S, step 3). Chum Qt6 6.8.4 devel packages are already in the `SailfishOS-5.2.0.15-aarch64` target. The fallback is a native build on the phone (route N).
 2. **Launch through keel-shell.** Install the RPM, then tap Reef in the app grid. The app and its cover should appear. Check `grep Groups /proc/$(pgrep -f /usr/bin/shipwright-reef)/status` for the `privileged` gid. The privileges entry names `/usr/bin/shipwright-reef`, but Lipstick launches `/usr/bin/keel-shell`. If the group is missing, the entry has to match what Lipstick actually starts: try the desktop file form, or a helper (`reef/helper`).
