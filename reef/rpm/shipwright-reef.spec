@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        25
+Release:        26
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -141,8 +141,9 @@ for s in 86 108 128 172; do
     %{buildroot}%{_datadir}/icons/hicolor/${s}x${s}/apps/shipwright-reef.png
 done
 desktop-file-validate %{buildroot}%{_datadir}/applications/shipwright-reef.desktop
-# Background update check (src/check.rs): a daily user timer, enabled for
-# every user by the wants symlink.
+# Background update check (src/check.rs): a 4-hourly user timer, enabled
+# for every user by the wants symlink (and started by %%post), with its
+# notification category and the D-Bus name its tap opens Reef with.
 install -D -m 0644 reef/client/app/packaging/systemd/shipwright-reef-check.service \
   %{buildroot}%{_userunitdir}/shipwright-reef-check.service
 install -D -m 0644 reef/client/app/packaging/systemd/shipwright-reef-check.timer \
@@ -150,6 +151,10 @@ install -D -m 0644 reef/client/app/packaging/systemd/shipwright-reef-check.timer
 install -d %{buildroot}%{_userunitdir}/timers.target.wants
 ln -s ../shipwright-reef-check.timer \
   %{buildroot}%{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
+install -D -m 0644 reef/client/app/packaging/notifications/x-shipwright.reef.updates.conf \
+  %{buildroot}%{_datadir}/lipstick/notificationcategories/x-shipwright.reef.updates.conf
+install -D -m 0644 reef/client/app/packaging/dbus/org.shipwright.reef.ui.service \
+  %{buildroot}%{_datadir}/dbus-1/services/org.shipwright.reef.ui.service
 install -D -m 0644 reef/client/packaging/privileges.d/shipwright-reef \
   %{buildroot}%{_datadir}/mapplauncherd/privileges.d/shipwright-reef
 
@@ -172,6 +177,14 @@ grep -q '^REEF_CLIENT_MARKER=%{reef_share}/owns-repository$' %{buildroot}%{reef_
 cat > %{buildroot}%{reef_share}/owns-repository <<'EOF'
 The shipwright-reef package owns the Reef repository registration.
 EOF
+
+%post
+# The wants symlink starts the update check timer at the next login only:
+# start it in the session that is running now (found 11 October 2026: a
+# phone that had not restarted since Reef arrived never checked).
+systemctl-user daemon-reload >/dev/null 2>&1 || :
+systemctl-user start shipwright-reef-check.timer >/dev/null 2>&1 || :
+exit 0
 
 %triggerin -- sailfish-version
 # Installer README: re-pin after an OS update. Fires when sailfish-version is
@@ -234,6 +247,8 @@ exit 0
 %{_datadir}/dbus-1/interfaces/org.shipwright.reef.actions.xml
 %{_bindir}/shipwright-reef-licenced
 %{_datadir}/dbus-1/services/org.shipwright.Reef.Licences.service
+%{_datadir}/dbus-1/services/org.shipwright.reef.ui.service
+%{_datadir}/lipstick/notificationcategories/x-shipwright.reef.updates.conf
 %config(noreplace) %{_sysconfdir}/sailjail/permissions/ShipwrightLicences.permission
 %{_datadir}/icons/hicolor/*/apps/shipwright-reef.png
 %{_bindir}/shipwright-reef-repo
@@ -249,6 +264,12 @@ exit 0
 %{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
 
 %changelog
+* Sun Oct 11 2026 Shipwright - 0.1.0-26
+- A new home: the featured apps as banners, updates waiting at the top with Update all, a row of new and updated apps, and every app from A to Z. Search is in the pull-down menu.
+- App pages show what's new in the latest version, with the version history folded away, several screenshots, the price, size and date at a glance, the website and source as links, and licences in words.
+- Permissions are the ones the app really asks for, each in words; before, every app said it asked for none.
+- Update notifications arrive: Reef now checks every few hours from the moment it is installed (before, the check only started after the phone restarted), names the apps, pops up once per new version, and opens Reef on its updates when tapped.
+
 * Sun Oct 11 2026 Shipwright - 0.1.0-25
 - Apps built for a newer processor than your phone has are not offered (Pacific crashed at start on an Xperia 10 II).
 - An app's link opens its page on reefstore.app (it pointed at placeholder addresses).

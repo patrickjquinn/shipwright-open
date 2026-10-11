@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Patrick Quinn
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Catalogue: every package tested on this phone's release, by category,
-// with a search box and, above the list, the featured apps. Untested
-// packages never reach this model (reef-backend hides them), the model is
-// sorted by category, then title, so each section appears once, and typing
-// in the search box narrows it (Reef.searchText).
+// The store's home: updates waiting (when there are), the featured apps as
+// a banner, the newest and most recently updated apps, then every app from
+// A to Z. Search is in the pull-down menu, as in the Jolla Store; while it
+// is open, the list below is the answer and the rest steps aside.
+// Untested packages never reach these models (reef-backend hides them).
+
+pragma ComponentBehavior: Bound
 
 import QtQuick
 import Sailfish.Silica 1.0
@@ -15,6 +17,15 @@ import "../components/Texts.js" as Texts
 
 Page {
     id: page
+
+    // The search field shows while searching: opened from the pull-down
+    // menu, and kept while it holds text.
+    property bool searching: Reef.searchText.length > 0
+    readonly property bool browsing: !searching
+
+    function openApp(name) {
+        pageStack.push(Qt.resolvedUrl("PackagePage.qml"), { packageName: name })
+    }
 
     SilicaListView {
         id: list
@@ -42,10 +53,26 @@ Page {
                 enabled: !Reef.busy
                 onClicked: Reef.refresh()
             }
+            MenuItem {
+                objectName: "searchItem"
+                text: qsTr("Search")
+                onDelayedClick: {
+                    page.searching = true
+                    list.positionViewAtBeginning()
+                    list.headerItem.searchField.forceActiveFocus()
+                }
+            }
         }
 
+        // The header grows once the catalogue arrives (banner, rows); a
+        // list that has not been scrolled yet stays at its top.
+        property bool scrolled
+        onMovementStarted: scrolled = true
+
         header: Column {
+            property alias searchField: search
             width: list.width
+            onHeightChanged: if (!list.scrolled) list.positionViewAtBeginning()
 
             PageHeader {
                 title: qsTr("Reef")
@@ -55,34 +82,15 @@ Page {
                 id: search
                 objectName: "search"
                 width: parent.width
+                visible: page.searching
+                height: visible ? implicitHeight : 0
                 placeholderText: qsTr("Search apps")
                 text: Reef.searchText
                 onTextChanged: Reef.searchText = text
                 EnterKey.iconSource: "image://theme/icon-m-enter-close"
                 EnterKey.onClicked: focus = false
-            }
-
-            // The featured apps, an editorial list in the catalogue; hidden
-            // while searching, when the list below is the answer.
-            Column {
-                width: parent.width
-                visible: Reef.featuredModel.count > 0 && Reef.searchText.length === 0
-
-                SectionHeader { text: qsTr("Featured") }
-
-                ListView {
-                    id: featured
-                    objectName: "featured"
-                    width: parent.width
-                    height: Theme.iconSizeLauncher + Theme.paddingSmall + Theme.fontSizeExtraSmall * 1.4 + 2 * Theme.paddingMedium
-                    orientation: ListView.Horizontal
-                    clip: true
-                    model: Reef.featuredModel
-                    header: Item { width: Theme.horizontalPageMargin - Theme.paddingLarge; height: 1 }
-                    delegate: FeaturedDelegate {
-                        onClicked: pageStack.push(Qt.resolvedUrl("PackagePage.qml"), { packageName: name })
-                    }
-                }
+                // Emptied and left: back to the home page.
+                onActiveFocusChanged: if (!activeFocus && text.length === 0) page.searching = false
             }
 
             // The repository no longer matches the installed release (an OS
@@ -91,6 +99,7 @@ Page {
                 width: parent.width
                 visible: Reef.repoState !== "pinned"
                 spacing: Theme.paddingSmall
+                bottomPadding: Theme.paddingLarge
 
                 Label {
                     x: Theme.horizontalPageMargin
@@ -109,18 +118,136 @@ Page {
                     enabled: !Reef.busy
                     onClicked: Reef.repairRepository()
                 }
-                Item { width: 1; height: Theme.paddingMedium }
+            }
+
+            // Updates waiting: first, with the one button that does them all.
+            BackgroundItem {
+                objectName: "updatesCard"
+                width: parent.width
+                height: visible ? Theme.itemSizeLarge : 0
+                visible: page.browsing && Reef.updateCount > 0
+                onClicked: pageStack.push(Qt.resolvedUrl("InstalledPage.qml"))
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity * 0.6)
+                }
+                Icon {
+                    id: updatesIcon
+                    x: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: "image://theme/icon-m-cloud-download"
+                    color: Theme.highlightColor
+                }
+                Column {
+                    anchors.left: updatesIcon.right
+                    anchors.leftMargin: Theme.paddingLarge
+                    anchors.right: updateAll.left
+                    anchors.rightMargin: Theme.paddingMedium
+                    anchors.verticalCenter: parent.verticalCenter
+                    Label {
+                        width: parent.width
+                        text: qsTr("%n update(s) ready", "", Reef.updateCount)
+                        color: Theme.highlightColor
+                        truncationMode: TruncationMode.Fade
+                    }
+                    Label {
+                        width: parent.width
+                        text: qsTr("Tap to see what's new")
+                        color: Theme.secondaryHighlightColor
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        truncationMode: TruncationMode.Fade
+                    }
+                }
+                SecondaryButton {
+                    id: updateAll
+                    objectName: "updateAllButton"
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Update all")
+                    enabled: !Reef.busy
+                    onClicked: Reef.updateAll()
+                }
+            }
+
+            // The featured apps, one banner at a time, turning every few
+            // seconds while the page is in front.
+            Item {
+                width: parent.width
+                height: visible ? hero.height + dots.height + Theme.paddingMedium : 0
+                visible: page.browsing && Reef.featuredModel.count > 0
+
+                SlideshowView {
+                    id: hero
+                    objectName: "featured"
+                    width: parent.width
+                    height: Math.round(Math.min(page.width, page.height) * 0.72)
+                    itemWidth: width
+                    itemHeight: height
+                    model: Reef.featuredModel
+                    delegate: HeroCard {
+                        width: hero.itemWidth
+                        height: hero.itemHeight
+                        onClicked: page.openApp(name)
+                    }
+                }
+                Timer {
+                    interval: 6000
+                    repeat: true
+                    running: hero.count > 1 && page.status === PageStatus.Active
+                             && Qt.application.state === Qt.ApplicationActive && !hero.moving
+                    onTriggered: hero.incrementCurrentIndex()
+                }
+                Row {
+                    id: dots
+                    anchors.top: hero.bottom
+                    anchors.topMargin: Theme.paddingMedium
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.paddingSmall
+                    visible: hero.count > 1
+                    height: visible ? Theme.paddingSmall : 0
+                    Repeater {
+                        model: hero.count
+                        Rectangle {
+                            required property int index
+                            width: Theme.paddingSmall
+                            height: width
+                            radius: width / 2
+                            color: index === hero.currentIndex ? Theme.highlightColor : Theme.secondaryColor
+                            opacity: index === hero.currentIndex ? 1.0 : Theme.opacityLow
+                        }
+                    }
+                }
+            }
+
+            // New apps and new versions, newest first.
+            SectionHeader {
+                text: qsTr("New and updated")
+                visible: page.browsing && Reef.recentModel.count > 0
+            }
+            SilicaListView {
+                objectName: "recent"
+                width: parent.width
+                height: visible ? Theme.iconSizeLauncher + 2 * Theme.fontSizeExtraSmall * 1.4 + 2 * Theme.paddingMedium : 0
+                visible: page.browsing && Reef.recentModel.count > 0
+                orientation: ListView.Horizontal
+                clip: true
+                model: Reef.recentModel
+                header: Item { width: Theme.horizontalPageMargin - Theme.paddingLarge; height: 1 }
+                delegate: FeaturedDelegate {
+                    onClicked: page.openApp(name)
+                }
+            }
+
+            SectionHeader {
+                text: page.searching ? qsTr("Results") : qsTr("All apps")
+                visible: list.count > 0
             }
         }
 
-        section.property: "category"
-        section.delegate: SectionHeader {
-            required property string section
-            text: section
-        }
-
         delegate: PackageDelegate {
-            onClicked: pageStack.push(Qt.resolvedUrl("PackagePage.qml"), { packageName: name })
+            onClicked: page.openApp(name)
         }
 
         ViewPlaceholder {
@@ -139,6 +266,7 @@ Page {
 
     BusyIndicator {
         anchors.centerIn: parent
+        size: BusyIndicatorSize.Large
         running: Reef.busy && list.count === 0
     }
 }

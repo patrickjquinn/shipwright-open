@@ -88,7 +88,8 @@ Page {
                 onCheckedChanged: Reef.refreshOnStart = checked
             }
             // Read by `shipwright-reef --check-updates`, which a systemd user
-            // timer starts daily (reef/client/app/packaging/systemd/). The
+            // timer starts every 4 hours (reef/client/app/packaging/systemd/;
+            // backgroundCheckDays 1 is "every few hours", src/check.rs). The
             // setting is written only when the user picks an item, never
             // while the page is created.
             ComboBox {
@@ -102,7 +103,7 @@ Page {
                         onClicked: Reef.backgroundCheckDays = 0
                     }
                     MenuItem {
-                        text: qsTr("Daily")
+                        text: qsTr("Every few hours")
                         onClicked: Reef.backgroundCheckDays = 1
                     }
                     MenuItem {

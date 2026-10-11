@@ -4,12 +4,17 @@
 //! `shipwright-reef --check-updates`: the background update check behind
 //! the "Check in the background" setting. No window and no Qt: the systemd
 //! user timer `shipwright-reef-check.timer` (packaging/systemd/) starts it
-//! daily, and it decides from the setting whether a check is due (never,
-//! daily, or weekly). A check is the same refresh the app runs: catalogue
-//! (cached for the next start), `ssu lr`, `PackageKit`'s Reef updates, and
-//! licence refreshes. When Reef updates are waiting, it posts one
+//! every 4 hours, and it decides from the setting whether a check is due
+//! (never, every few hours, or weekly). A check is the same refresh the app
+//! runs: catalogue (cached for the next start), `ssu lr`, `PackageKit`'s
+//! Reef updates, and licence refreshes.
+//!
+//! When an update appears that has not been announced yet, it posts one
 //! notification through `org.freedesktop.Notifications` (Lipstick on a
-//! phone).
+//! phone): the apps by name, a popup, and a tap that opens Reef on its
+//! updates (`org.shipwright.reef.ui.openUpdates`, the app's `DBusAdaptor`).
+//! The same updates are not announced again on the next check; a newer
+//! version is, replacing the earlier notification.
 
 use std::path::{Path, PathBuf};
 
@@ -20,19 +25,30 @@ use reef_backend::release;
 use crate::jobs::{self, RefreshInput};
 use crate::settings::Settings;
 
-/// Whether a check is due: `days` is the setting (0 never, 1 daily, 7
-/// weekly), `last` the time of the last completed check. An hour of slack
-/// keeps a daily timer that fires a little early from skipping a day. A
+/// Whether a check is due: `days` is the setting (0 never, 1 every few
+/// hours, 7 weekly), `last` the time of the last completed check. Half an
+/// hour of slack keeps a timer that fires a little early from skipping a
+/// turn. A
 /// last check in the future means the clock was wrong when it was recorded
 /// (a phone's RTC at boot): it is due, rather than waiting until the clock
 /// catches up.
 pub fn due(days: i32, last: Option<i64>, now: i64) -> bool {
-    const SLACK: i64 = 3600;
+    const SLACK: i64 = 1800;
     match (days, last) {
         (d, _) if d <= 0 => false,
         (_, None) => true,
         (_, Some(last)) if last > now => true,
-        (d, Some(last)) => now.saturating_sub(last) >= i64::from(d) * 86_400 - SLACK,
+        (d, Some(last)) => now.saturating_sub(last) >= interval_secs(d) - SLACK,
+    }
+}
+
+/// The time between checks for the setting: 1 is "every few hours" (each
+/// firing of the 4-hourly timer), 7 is weekly.
+pub fn interval_secs(days: i32) -> i64 {
+    if days == 1 {
+        4 * 3600
+    } else {
+        i64::from(days) * 86_400
     }
 }
 
@@ -96,50 +112,127 @@ pub fn run() -> i32 {
             log::warn!("recording the check in {}: {e}", path.display());
         }
     }
-    let updates = out.pk.as_ref().map_or(0, |pk| pk.updates.len());
-    log::info!("background check done: {updates} Reef update(s)");
-    if updates > 0 {
-        if let Err(e) = notify(updates) {
-            log::warn!("posting the update notification: {e}");
+    let updates: Vec<Update> = out
+        .pk
+        .as_ref()
+        .map(|pk| {
+            pk.updates
+                .iter()
+                .map(|u| Update {
+                    title: out
+                        .catalogue
+                        .as_ref()
+                        .and_then(|c| c.packages.iter().find(|p| p.name == u.id.name))
+                        .map_or_else(|| u.id.name.clone(), |p| p.title.clone()),
+                    key: format!("{} {}", u.id.name, u.id.version),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    log::info!("background check done: {} Reef update(s)", updates.len());
+    let record = jobs::cache_dir().map(|d| d.join("announced-updates"));
+    let announced = record
+        .as_deref()
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .unwrap_or_default();
+    if !news(&updates, &announced) {
+        return 0;
+    }
+    let previous_id = record
+        .as_deref()
+        .and_then(|p| std::fs::read_to_string(p.with_extension("id")).ok())
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(0);
+    match notify(&updates, previous_id) {
+        Ok(id) => {
+            if let Some(p) = &record {
+                let keys: Vec<&str> = updates.iter().map(|u| u.key.as_str()).collect();
+                let _ = std::fs::write(p, keys.join("\n"));
+                let _ = std::fs::write(p.with_extension("id"), id.to_string());
+            }
         }
+        Err(e) => log::warn!("posting the update notification: {e}"),
     }
     0
 }
 
-/// One notification: "Reef: N updates". The text is English: this path
-/// runs without Qt, so it has no translations (see the app README).
-fn notify(count: usize) -> Result<(), String> {
+/// One waiting update: the app's name in the store, and `name version`.
+pub struct Update {
+    pub title: String,
+    pub key: String,
+}
+
+/// Whether `updates` holds one not announced yet (`announced` is the
+/// record, one `name version` a line).
+pub fn news(updates: &[Update], announced: &str) -> bool {
+    updates
+        .iter()
+        .any(|u| !announced.lines().any(|l| l.trim() == u.key))
+}
+
+/// The notification's title and text. English: this path runs without Qt,
+/// so it has no translations (see the app README).
+pub fn wording(updates: &[Update]) -> (String, String) {
+    let names: Vec<&str> = updates.iter().map(|u| u.title.as_str()).collect();
+    let title = if names.len() == 1 {
+        format!("{} update ready", names[0])
+    } else {
+        format!("{} app updates ready", names.len())
+    };
+    let body = match names.as_slice() {
+        [_] => "Tap to update it in Reef".to_string(),
+        [a, b] => format!("{a} and {b}"),
+        [a, b, c] => format!("{a}, {b} and {c}"),
+        [a, b, rest @ ..] => format!("{a}, {b} and {} more", rest.len()),
+        [] => String::new(),
+    };
+    (title, body)
+}
+
+/// Posts (or replaces `previous_id`'s) notification; returns its id.
+fn notify(updates: &[Update], previous_id: u32) -> Result<u32, String> {
     use std::collections::HashMap;
+    use zbus::zvariant::Value;
+    let (title, body) = wording(updates);
     futures_lite::future::block_on(async {
         let conn = zbus::Connection::session()
             .await
             .map_err(|e| e.to_string())?;
-        let summary = "Reef";
-        let body = if count == 1 {
-            "1 app update is available".to_string()
-        } else {
-            format!("{count} app updates are available")
-        };
-        let hints: HashMap<&str, zbus::zvariant::Value<'_>> = HashMap::new();
-        conn.call_method(
-            Some("org.freedesktop.Notifications"),
-            "/org/freedesktop/Notifications",
-            Some("org.freedesktop.Notifications"),
-            "Notify",
-            &(
-                "shipwright-reef",
-                0u32,
-                "icon-lock-information",
-                summary,
-                body.as_str(),
-                Vec::<&str>::new(),
-                hints,
-                -1i32,
-            ),
-        )
-        .await
-        .map(drop)
-        .map_err(|e| e.to_string())
+        let mut hints: HashMap<&str, Value<'_>> = HashMap::new();
+        // packaging/notifications: appName, icon, popup, removable.
+        hints.insert("category", Value::from("x-shipwright.reef.updates"));
+        hints.insert("x-nemo-preview-summary", Value::from(title.as_str()));
+        hints.insert("x-nemo-preview-body", Value::from(body.as_str()));
+        hints.insert(
+            "x-nemo-item-count",
+            Value::from(i32::try_from(updates.len()).unwrap_or(i32::MAX)),
+        );
+        // A tap opens Reef on its updates (the app's DBusAdaptor; the
+        // session bus starts the app when it is not running).
+        hints.insert(
+            "x-nemo-remote-action-default",
+            Value::from("org.shipwright.reef.ui / org.shipwright.reef.ui openUpdates"),
+        );
+        let reply = conn
+            .call_method(
+                Some("org.freedesktop.Notifications"),
+                "/org/freedesktop/Notifications",
+                Some("org.freedesktop.Notifications"),
+                "Notify",
+                &(
+                    "shipwright-reef",
+                    previous_id,
+                    "",
+                    title.as_str(),
+                    body.as_str(),
+                    vec!["default", ""],
+                    hints,
+                    -1i32,
+                ),
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+        reply.body().deserialize::<u32>().map_err(|e| e.to_string())
     })
 }
 
@@ -158,9 +251,10 @@ mod tests {
         // First run.
         assert!(due(1, None, now));
         assert!(due(7, None, now));
-        // Daily, with an hour of slack for a timer that fires early.
+        // Every few hours (each 4-hourly firing), with half an hour of
+        // slack for a timer that fires early.
         assert!(!due(1, Some(now - 3600), now));
-        assert!(due(1, Some(now - DAY + 1800), now));
+        assert!(due(1, Some(now - 4 * 3600 + 1200), now));
         assert!(due(1, Some(now - 2 * DAY), now));
         // Weekly.
         assert!(!due(7, Some(now - 3 * DAY), now));
@@ -170,5 +264,48 @@ mod tests {
         assert!(due(1, Some(now + DAY), now));
         assert!(due(7, Some(now + 365 * DAY), now));
         assert!(!due(0, Some(now + DAY), now));
+    }
+
+    fn up(title: &str, key: &str) -> Update {
+        Update {
+            title: title.into(),
+            key: key.into(),
+        }
+    }
+
+    #[test]
+    fn announces_each_update_once() {
+        let pilot = up("Pilot", "shoal-pilot 0.1.0-28");
+        assert!(news(std::slice::from_ref(&pilot), ""));
+        assert!(!news(std::slice::from_ref(&pilot), "shoal-pilot 0.1.0-28"));
+        // A newer version is news.
+        let newer = up("Pilot", "shoal-pilot 0.1.0-29");
+        assert!(news(&[newer], "shoal-pilot 0.1.0-28"));
+        // So is another app joining the ones already announced.
+        let migrate = up("Shoal Migrate", "shipwright-shoal-migrate 0.1.0-9");
+        assert!(news(&[pilot, migrate], "shoal-pilot 0.1.0-28"));
+        assert!(!news(&[], "shoal-pilot 0.1.0-28"));
+    }
+
+    #[test]
+    fn names_the_apps() {
+        let a = up("Pilot", "a 1");
+        let b = up("Shoal Migrate", "b 1");
+        let c = up("Reef", "c 1");
+        let d = up("Pacific", "d 1");
+        assert_eq!(
+            wording(std::slice::from_ref(&a)),
+            (
+                "Pilot update ready".into(),
+                "Tap to update it in Reef".into()
+            )
+        );
+        assert_eq!(
+            wording(&[a, b, c, d]),
+            (
+                "4 app updates ready".into(),
+                "Pilot, Shoal Migrate and 2 more".into()
+            )
+        );
     }
 }

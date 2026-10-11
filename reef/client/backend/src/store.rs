@@ -483,7 +483,9 @@ mod tests {
             exit: crate::packagekit::Exit::Failed,
             error: Some((13, "shoal-pilot-gesture-patch requires shoal-pilot".into())),
         };
-        assert!(e.to_string().starts_with("Other installed software needs this package"));
+        assert!(e
+            .to_string()
+            .starts_with("Other installed software needs this package"));
     }
 
     #[test]

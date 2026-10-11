@@ -12,6 +12,7 @@ import "../components/Texts.js" as Texts
 
 Page {
     id: page
+    objectName: "installedPage"
 
     SilicaListView {
         id: list

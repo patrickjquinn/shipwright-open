@@ -18,6 +18,7 @@
 pub mod bridge;
 pub mod check;
 pub mod jobs;
+pub mod launch;
 pub mod logging;
 pub mod release_gate;
 pub mod rows;

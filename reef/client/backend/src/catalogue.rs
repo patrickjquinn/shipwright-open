@@ -43,6 +43,23 @@ pub struct Catalogue {
 
 /// Screenshots kept per package; the rest are dropped.
 pub const MAX_SCREENSHOTS: usize = 8;
+/// Changelog entries, notes per entry and characters per note kept (the
+/// generator's limits, tools/build/reef/gen-catalogue.py).
+pub const MAX_CHANGES: usize = 12;
+pub const MAX_NOTES: usize = 12;
+pub const MAX_NOTE_CHARS: usize = 400;
+
+/// One `%changelog` entry of the package, newest first in [`Package::changelog`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Change {
+    /// The `version-release` the entry is for; may be empty.
+    #[serde(default)]
+    pub version: String,
+    /// `YYYY-MM-DD`.
+    pub date: String,
+    #[serde(default)]
+    pub notes: Vec<String>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Package {
@@ -111,6 +128,11 @@ pub struct Package {
     /// catalogues generated before the field existed.
     #[serde(default)]
     pub keel_tier: Option<String>,
+    /// The package's newest changelog entries, newest first: the store's
+    /// "What's new" and version history. Entries with a malformed date are
+    /// dropped by `parse`, and the lists are cut to the `MAX_` limits.
+    #[serde(default)]
+    pub changelog: Vec<Change>,
 }
 
 /// How a package is paid for (docs/plan.md, "Pricing model").
@@ -248,6 +270,20 @@ impl Catalogue {
             if p.added.as_deref().is_some_and(|d| parse_date(d).is_none()) {
                 p.added = None;
             }
+            p.changelog.retain(|c| parse_date(&c.date).is_some());
+            p.changelog.truncate(MAX_CHANGES);
+            for c in &mut p.changelog {
+                if c.version.chars().count() > 64 {
+                    c.version = c.version.chars().take(64).collect();
+                }
+                c.notes.retain(|n| !n.trim().is_empty());
+                c.notes.truncate(MAX_NOTES);
+                for n in &mut c.notes {
+                    if n.chars().count() > MAX_NOTE_CHARS {
+                        *n = n.chars().take(MAX_NOTE_CHARS).collect();
+                    }
+                }
+            }
         }
         let packages = &cat.packages;
         let mut seen = std::collections::HashSet::new();
@@ -320,7 +356,13 @@ pub fn parse_cpu_features(cpuinfo: &str) -> Option<BTreeSet<String>> {
     let line = cpuinfo
         .lines()
         .find(|l| l.split(':').next().is_some_and(|k| k.trim() == "Features"))?;
-    Some(line.split_once(':')?.1.split_whitespace().map(str::to_owned).collect())
+    Some(
+        line.split_once(':')?
+            .1
+            .split_whitespace()
+            .map(str::to_owned)
+            .collect(),
+    )
 }
 
 /// The one display form of a category: trimmed, first letter upper case and
@@ -410,7 +452,10 @@ pub(crate) mod tests {
         let cat = Catalogue::parse(json.as_bytes(), "aarch64").unwrap();
         let release = SailfishRelease::parse("5.2.0.18").unwrap();
         let names = |f: Option<&BTreeSet<String>>| {
-            cat.visible_on(&release, f).iter().map(|p| p.name.clone()).collect::<Vec<_>>()
+            cat.visible_on(&release, f)
+                .iter()
+                .map(|p| p.name.clone())
+                .collect::<Vec<_>>()
         };
         // An Xperia 10 II (Kryo 260, ARMv8.0) and a Jolla Phone (Cortex-A78).
         let xperia = parse_cpu_features(
@@ -685,7 +730,11 @@ pub(crate) mod tests {
                 "\"keel_tier\": \"B\",",
                 r#""keel_tier": "B", "icon": "assets/bridge.png", "publisher": "Shipwright",
                    "added": "2026-10-01",
-                   "screenshots": ["assets/shots/b1.jpg", "https://x/y.png", "assets/shots/b2.jpeg"],"#,
+                   "screenshots": ["assets/shots/b1.jpg", "https://x/y.png", "assets/shots/b2.jpeg"],
+                   "changelog": [
+                     {"version": "1.2-3", "date": "2026-10-11", "notes": ["Faster.", " ", "Fixed."]},
+                     {"version": "1.2-2", "date": "yesterday", "notes": ["Dropped: no date."]},
+                     {"date": "2026-10-01"}],"#,
             )
             .replace(
                 "\"summary\": \"Silica for Qt6\",",
@@ -703,6 +752,21 @@ pub(crate) mod tests {
         assert_eq!(
             bridge.screenshots,
             ["assets/shots/b1.jpg", "assets/shots/b2.jpeg"]
+        );
+        assert_eq!(
+            bridge.changelog,
+            [
+                Change {
+                    version: "1.2-3".into(),
+                    date: "2026-10-11".into(),
+                    notes: vec!["Faster.".into(), "Fixed.".into()],
+                },
+                Change {
+                    version: String::new(),
+                    date: "2026-10-01".into(),
+                    notes: vec![],
+                },
+            ]
         );
         let keel = &cat.packages[1];
         assert_eq!(keel.icon, None, "a URL is not an asset path");

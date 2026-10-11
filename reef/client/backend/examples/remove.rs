@@ -17,7 +17,9 @@ fn main() {
         let store = Store::new(pm, "shipwright-reef")
             .with_ledger(InstallLedger::default_path().map(InstallLedger::new));
         store
-            .remove(&name, &mut |p| eprintln!("{:?} {:?}", p.status, p.percentage))
+            .remove(&name, &mut |p| {
+                eprintln!("{:?} {:?}", p.status, p.percentage)
+            })
             .await
     });
     match result {

@@ -120,7 +120,9 @@ impl MetadataCheck {
             if let Some(parent) = self.state.parent() {
                 let _ = std::fs::create_dir_all(parent);
             }
-            let tmp = self.state.with_extension(format!("{}.tmp", std::process::id()));
+            let tmp = self
+                .state
+                .with_extension(format!("{}.tmp", std::process::id()));
             if std::fs::write(&tmp, seen.to_string()).is_ok() {
                 let _ = std::fs::rename(tmp, &self.state);
             }
@@ -172,8 +174,8 @@ fn verify_signature(
     std::fs::create_dir_all(&dir).map_err(|e| MetaError::Tool(e.to_string()))?;
     let result = (|| {
         let keyring = dir.join("reef.gpg");
-        let armoured = std::fs::read(key)
-            .map_err(|e| MetaError::Tool(format!("{}: {e}", key.display())))?;
+        let armoured =
+            std::fs::read(key).map_err(|e| MetaError::Tool(format!("{}: {e}", key.display())))?;
         let out = Command::new(gpg)
             .args(["--batch", "--homedir"])
             .arg(&dir)
@@ -208,7 +210,11 @@ fn verify_signature(
             Ok(())
         } else {
             Err(MetaError::BadSignature(
-                said.lines().last().unwrap_or("no good signature").trim().to_owned(),
+                said.lines()
+                    .last()
+                    .unwrap_or("no good signature")
+                    .trim()
+                    .to_owned(),
             ))
         }
     })();
@@ -223,7 +229,10 @@ mod tests {
     #[test]
     fn finds_zypps_metadata_directory() {
         let sailfish = "## comment\n[main]\n cachedir = /home/.zypp-cache\n metadatadir = /home/.zypp-cache/raw\n";
-        assert_eq!(metadata_dir(sailfish), PathBuf::from("/home/.zypp-cache/raw"));
+        assert_eq!(
+            metadata_dir(sailfish),
+            PathBuf::from("/home/.zypp-cache/raw")
+        );
         assert_eq!(metadata_dir("cachedir = /c\n"), PathBuf::from("/c/raw"));
         assert_eq!(
             metadata_dir("# metadatadir = /x\n"),
@@ -266,18 +275,41 @@ mod tests {
                 .args(args)
                 .output()
                 .unwrap();
-            assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+            assert!(
+                out.status.success(),
+                "{}",
+                String::from_utf8_lossy(&out.stderr)
+            );
             out.stdout
         };
-        g(&["--passphrase", "", "--quick-gen-key", "Reef Test <t@example.com>", "rsa2048", "sign", "never"]);
-        g(&["--passphrase", "", "--quick-gen-key", "Other <o@example.com>", "rsa2048", "sign", "never"]);
+        g(&[
+            "--passphrase",
+            "",
+            "--quick-gen-key",
+            "Reef Test <t@example.com>",
+            "rsa2048",
+            "sign",
+            "never",
+        ]);
+        g(&[
+            "--passphrase",
+            "",
+            "--quick-gen-key",
+            "Other <o@example.com>",
+            "rsa2048",
+            "sign",
+            "never",
+        ]);
         let key = t.path().join("key.asc");
         std::fs::write(&key, g(&["--armor", "--export", "t@example.com"])).unwrap();
         let repodata = t.path().join("raw/shipwright-reef/repodata");
         std::fs::create_dir_all(&repodata).unwrap();
         let conf = t.path().join("zypp.conf");
-        std::fs::write(&conf, format!("metadatadir = {}\n", t.path().join("raw").display()))
-            .unwrap();
+        std::fs::write(
+            &conf,
+            format!("metadatadir = {}\n", t.path().join("raw").display()),
+        )
+        .unwrap();
         let sign = |rev: u64, who: &str| {
             let xml = repodata.join("repomd.xml");
             std::fs::write(&xml, format!("<repomd><revision>{rev}</revision></repomd>")).unwrap();
@@ -303,8 +335,11 @@ mod tests {
         sign(200, "t@example.com");
         assert_eq!(check.verify(), Ok(200));
         // Tampered after signing.
-        std::fs::write(repodata.join("repomd.xml"), "<repomd><revision>201</revision></repomd>")
-            .unwrap();
+        std::fs::write(
+            repodata.join("repomd.xml"),
+            "<repomd><revision>201</revision></repomd>",
+        )
+        .unwrap();
         assert!(matches!(check.verify(), Err(MetaError::BadSignature(_))));
         // Signed, but by another key.
         sign(300, "o@example.com");
@@ -313,7 +348,10 @@ mod tests {
         sign(100, "t@example.com");
         assert_eq!(
             check.verify(),
-            Err(MetaError::Rollback { seen: 100, accepted: 200 })
+            Err(MetaError::Rollback {
+                seen: 100,
+                accepted: 200
+            })
         );
         sign(250, "t@example.com");
         assert_eq!(check.verify(), Ok(250));

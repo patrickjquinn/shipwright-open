@@ -180,7 +180,7 @@ run() { # mode registered-url
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/reef-smoke-no-bus" \
         REEF_SYSROOT="$work/root" REEF_URL_TEMPLATE="$template" \
         REEF_SMOKE_STATE="$state" \
-        timeout 120 "$bin" --qml "$work/smoke-$mode.qml" > "$state/out" 2>&1 || status=$?
+        timeout 120 dbus-run-session -- "$bin" --qml "$work/smoke-$mode.qml" > "$state/out" 2>&1 || status=$?
     cat "$state/out"
 
     [ "$status" -eq 0 ] || { echo "smoke-test: $mode: exit status $status" >&2; exit 1; }
@@ -266,6 +266,8 @@ fi
 echo "smoke-test: repair ran: $(echo "$actual" | tr '\n' ';')"
 # The real main QML through the real binary must show a main window: Keel's
 # ApplicationWindow is an Item and needs SailfishApp's view (cpp/launcher.cpp).
+# Each run has a private session bus, as on the phone: the window owns
+# org.shipwright.reef.ui (the update notification's tap).
 echo "== main window"
 mkdir -p "$work/home-window" "$work/state-window"
 chmod 700 "$work/state-window"
@@ -274,6 +276,6 @@ env -i PATH="$work/bin:/usr/bin:/bin" HOME="$work/home-window" \
     QML_IMPORT_PATH="$keel_qml" \
     DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/reef-smoke-no-bus" \
     REEF_SYSROOT="$work/root" REEF_URL_TEMPLATE="$template" \
-    "$repo_root/tools/window-probe/window-probe.sh" "$bin" --qml "$repo_root/reef/client/ui/qml/shipwright-reef.qml" ||
+    dbus-run-session -- "$repo_root/tools/window-probe/window-probe.sh" "$bin" --qml "$repo_root/reef/client/ui/qml/shipwright-reef.qml" ||
     { echo "smoke-test: no main window" >&2; exit 1; }
 echo "smoke-test: PASS"

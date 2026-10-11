@@ -143,6 +143,7 @@ pub mod qobject {
         #[qproperty(QString, licence_server, cxx_name = "licenceServer")]
         #[qproperty(QString, search_text, cxx_name = "searchText")]
         #[qproperty(*mut ReefListModel, featured_model, cxx_name = "featuredModel", READ, CONSTANT)]
+        #[qproperty(*mut ReefListModel, recent_model, cxx_name = "recentModel", READ, CONSTANT)]
         type Reef = super::ReefRust;
 
         #[qinvokable]
@@ -151,6 +152,17 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "packageDetails"]
         fn package_details(self: &Reef, name: &QString) -> QMap_QString_QVariant;
+
+        /// Whether the installed package has a launcher entry to open
+        /// (launch.rs).
+        #[qinvokable]
+        #[cxx_name = "canOpen"]
+        fn can_open(self: &Reef, name: &QString) -> bool;
+
+        /// Opens the installed app, as the launcher would; false when it
+        /// has no launcher entry or could not be started.
+        #[qinvokable]
+        fn open(self: &Reef, name: &QString) -> bool;
 
         #[qinvokable]
         fn install(self: Pin<&mut Reef>, name: &QString);
@@ -391,6 +403,8 @@ pub struct ReefRust {
     installed_model: *mut qobject::ReefListModel,
     licence_model: *mut qobject::ReefListModel,
     featured_model: *mut qobject::ReefListModel,
+    /// The most recently updated apps (rows.rs, `recent_rows`).
+    recent_model: *mut qobject::ReefListModel,
     refresh_on_start: bool,
     background_check_days: i32,
     licence_server: QString,
@@ -422,6 +436,7 @@ impl Default for ReefRust {
             installed_model: std::ptr::null_mut(),
             licence_model: std::ptr::null_mut(),
             featured_model: std::ptr::null_mut(),
+            recent_model: std::ptr::null_mut(),
             refresh_on_start: settings.refresh_on_start,
             background_check_days: settings.background_check_days,
             licence_server: QString::from(settings.licence_server.as_str()),
@@ -469,8 +484,9 @@ impl cxx_qt::Initialize for qobject::Reef {
         // SAFETY: `parent` is this live Reef object; each model becomes its
         // QObject child, so Qt deletes the models with it and they live as
         // long as every method of `self` that uses the pointers.
-        let (catalogue_model, installed_model, licence_model, featured_model) = unsafe {
+        let (catalogue_model, installed_model, licence_model, featured_model, recent_model) = unsafe {
             (
+                qobject::reef_new_list_model(parent),
                 qobject::reef_new_list_model(parent),
                 qobject::reef_new_list_model(parent),
                 qobject::reef_new_list_model(parent),
@@ -482,6 +498,7 @@ impl cxx_qt::Initialize for qobject::Reef {
             (installed_model, PACKAGE_ROLES),
             (licence_model, LICENCE_ROLES),
             (featured_model, PACKAGE_ROLES),
+            (recent_model, PACKAGE_ROLES),
         ] {
             // SAFETY: just created above by reef_new_list_model, owned by
             // `self` (see model_mut's contract).
@@ -503,6 +520,7 @@ impl cxx_qt::Initialize for qobject::Reef {
             r.installed_model = installed_model;
             r.licence_model = licence_model;
             r.featured_model = featured_model;
+            r.recent_model = recent_model;
             r.refresh_on_start = settings.refresh_on_start;
             r.background_check_days = settings.background_check_days;
             r.licence_server = QString::from(settings.licence_server.as_str());
@@ -606,6 +624,7 @@ impl qobject::Reef {
         let featured_rows = catalogue
             .map(|c| rows::featured_rows(&package_rows, c))
             .unwrap_or_default();
+        let recent_rows = rows::recent_rows(&package_rows);
         let shown_rows = rows::filter_rows(&package_rows, &self.search_text.to_string());
         let licence_rows: Vec<Vec<Value>> = stored
             .iter()
@@ -613,7 +632,7 @@ impl qobject::Reef {
             .collect();
         let update_count = qt_count(self.core.pk.updates.len());
 
-        // SAFETY: the three models were created in `initialize` as QObject
+        // SAFETY: the models were created in `initialize` as QObject
         // children of `self` and live as long as it does; they are used only
         // here, on the GUI thread (model_mut's contract).
         unsafe {
@@ -628,6 +647,8 @@ impl qobject::Reef {
             model_mut(self.licence_model).set_rows(licence_rows);
             model_mut(self.featured_model)
                 .set_rows(featured_rows.iter().map(rows::PackageRow::values).collect());
+            model_mut(self.recent_model)
+                .set_rows(recent_rows.iter().map(rows::PackageRow::values).collect());
         }
         set_notify!(self, update_count, update_count_changed, update_count);
         let revision = self.revision.wrapping_add(1);
@@ -879,6 +900,23 @@ impl qobject::Reef {
         to_map(&rows::package_details(package, &state, licensed, &|rel| {
             self.asset(rel)
         }))
+    }
+
+    pub fn can_open(&self, name: &QString) -> bool {
+        crate::launch::desktop_entry(&jobs::sysroot(), &name.to_string()).is_some()
+    }
+
+    pub fn open(&self, name: &QString) -> bool {
+        let Some(entry) = crate::launch::desktop_entry(&jobs::sysroot(), &name.to_string()) else {
+            return false;
+        };
+        match crate::launch::open(&entry) {
+            Ok(()) => true,
+            Err(e) => {
+                log::warn!("opening {entry}: {e}");
+                false
+            }
+        }
     }
 
     pub fn install(self: Pin<&mut Self>, name: &QString) {

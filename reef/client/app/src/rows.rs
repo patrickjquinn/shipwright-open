@@ -60,7 +60,12 @@ pub const PACKAGE_ROLES: &[&str] = &[
     "iconPath",
     "featured",
     "isNew",
+    "updated",
+    "heroPath",
 ];
+
+/// How many apps the home page's "New and updated" row shows.
+pub const RECENT_COUNT: usize = 10;
 
 /// A package is "new" for this many days after its `added` date.
 pub const NEW_DAYS: i64 = 30;
@@ -92,6 +97,11 @@ pub struct PackageRow {
     pub icon_path: String,
     pub featured: bool,
     pub is_new: bool,
+    /// `YYYY-MM-DD` of the newest changelog entry, else `added`, else empty.
+    pub updated: String,
+    /// Local path of the first cached screenshot (the home page's banner
+    /// for a featured app), or empty.
+    pub hero_path: String,
 }
 
 impl PackageRow {
@@ -111,6 +121,8 @@ impl PackageRow {
             self.icon_path.as_str().into(),
             self.featured.into(),
             self.is_new.into(),
+            self.updated.as_str().into(),
+            self.hero_path.as_str().into(),
         ]
     }
 }
@@ -143,6 +155,23 @@ pub fn filter_rows(rows: &[PackageRow], query: &str) -> Vec<PackageRow> {
         })
         .cloned()
         .collect()
+}
+
+/// `recentModel`: the most recently updated rows, newest first (by
+/// `updated`; rows without a date left out), at most [`RECENT_COUNT`].
+pub fn recent_rows(rows: &[PackageRow]) -> Vec<PackageRow> {
+    let mut recent: Vec<PackageRow> = rows
+        .iter()
+        .filter(|r| !r.updated.is_empty())
+        .cloned()
+        .collect();
+    recent.sort_by(|a, b| {
+        b.updated
+            .cmp(&a.updated)
+            .then_with(|| a.title.cmp(&b.title))
+    });
+    recent.truncate(RECENT_COUNT);
+    recent
 }
 
 /// `featuredModel`: the featured rows, in the catalogue's order.
@@ -198,8 +227,8 @@ pub fn is_licensed(package: &Package, licensed_app: &dyn Fn(&str) -> bool) -> bo
 }
 
 /// `catalogueModel`: visible packages joined with install state
-/// (`catalogue.visible` through `store::entries`), sorted by category and
-/// then title, so the list's category sections each appear once. `asset`
+/// (`catalogue.visible` through `store::entries`), sorted by title (the
+/// home page's A to Z list; the category is in each row). `asset`
 /// maps a repository-relative icon path to its cached local path (or
 /// empty); `today` is [`today`]'s value.
 pub fn package_rows(
@@ -211,7 +240,7 @@ pub fn package_rows(
     asset: &dyn Fn(&str) -> String,
     today: i64,
 ) -> Vec<PackageRow> {
-    entries(catalogue, release, installed, updates)
+    let mut rows: Vec<PackageRow> = entries(catalogue, release, installed, updates)
         .into_iter()
         .map(|e| {
             let (state, installed_version) = install_state(&e.state);
@@ -229,9 +258,30 @@ pub fn package_rows(
                 icon_path: e.package.icon.as_deref().map(asset).unwrap_or_default(),
                 featured: catalogue.featured.contains(&e.package.name),
                 is_new: is_new(e.package.added.as_deref(), today),
+                updated: e
+                    .package
+                    .changelog
+                    .first()
+                    .map(|c| c.date.clone())
+                    .or_else(|| e.package.added.clone())
+                    .unwrap_or_default(),
+                hero_path: e
+                    .package
+                    .screenshots
+                    .iter()
+                    .map(|s| asset(s))
+                    .find(|p| !p.is_empty())
+                    .unwrap_or_default(),
             }
         })
-        .collect()
+        .collect();
+    rows.sort_by(|a, b| {
+        a.title
+            .to_lowercase()
+            .cmp(&b.title.to_lowercase())
+            .then_with(|| a.name.cmp(&b.name))
+    });
+    rows
 }
 
 /// `installedModel`: the same rows, only those installed.
@@ -301,6 +351,25 @@ pub fn package_details(
             ),
         ),
         ("added", package.added.clone().unwrap_or_default().into()),
+        // The newest changelog entry's day, else the day it was published.
+        (
+            "updated",
+            package
+                .changelog
+                .first()
+                .map(|c| c.date.clone())
+                .or_else(|| package.added.clone())
+                .unwrap_or_default()
+                .into(),
+        ),
+        // [{version, date, notes}], newest first, for QML's JSON.parse
+        // (a list of maps does not fit `Value`).
+        (
+            "changelogJson",
+            serde_json::to_string(&package.changelog)
+                .unwrap_or_else(|_| "[]".into())
+                .into(),
+        ),
     ]
 }
 
@@ -595,23 +664,22 @@ mod tests {
             &no_asset,
             0,
         );
-        // Messages is not tested on 5.2.0.17: hidden. Sorted by category
-        // (Audio, System), then title.
+        // Messages is not tested on 5.2.0.17: hidden. Sorted by title.
         assert_eq!(
             rows.iter().map(|r| r.title.as_str()).collect::<Vec<_>>(),
-            ["Shoal Bridge", "Keel"]
+            ["Keel", "Shoal Bridge"]
         );
-        assert_eq!(rows[1].install_state, "installed");
-        assert_eq!(rows[1].installed_version, "0.1.0-1");
-        assert_eq!(rows[1].licence_model, "free");
-        assert!(!rows[1].licensed, "free packages carry no licence");
-        assert_eq!(rows[0].install_state, "update_available");
-        assert_eq!(rows[0].installed_version, "0.9.0-1");
-        assert_eq!(rows[0].version, "1.0.0-1");
-        assert_eq!(rows[0].licence_model, "one_off");
-        assert!(rows[0].licensed);
+        assert_eq!(rows[0].install_state, "installed");
+        assert_eq!(rows[0].installed_version, "0.1.0-1");
+        assert_eq!(rows[0].licence_model, "free");
+        assert!(!rows[0].licensed, "free packages carry no licence");
+        assert_eq!(rows[1].install_state, "update_available");
+        assert_eq!(rows[1].installed_version, "0.9.0-1");
+        assert_eq!(rows[1].version, "1.0.0-1");
+        assert_eq!(rows[1].licence_model, "one_off");
+        assert!(rows[1].licensed);
 
-        let values = rows[0].values();
+        let values = rows[1].values();
         assert_eq!(values.len(), PACKAGE_ROLES.len());
         assert_eq!(
             values[0],
@@ -625,8 +693,8 @@ mod tests {
         assert_eq!(rows.len(), 2);
         assert!(rows.iter().all(|r| r.install_state == "not_installed"));
         assert!(installed_rows(&rows).is_empty());
-        // Audio before Communication.
-        assert_eq!(rows[1].licence_model, "subscription");
+        // By title: Messages, then Shoal Bridge.
+        assert_eq!(rows[0].licence_model, "subscription");
     }
 
     #[test]
@@ -675,8 +743,16 @@ mod tests {
         assert_eq!(keel.publisher, "Shipwright");
         assert_eq!(keel.icon_path, "/cache/assets__keel.png");
         assert!(keel.featured && keel.is_new);
-        let bridge = &rows[0];
+        let bridge = rows
+            .iter()
+            .find(|r| r.name == "shipwright-shoal-bridge-airpods-ui")
+            .unwrap();
         assert!(bridge.featured && !bridge.is_new && bridge.icon_path.is_empty());
+        // The banner is the first screenshot that is cached; "updated" falls
+        // back to the day it was added when there is no changelog.
+        assert_eq!(keel.hero_path, "/cache/assets__shots__k1.jpg");
+        assert_eq!(keel.updated, "2026-10-01");
+        assert!(bridge.hero_path.is_empty());
         assert_eq!(keel.values().len(), PACKAGE_ROLES.len());
 
         // New for 30 days, not before the date and not after.
@@ -733,6 +809,39 @@ mod tests {
     }
 
     #[test]
+    fn recent_rows_are_newest_first() {
+        let row = |title: &str, updated: &str| PackageRow {
+            name: title.to_lowercase(),
+            title: title.into(),
+            summary: String::new(),
+            category: String::new(),
+            version: String::new(),
+            install_state: "not_installed",
+            installed_version: String::new(),
+            licence_model: "free",
+            licensed: false,
+            publisher: String::new(),
+            icon_path: String::new(),
+            featured: false,
+            is_new: false,
+            updated: updated.into(),
+            hero_path: String::new(),
+        };
+        let rows = [
+            row("Keys", "2026-10-08"),
+            row("Undated", ""),
+            row("Pilot", "2026-10-11"),
+            row("Migrate", "2026-10-11"),
+        ];
+        let titles: Vec<String> = recent_rows(&rows).into_iter().map(|r| r.title).collect();
+        assert_eq!(titles, ["Migrate", "Pilot", "Keys"]);
+        let many: Vec<PackageRow> = (0..15)
+            .map(|i| row(&format!("A{i:02}"), "2026-10-01"))
+            .collect();
+        assert_eq!(recent_rows(&many).len(), RECENT_COUNT);
+    }
+
+    #[test]
     fn details_map_has_every_documented_key() {
         let c = cat();
         let p = c
@@ -767,7 +876,9 @@ mod tests {
                 "publisher",
                 "iconPath",
                 "screenshotPaths",
-                "added"
+                "added",
+                "updated",
+                "changelogJson"
             ]
         );
         let get = |k: &str| d.iter().find(|(key, _)| *key == k).unwrap().1.clone();

@@ -91,3 +91,86 @@ function openHttps(url) {
 function isServiceUrl(url) {
     return isHttps(url) && url.indexOf("?") < 0 && url.indexOf("#") < 0
 }
+
+// A Sailjail permission (the catalogue's names, from the app's desktop
+// file) in words, with a theme icon: {label, icon}. Names not listed are
+// split at their capitals ("ShoalPush" is "Shoal push").
+function permission(name) {
+    switch (name) {
+    case "Internet": return { label: qsTr("Internet"), icon: "image://theme/icon-m-website" }
+    case "Bluetooth": return { label: qsTr("Bluetooth"), icon: "image://theme/icon-m-bluetooth" }
+    case "Connman": return { label: qsTr("Network settings"), icon: "image://theme/icon-m-wlan" }
+    case "Location": return { label: qsTr("Your location"), icon: "image://theme/icon-m-location" }
+    case "Camera": return { label: qsTr("Camera"), icon: "image://theme/icon-m-camera" }
+    case "Microphone": return { label: qsTr("Microphone"), icon: "image://theme/icon-m-mic" }
+    case "Audio": return { label: qsTr("Sound"), icon: "image://theme/icon-m-speaker" }
+    case "Contacts": return { label: qsTr("Contacts"), icon: "image://theme/icon-m-people" }
+    case "Calendar": return { label: qsTr("Calendar"), icon: "image://theme/icon-m-date" }
+    case "CommunicationHistory": return { label: qsTr("Messages and call history"), icon: "image://theme/icon-m-sms" }
+    case "Messages": return { label: qsTr("Send messages"), icon: "image://theme/icon-m-message" }
+    case "Phone": return { label: qsTr("Phone calls"), icon: "image://theme/icon-m-phone" }
+    case "Accounts": return { label: qsTr("Your accounts"), icon: "image://theme/icon-m-person" }
+    case "Synchronization": return { label: qsTr("Account sync"), icon: "image://theme/icon-m-sync" }
+    case "Secrets": return { label: qsTr("Saved passwords and keys"), icon: "image://theme/icon-m-keys" }
+    case "Privileged": return { label: qsTr("System data (contacts, calendar, messages)"), icon: "image://theme/icon-m-warning" }
+    case "Pictures": return { label: qsTr("Pictures"), icon: "image://theme/icon-m-image" }
+    case "Videos": return { label: qsTr("Videos"), icon: "image://theme/icon-m-video" }
+    case "Music": return { label: qsTr("Music"), icon: "image://theme/icon-m-music" }
+    case "Documents": return { label: qsTr("Documents"), icon: "image://theme/icon-m-document" }
+    case "Downloads": return { label: qsTr("Downloads"), icon: "image://theme/icon-m-downloads" }
+    case "PublicDir": return { label: qsTr("Public folder"), icon: "image://theme/icon-m-folder" }
+    case "RemovableMedia": return { label: qsTr("Memory card"), icon: "image://theme/icon-m-sd-card" }
+    case "MediaIndexing": return { label: qsTr("Media library"), icon: "image://theme/icon-m-folder" }
+    case "Thumbnails": return { label: qsTr("Thumbnails"), icon: "image://theme/icon-m-image" }
+    case "Sharing": return { label: qsTr("Sharing"), icon: "image://theme/icon-m-share" }
+    case "Notifications": return { label: qsTr("Notifications"), icon: "image://theme/icon-m-notifications" }
+    case "UnifiedPush": return { label: qsTr("Push notifications"), icon: "image://theme/icon-m-notifications" }
+    case "ShipwrightLicences": return { label: qsTr("Your Reef licences"), icon: "image://theme/icon-m-certificates" }
+    case "ShoalPilot": return { label: qsTr("The Pilot assistant service"), icon: "image://theme/icon-m-chat" }
+    case "KeelPolicy": return { label: qsTr("Camera and sound settings"), icon: "image://theme/icon-m-sounds" }
+    }
+    var words = String(name).replace(/([a-z])([A-Z])/g, "$1 $2")
+    return { label: words.charAt(0).toUpperCase() + words.slice(1).toLowerCase(),
+             icon: "image://theme/icon-m-other" }
+}
+
+// The package's own licence (an SPDX expression) for people: Shipwright's
+// and other LicenseRef- licences are "Proprietary".
+function licence(spdx) {
+    if (!spdx)
+        return ""
+    if (spdx === "LicenseRef-Shipwright-Proprietary")
+        return qsTr("Proprietary (Shipwright)")
+    if (spdx.indexOf("LicenseRef-") === 0)
+        return qsTr("Proprietary")
+    return spdx.replace(/-or-later$/, "+").replace(/-only$/, "")
+}
+
+// "2026-10-11" as the phone's locale writes a short date ("11 Oct 2026").
+function date(ymd) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || "")
+    if (!m)
+        return ""
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    return d.toLocaleDateString(Qt.locale(), "d MMM yyyy")
+}
+
+// What it costs, for the list chips and the page: "Free", "Paid",
+// "Subscription", or what the person already has.
+function price(model, licensed) {
+    if (model === "one_off")
+        return licensed ? qsTr("Licensed") : qsTr("Paid")
+    if (model === "subscription")
+        return licensed ? qsTr("Subscribed") : qsTr("Subscription")
+    return qsTr("Free")
+}
+
+// The catalogue's changelog JSON (packageDetails' changelogJson), or [].
+function changelog(json) {
+    try {
+        var list = JSON.parse(json || "[]")
+        return Array.isArray(list) ? list : []
+    } catch (e) {
+        return []
+    }
+}

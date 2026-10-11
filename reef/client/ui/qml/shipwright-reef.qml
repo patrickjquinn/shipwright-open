@@ -8,6 +8,7 @@
 import QtQuick
 import Sailfish.Silica 1.0
 import Shipwright.Reef 1.0
+import Nemo.DBus 2.0
 import "pages"
 import "actions"
 
@@ -25,6 +26,29 @@ ApplicationWindow {
 
     // Keel Actions for Pilot and other MCP clients (actions/ReefActions.qml).
     ReefActions {}
+
+    // The update notification's tap (src/check.rs): Reef on its updates.
+    // The session bus starts Reef for it when it is not running
+    // (packaging/dbus/org.shipwright.reef.ui.service).
+    DBusAdaptor {
+        service: "org.shipwright.reef.ui"
+        iface: "org.shipwright.reef.ui"
+        path: "/"
+        xml: '<interface name="org.shipwright.reef.ui"><method name="openUpdates"/></interface>'
+
+        function openUpdates() {
+            app.openUpdates()
+        }
+    }
+
+    function openUpdates() {
+        if (!pageStack.currentPage || pageStack.currentPage.objectName !== "installedPage") {
+            pageStack.pop(null, PageStackAction.Immediate)
+            pageStack.push(Qt.resolvedUrl("pages/InstalledPage.qml"), {}, PageStackAction.Immediate)
+        }
+        app.activate()
+        Reef.refresh()
+    }
 
     Component.onCompleted: {
         if (Reef.refreshOnStart) {

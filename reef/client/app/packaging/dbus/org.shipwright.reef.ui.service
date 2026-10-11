@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Patrick Quinn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Opens the Reef window when something calls org.shipwright.reef.ui (the
+# update notification's tap, src/check.rs) and Reef is not running. The
+# window registers the name itself (ui/qml/shipwright-reef.qml,
+# DBusAdaptor), so the call reaches it once it has started; a running
+# Reef answers directly. Started as the launcher starts it (the desktop
+# file's X-Nemo-Application-Type=keel, single instance).
+[D-BUS Service]
+Name=org.shipwright.reef.ui
+Exec=/usr/bin/invoker --type=keel --single-instance --id=shipwright-reef /usr/bin/shipwright-reef

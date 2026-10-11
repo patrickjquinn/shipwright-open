@@ -21,7 +21,9 @@ This is a standalone Cargo workspace (its own `[workspace]` and `Cargo.lock`). T
 | `src/settings.rs` | `refreshOnStart`, `backgroundCheckDays` and `licenceServer`, stored in `$XDG_CONFIG_HOME/shipwright-reef/settings.json`. |
 | `cpp/factory.*` | C++ glue: creates the list models as QObject children of `Reef`, because Rust cannot `new` a CXX-Qt QObject. |
 | `packaging/shipwright-reef.desktop` | Launcher: `Exec=/usr/bin/keel-shell -- /usr/bin/shipwright-reef`, `Sandboxing=Disabled`. The privileges entry is still `../packaging/privileges.d/`. |
-| `packaging/systemd/shipwright-reef-check.{service,timer}` | The user timer (daily, persistent, randomised by up to an hour) that runs the background check. |
+| `packaging/systemd/shipwright-reef-check.{service,timer}` | The user timer (every 4 hours, persistent, randomised by up to 20 minutes) that runs the background check; the package's `%post` starts it in the running session. |
+| `packaging/notifications/x-shipwright.reef.updates.conf` | Lipstick notification category of the update notification (popup, Events entry under Reef). |
+| `packaging/dbus/org.shipwright.reef.ui.service` | Starts Reef when the notification's tap calls `org.shipwright.reef.ui.openUpdates` (the window's `DBusAdaptor`). |
 | `tests/smoke-test.sh` | Headless smoke test (see below). |
 | `tests/harness/smoke.qml.in` | The smoke test's QML driver. |
 
@@ -37,7 +39,7 @@ Developer overrides, never set on a phone: `REEF_SYSROOT` (the root used to find
 
 ## Background check
 
-The "Check in the background" setting (never, daily, weekly) is read by `shipwright-reef --check-updates`, which `packaging/systemd/shipwright-reef-check.timer` (a systemd **user** timer) starts daily. It runs without Qt: it reads the settings, and when a check is due (`check::due`: daily or weekly since `$XDG_CACHE_HOME/shipwright-reef/last-check`, with an hour of slack; never for "Never") it runs the same refresh as the app (catalogue, cached for the next start; `ssu lr`; PackageKit's Reef updates; licence refreshes), records the time, and posts one `org.freedesktop.Notifications` notification when Reef updates are waiting. The notification text is English, because this path has no Qt translations.
+The "Check in the background" setting (never, every few hours, weekly) is read by `shipwright-reef --check-updates`, which `packaging/systemd/shipwright-reef-check.timer` (a systemd **user** timer) starts every 4 hours; the RPM's `%post` starts the timer in the running session, since its wants link only acts at the next login (until 11 October 2026 a phone that had not restarted since Reef arrived never checked). It runs without Qt: it reads the settings, and when a check is due (`check::due`: 4 hours or a week since `$XDG_CACHE_HOME/shipwright-reef/last-check`, with half an hour of slack; never for "Never") it runs the same refresh as the app (catalogue, cached for the next start; `ssu lr`; PackageKit's Reef updates; licence refreshes) and records the time. When an update has appeared that was not announced yet (`announced-updates` in the same folder, one `name version` a line), it posts one notification through `org.freedesktop.Notifications`, replacing its previous one: the apps by name ("Pilot update ready", "3 app updates ready" with the names), a popup (category `x-shipwright.reef.updates`), and a tap that opens Reef on its updates (`org.shipwright.reef.ui openUpdates`). The text is English, because this path has no Qt translations.
 
 The RPM must ship the two units in `/usr/lib/systemd/user/` and enable the timer for every user (`/usr/lib/systemd/user/timers.target.wants/shipwright-reef-check.timer` symlink); see the report for the spec change.
 
@@ -71,7 +73,7 @@ The build needs Qt 6 development files (`qmake6` on `PATH`, or `QMAKE=/usr/lib/q
 - **pinned.** Checks the release, arch, alias, `repoState` and URL. Checks that `catalogueModel` has 2 of the 3 packages (one is tested only on 5.2.0.18) with the right roles, that `packageDetails` is complete and empty for a hidden package, that `repairCommands()` is empty, and that the licence calls reject a garbage token. Checks that settings are normalised and saved, and that the catalogue is cached. Starts an install, which fails (no PackageKit), and checks the package page shows the error and `lastError` has it. Checks that the cover and every page (Package, Installed, Licences, Settings, AddLicenceDialog) instantiate against the real object (created directly, not through the page stack, so the check does not depend on Keel's transition timing). Last, Buy: `buyUrl()` is empty for a free package and adds a 32-hex `claim=` code for the paid one, `checkPurchases()` then starts a licence refresh that asks the (unreachable) service for the code without showing it in `lastError`, and the script checks the pending claim file is kept, mode 600 in a 700 directory. Fails on any QML warning.
 - **drifted.** The same checks with `ssu` reporting 5.2.0.15. `repairCommands()` shows four commands. `repairRepository()` returns at once with `busy` set. When `operationFinished` fires, `repoState` must be `pinned`. The script then checks that exactly `ssu rr`, `ssu ar <url>`, `ssu ur` and `pkcon -p repo-set-data shipwright-reef refresh-now true` ran.
 
-- **background check.** `--check-updates` with no settings file (daily by default) caches the catalogue and records the check; with the setting at "Never" it does nothing and says so.
+- **background check.** `--check-updates` with no settings file (every few hours by default) caches the catalogue and records the check; with the setting at "Never" it does nothing and says so.
 
 ## Needs device verification
 

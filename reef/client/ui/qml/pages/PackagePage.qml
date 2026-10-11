@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Patrick Quinn
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// One package: what it is, which Sailfish releases it was tested on, what
-// it may access, and install / update / remove. Everything shown here comes
-// from the developer's catalogue entry: it is plain text (the window's
-// default label format), and only https:// links are ever opened.
+// One app: what it is, what is new in it, what it may access, and
+// install / update / buy / remove. Laid out as the Jolla Store lays out an
+// app (the name and publisher right-aligned beside the icon), then the one
+// thing to do, the facts at a glance, the screenshots, and the rest in
+// sections. Everything shown comes from the developer's catalogue entry:
+// it is plain text (the window's default label format), and only https://
+// links are ever opened.
 
 pragma ComponentBehavior: Bound
 
@@ -24,6 +27,7 @@ Page {
         const revision = Reef.revision
         return revision >= 0 ? Reef.packageDetails(packageName) : ({})
     }
+    readonly property var changes: Texts.changelog(pkg.changelogJson)
     readonly property bool working: Reef.busy && Reef.busyPackage === packageName
     readonly property bool paid: pkg.licenceModel === "one_off" || pkg.licenceModel === "subscription"
     // Why the last install, update or remove of this package failed.
@@ -40,8 +44,14 @@ Page {
     RemorsePopup { id: remorse }
 
     readonly property bool installed: pkg.installState !== undefined && pkg.installState !== "not_installed"
+    readonly property bool updatable: pkg.installState === "update_available"
     readonly property bool canBuy: paid && !pkg.licensed && Texts.isHttps(pkg.purchaseUrl)
-    readonly property bool showActions: !working && (!installed || pkg.installState === "update_available" || canBuy)
+    // Installed with a launcher entry: an Open button (asks rpm once per
+    // install state, not on every model rebuild).
+    readonly property bool openable: installed && openableFor(pkg.installState, pkg.installedVersion)
+    function openableFor(state, version) {
+        return state !== undefined && Reef.canOpen(packageName)
+    }
 
     // Set once Buy has opened the checkout in the browser.
     property bool buying
@@ -61,15 +71,167 @@ Page {
 
     function install() {
         page.error = ""
-        if (page.pkg.installState === "update_available")
+        if (page.updatable)
             Reef.update(page.packageName)
         else
             Reef.install(page.packageName)
     }
 
+    // A changelog entry: its version and day, then its notes as a list.
+    component ChangeEntry: Column {
+        id: entry
+        required property var change
+        width: parent ? parent.width : 0
+        spacing: Theme.paddingSmall
+
+        Item {
+            x: Theme.horizontalPageMargin
+            width: parent.width - 2 * Theme.horizontalPageMargin
+            height: versionLabel.height
+            Label {
+                id: versionLabel
+                anchors.left: parent.left
+                anchors.right: dateLabel.left
+                anchors.rightMargin: Theme.paddingMedium
+                text: entry.change.version ? qsTr("Version %1").arg(entry.change.version) : ""
+                color: Theme.highlightColor
+                font.pixelSize: Theme.fontSizeSmall
+                truncationMode: TruncationMode.Fade
+            }
+            Label {
+                id: dateLabel
+                anchors.right: parent.right
+                anchors.baseline: versionLabel.baseline
+                text: Texts.date(entry.change.date)
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+            }
+        }
+        Repeater {
+            model: entry.change.notes || []
+            // A bullet with a hanging indent.
+            Item {
+                id: note
+                required property string modelData
+                x: Theme.horizontalPageMargin
+                width: entry.width - 2 * Theme.horizontalPageMargin
+                height: noteText.height
+                Label {
+                    id: bullet
+                    text: "•"
+                    color: Theme.secondaryHighlightColor
+                    font.pixelSize: Theme.fontSizeSmall
+                }
+                Label {
+                    id: noteText
+                    anchors.left: bullet.right
+                    anchors.leftMargin: Theme.paddingMedium
+                    anchors.right: parent.right
+                    text: note.modelData
+                    wrapMode: Text.Wrap
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeSmall
+                }
+            }
+        }
+    }
+
+    // One fact in the row under the button: the value over its name.
+    component Fact: Column {
+        id: fact
+        required property string value
+        required property string name
+        width: facts.width / 3
+        spacing: Theme.paddingSmall / 2
+        Label {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: fact.value
+            color: Theme.highlightColor
+            font.pixelSize: Theme.fontSizeMedium
+            truncationMode: TruncationMode.Fade
+        }
+        Label {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: fact.name
+            color: Theme.secondaryHighlightColor
+            font.pixelSize: Theme.fontSizeExtraSmall
+            truncationMode: TruncationMode.Fade
+        }
+    }
+
+    // A line with a small icon in front: permissions, compatibility.
+    component IconLine: Item {
+        id: line
+        property string source
+        property string text
+        property color color: Theme.highlightColor
+        x: Theme.horizontalPageMargin
+        width: (parent ? parent.width : 0) - 2 * Theme.horizontalPageMargin
+        height: Math.max(lineIcon.height, lineText.height) + Theme.paddingSmall
+        Icon {
+            id: lineIcon
+            anchors.verticalCenter: lineText.lineCount > 1 ? undefined : parent.verticalCenter
+            source: line.source
+            width: Theme.iconSizeSmallPlus
+            height: width
+            sourceSize.width: width
+            sourceSize.height: height
+            color: line.color
+        }
+        Label {
+            id: lineText
+            anchors.left: lineIcon.right
+            anchors.leftMargin: Theme.paddingMedium
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            text: line.text
+            wrapMode: Text.Wrap
+            color: line.color
+            font.pixelSize: Theme.fontSizeSmall
+        }
+    }
+
+    // A link to the developer's pages, as a list row.
+    component LinkItem: BackgroundItem {
+        id: link
+        property string iconSource
+        property string text
+        property string url
+        visible: Texts.isHttps(url)
+        height: visible ? Theme.itemSizeSmall : 0
+        onClicked: Texts.openHttps(url)
+        Icon {
+            id: linkIcon
+            x: Theme.horizontalPageMargin
+            anchors.verticalCenter: parent.verticalCenter
+            source: link.iconSource
+            color: link.highlighted ? Theme.highlightColor : Theme.primaryColor
+        }
+        Label {
+            anchors.left: linkIcon.right
+            anchors.leftMargin: Theme.paddingLarge
+            anchors.right: arrow.left
+            anchors.verticalCenter: parent.verticalCenter
+            text: link.text
+            color: link.highlighted ? Theme.highlightColor : Theme.primaryColor
+            truncationMode: TruncationMode.Fade
+        }
+        Icon {
+            id: arrow
+            anchors.right: parent.right
+            anchors.rightMargin: Theme.horizontalPageMargin
+            anchors.verticalCenter: parent.verticalCenter
+            source: "image://theme/icon-m-right"
+            color: link.highlighted ? Theme.highlightColor : Theme.secondaryColor
+        }
+    }
+
     SilicaFlickable {
+        id: flick
         anchors.fill: parent
-        contentHeight: column.height + Theme.paddingLarge
+        contentHeight: column.height + Theme.paddingLarge * 2
 
         // Removing is a pull-down action with a remorse timer, as in the
         // Jolla Store; the links to the developer's pages sit with it.
@@ -84,7 +246,7 @@ Page {
             }
             MenuItem {
                 objectName: "homepageItem"
-                text: qsTr("Homepage")
+                text: qsTr("Website")
                 visible: Texts.isHttps(page.pkg.homepage)
                 onClicked: Texts.openHttps(page.pkg.homepage)
             }
@@ -102,48 +264,61 @@ Page {
             id: column
             width: page.width
 
-            PageHeader {
-                title: page.pkg.title || ""
-                description: page.pkg.summary || ""
-            }
-
-            // The icon, and who publishes the app.
+            // The name and who publishes it, right-aligned beside the icon.
             Item {
                 width: parent.width
-                height: appIcon.height + Theme.paddingMedium
+                height: Math.max(appIcon.height, heading.height) + Theme.paddingLarge * 3
 
                 AppIcon {
                     id: appIcon
-                    x: Theme.horizontalPageMargin
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    y: Theme.paddingLarge * 2
                     iconPath: page.pkg.iconPath || ""
                     title: page.pkg.title || ""
                     size: Theme.iconSizeExtraLarge
                 }
 
                 Column {
-                    anchors {
-                        left: appIcon.right
-                        leftMargin: Theme.paddingLarge
-                        right: parent.right
-                        rightMargin: Theme.horizontalPageMargin
-                        verticalCenter: appIcon.verticalCenter
-                    }
+                    id: heading
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.horizontalPageMargin
+                    anchors.right: appIcon.left
+                    anchors.rightMargin: Theme.paddingLarge
+                    anchors.verticalCenter: appIcon.verticalCenter
 
+                    Label {
+                        objectName: "title"
+                        width: parent.width
+                        horizontalAlignment: Text.AlignRight
+                        text: page.pkg.title || ""
+                        color: Theme.highlightColor
+                        font.pixelSize: Theme.fontSizeExtraLarge
+                        font.family: Theme.fontFamilyHeading
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                    }
+                    Label {
+                        width: parent.width
+                        horizontalAlignment: Text.AlignRight
+                        visible: !!page.pkg.summary
+                        text: page.pkg.summary || ""
+                        color: Theme.secondaryHighlightColor
+                        font.pixelSize: Theme.fontSizeSmall
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 3
+                        elide: Text.ElideRight
+                    }
                     Label {
                         objectName: "publisher"
                         width: parent.width
-                        visible: !!page.pkg.publisher
-                        text: page.pkg.publisher || ""
-                        textFormat: Text.PlainText
-                        color: Theme.highlightColor
-                        truncationMode: TruncationMode.Fade
-                    }
-                    Label {
-                        width: parent.width
-                        text: page.pkg.category || ""
-                        textFormat: Text.PlainText
-                        color: Theme.secondaryHighlightColor
-                        font.pixelSize: Theme.fontSizeSmall
+                        horizontalAlignment: Text.AlignRight
+                        topPadding: Theme.paddingSmall
+                        text: [page.pkg.publisher || "", page.pkg.category || ""]
+                              .filter(function(s) { return s.length > 0 }).join(" · ")
+                        color: Theme.secondaryColor
+                        font.pixelSize: Theme.fontSizeExtraSmall
                         truncationMode: TruncationMode.Fade
                     }
                 }
@@ -152,35 +327,72 @@ Page {
             // The one thing to do with this app: install, update, or buy.
             // Paid packages install freely (the app checks its own licence
             // offline); buying happens on the web, through the merchant of
-            // record.
-            // (A Row, not ButtonLayout: Keel's ButtonLayout does not lay
-            // out its buttons inside a Column yet.)
+            // record. One action at a time: install first, then buy.
             Item {
+                objectName: "actions"
+                readonly property bool buyNow: page.canBuy && page.pkg.installState === "installed"
                 width: parent.width
-                height: page.showActions ? actions.height + 2 * Theme.paddingMedium : 0
-                visible: page.showActions
+                visible: !page.working && (!page.installed || page.updatable || page.canBuy || page.openable)
+                height: visible ? actionRow.height + Theme.paddingMedium : 0
+
                 Row {
-                    id: actions
-                    objectName: "actions"
-                    anchors.centerIn: parent
+                    id: actionRow
+                    anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Theme.paddingLarge
+                    // Two buttons share the width; one takes the large size.
+                    readonly property real buttonWidth: openButton.visible && (installButton.visible || buyButton.visible)
+                        ? (page.width - 2 * Theme.horizontalPageMargin - spacing) / 2
+                        : Theme.buttonWidthLarge
+
+                    // The app itself, as the launcher opens it (launch.rs);
+                    // first, and secondary, when there is an update or a
+                    // licence to get.
                     Button {
+                        id: openButton
+                        objectName: "openButton"
+                        visible: page.openable
+                        preferredWidth: actionRow.buttonWidth
+                        backgroundColor: installButton.visible || buyButton.visible
+                                         ? "transparent" : Theme.rgba(color, Theme.opacityFaint)
+                        text: qsTr("Open")
+                        onClicked: if (!Reef.open(page.packageName)) page.error = qsTr("Couldn't open the app")
+                    }
+                    Button {
+                        id: installButton
                         objectName: "installButton"
-                        visible: page.pkg.installState === "not_installed" || page.pkg.installState === "update_available"
+                        visible: !page.installed || page.updatable
+                        preferredWidth: actionRow.buttonWidth
                         enabled: !Reef.busy
-                        text: page.pkg.installState === "update_available" ? qsTr("Update to %1").arg(page.pkg.updateVersion || page.pkg.version)
+                        text: page.updatable ? qsTr("Update")
                             : page.error.length > 0 ? qsTr("Try again") : qsTr("Install")
                         onClicked: page.install()
                     }
-                    // One action at a time: install first (paid apps install
-                    // freely and check their licence offline), then buy.
                     Button {
+                        id: buyButton
                         objectName: "buyButton"
-                        visible: page.canBuy && page.pkg.installState === "installed"
+                        visible: parent.parent.buyNow
+                        preferredWidth: actionRow.buttonWidth
                         text: page.pkg.licenceModel === "subscription" ? qsTr("Subscribe") : qsTr("Buy")
                         onClicked: page.buy()
                     }
                 }
+            }
+
+            // Under the button: the versions an update moves between, or
+            // that it is installed and current.
+            Label {
+                objectName: "installedNote"
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: !page.working && page.installed
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                color: page.updatable ? Theme.secondaryHighlightColor : Theme.highlightColor
+                font.pixelSize: page.updatable ? Theme.fontSizeExtraSmall : Theme.fontSizeSmall
+                text: page.updatable
+                      ? qsTr("%1 installed, %2 available").arg(page.pkg.installedVersion).arg(page.pkg.updateVersion || page.pkg.version)
+                      : qsTr("Installed, up to date (%1)").arg(page.pkg.installedVersion)
+                bottomPadding: Theme.paddingMedium
             }
 
             // After Buy: the licence arrives by itself once paid.
@@ -194,18 +406,7 @@ Page {
                 color: Theme.secondaryHighlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 text: qsTr("Finish the purchase in the browser. Reef adds the licence when you come back.")
-            }
-
-            // Installed and current: say so, instead of a button.
-            Label {
-                objectName: "installedNote"
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                visible: !page.working && page.pkg.installState === "installed"
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                color: Theme.highlightColor
-                text: qsTr("Installed and up to date")
+                bottomPadding: Theme.paddingMedium
             }
 
             ProgressBar {
@@ -224,45 +425,64 @@ Page {
                 objectName: "operationError"
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                topPadding: Theme.paddingMedium
                 visible: page.error.length > 0 && !page.working
                 wrapMode: Text.Wrap
                 color: Theme.errorColor
                 font.pixelSize: Theme.fontSizeSmall
                 text: qsTr("That didn't work: %1").arg(page.error)
+                bottomPadding: Theme.paddingMedium
             }
 
-            // Screenshots the repository ships (cached files, like the icon);
-            // a horizontal strip, each at the phone's own proportions. A tap
-            // opens them full screen (ScreenshotPage).
-            SectionHeader { text: qsTr("Screenshots"); visible: shots.count > 0 }
+            // The facts at a glance.
+            Row {
+                id: facts
+                objectName: "facts"
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                topPadding: Theme.paddingLarge
+                bottomPadding: Theme.paddingLarge
+
+                Fact { value: Texts.price(page.pkg.licenceModel, page.pkg.licensed); name: qsTr("Price") }
+                Fact { value: page.pkg.sizeText || "–"; name: qsTr("Download") }
+                Fact {
+                    value: Texts.date(page.pkg.updated) || "–"
+                    name: page.changes.length > 0 ? qsTr("Updated") : qsTr("Published")
+                }
+            }
+
+            // Screenshots the repository ships (cached files, like the
+            // icon), at the phone's proportions, two and a bit across so
+            // it shows there are more. A tap opens them full screen.
             Flickable {
                 id: shotStrip
                 objectName: "screenshots"
+                readonly property real shotWidth: shots.count === 1
+                    ? Math.round(page.width * 0.5)
+                    : Math.round((page.width - Theme.horizontalPageMargin - 2 * Theme.paddingMedium) / 2.35)
                 width: parent.width
-                height: visible ? Math.round(page.height * 0.42) : 0
+                height: visible ? Math.round(shotWidth * 2.1) + Theme.paddingLarge : 0
                 visible: shots.count > 0
-                contentWidth: shotRow.width
+                contentWidth: Math.max(width, shotRow.width)
                 flickableDirection: Flickable.HorizontalFlick
                 clip: true
 
                 Row {
                     id: shotRow
-                    height: shotStrip.height
+                    x: shots.count === 1 ? Math.round((shotStrip.width - width) / 2) : 0
+                    height: shotStrip.height - Theme.paddingLarge
                     spacing: Theme.paddingMedium
 
-                    Item { width: Theme.horizontalPageMargin - shotRow.spacing; height: 1 }
+                    Item { width: Theme.horizontalPageMargin - shotRow.spacing; height: 1; visible: shots.count > 1 }
                     Repeater {
                         id: shots
                         model: page.pkg.screenshotPaths || []
-                        // Tapped: the screenshots full screen, from this one.
                         BackgroundItem {
                             id: shot
                             required property string modelData
                             required property int index
                             objectName: "screenshot" + index
                             height: parent.height
-                            width: Math.round(height * 9 / 16)
+                            width: shotStrip.shotWidth
                             onClicked: pageStack.push(Qt.resolvedUrl("ScreenshotPage.qml"), {
                                 paths: page.pkg.screenshotPaths,
                                 startIndex: shot.index
@@ -271,118 +491,167 @@ Page {
                             Image {
                                 anchors.fill: parent
                                 source: "file://" + shot.modelData
-                                sourceSize.height: height
-                                fillMode: Image.PreserveAspectFit
+                                sourceSize.width: width
+                                fillMode: Image.PreserveAspectCrop
+                                verticalAlignment: Image.AlignTop
                                 asynchronous: true
                                 smooth: true
                             }
                         }
                     }
-                    Item { width: Theme.horizontalPageMargin - shotRow.spacing; height: 1 }
+                    Item { width: Theme.horizontalPageMargin - shotRow.spacing; height: 1; visible: shots.count > 1 }
                 }
 
                 HorizontalScrollDecorator {}
             }
 
-            SectionHeader { text: qsTr("Description"); visible: !!page.pkg.description }
+            // The description, five lines until asked for more.
+            SectionHeader { text: qsTr("About"); visible: !!page.pkg.description }
             Label {
+                id: description
+                property bool expanded
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: !!page.pkg.description
                 wrapMode: Text.Wrap
-                textFormat: Text.PlainText
+                maximumLineCount: expanded ? 1000 : 5
+                elide: Text.ElideRight
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.highlightColor
                 text: page.pkg.description || ""
             }
+            BackgroundItem {
+                objectName: "moreButton"
+                width: parent.width
+                height: visible ? Theme.itemSizeExtraSmall : 0
+                visible: description.visible && (description.truncated || description.expanded)
+                onClicked: description.expanded = !description.expanded
+                Label {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: description.expanded ? qsTr("Show less") : qsTr("Show more")
+                    color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor
+                    font.pixelSize: Theme.fontSizeSmall
+                }
+            }
 
-            SectionHeader { text: qsTr("Details") }
+            // What changed in the newest version; the earlier ones folded
+            // away under "Version history".
+            SectionHeader { text: qsTr("What's new"); visible: page.changes.length > 0 }
+            ChangeEntry {
+                objectName: "whatsNew"
+                visible: page.changes.length > 0
+                change: page.changes.length > 0 ? page.changes[0] : ({})
+            }
+            Item { width: 1; height: Theme.paddingMedium; visible: page.changes.length > 1 }
+            ExpandingSection {
+                objectName: "versionHistory"
+                width: parent.width
+                visible: page.changes.length > 1
+                title: qsTr("Version history")
+                content.sourceComponent: Column {
+                    width: parent ? parent.width : page.width
+                    spacing: Theme.paddingLarge
+                    bottomPadding: Theme.paddingMedium
+                    Repeater {
+                        model: page.changes.slice(1)
+                        ChangeEntry {
+                            required property var modelData
+                            change: modelData
+                        }
+                    }
+                }
+            }
+
+            // What it may reach on the phone, from the app's own desktop
+            // file: before install, in words.
+            SectionHeader { text: qsTr("Permissions") }
+            Column {
+                objectName: "permissions"
+                width: parent.width
+                spacing: Theme.paddingSmall
+
+                IconLine {
+                    source: page.pkg.sandboxed === false ? "image://theme/icon-s-warning" : "image://theme/icon-s-secure"
+                    text: page.pkg.sandboxed === false
+                          ? qsTr("Parts of it run outside the Sailfish OS sandbox, with your access to files and data.")
+                          : (page.pkg.permissions || []).length > 0
+                            ? qsTr("Runs in the Sailfish OS sandbox, and may use:")
+                            : qsTr("Runs in the Sailfish OS sandbox, and asks for no extra permissions.")
+                    color: page.pkg.sandboxed === false ? Theme.highlightColor : Theme.secondaryHighlightColor
+                }
+                Repeater {
+                    model: page.pkg.permissions || []
+                    IconLine {
+                        required property string modelData
+                        source: Texts.permission(modelData).icon
+                        text: Texts.permission(modelData).label
+                    }
+                }
+            }
+
+            SectionHeader { text: qsTr("Compatibility") }
+            IconLine {
+                objectName: "testedOn"
+                source: page.pkg.deviceTested === false ? "image://theme/icon-s-warning" : "image://theme/icon-s-accept"
+                text: page.pkg.deviceTested === false
+                      ? qsTr("Built for Sailfish OS %1, the version on this phone, but not yet tested on a phone running it. "
+                             + "If something doesn't work, please report it.").arg(Reef.installedRelease)
+                      : qsTr("Tested on Sailfish OS %1, the version on this phone.").arg(Reef.installedRelease)
+            }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                readonly property var others: (page.pkg.testedOn || []).filter(function(r) { return r !== Reef.installedRelease })
+                visible: page.pkg.deviceTested !== false && others.length > 0
+                text: qsTr("Also tested on %1").arg(others.join(", "))
+                wrapMode: Text.Wrap
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+                leftPadding: Theme.iconSizeSmallPlus + Theme.paddingMedium
+            }
+
+            SectionHeader { text: qsTr("Information") }
             DetailItem { label: qsTr("Version"); value: page.pkg.version || "" }
             DetailItem {
                 label: qsTr("Installed")
                 value: page.pkg.installedVersion || ""
-                visible: page.pkg.installState !== undefined && page.pkg.installState !== "not_installed"
+                visible: page.installed
             }
-            DetailItem { label: qsTr("Category"); value: page.pkg.category || "" }
-            DetailItem { label: qsTr("Published"); value: page.pkg.added || ""; visible: !!page.pkg.added }
+            DetailItem { label: qsTr("Publisher"); value: page.pkg.publisher || ""; visible: !!page.pkg.publisher }
+            DetailItem { label: qsTr("Licence"); value: Texts.licence(page.pkg.spdx); visible: !!page.pkg.spdx }
             DetailItem {
-                label: qsTr("Price")
-                value: page.pkg.licenceModel === "one_off" ? qsTr("One-off licence")
-                     : page.pkg.licenceModel === "subscription" ? qsTr("Subscription")
-                     : qsTr("Free")
+                label: qsTr("First published")
+                value: Texts.date(page.pkg.added)
+                visible: !!page.pkg.added && page.changes.length > 0
             }
-            DetailItem { label: qsTr("Licence"); value: page.pkg.spdx || ""; visible: !!page.pkg.spdx }
             DetailItem {
-                // The store's Keel grade from the catalogue's keel_tier, the
-                // engineering tier keel-compat measures (docs/plan.md,
-                // "Compatibility target", where B is the higher): grade A
-                // is tier B reached, grade B is tier A only.
-                label: qsTr("Keel grade")
-                value: page.pkg.keelTier === "B" ? qsTr("A: everything it uses runs on Keel")
-                     : page.pkg.keelTier === "A" ? qsTr("B: some components differ")
+                // The catalogue's keel_tier, the tier keel-compat measures
+                // (docs/plan.md, "Compatibility target", where B is the
+                // higher): how much of the app runs on Keel, Sailfish's Qt 6.
+                label: qsTr("Qt 6 (Keel)")
+                value: page.pkg.keelTier === "B" ? qsTr("Fully supported")
+                     : page.pkg.keelTier === "A" ? qsTr("Mostly supported")
                      : page.pkg.keelTier === "none" ? qsTr("Not supported yet")
-                     : page.pkg.keelTier === "not-applicable" ? qsTr("Not applicable (no Silica)")
+                     : page.pkg.keelTier === "not-applicable" ? qsTr("Not needed")
                      : (page.pkg.keelTier || "")
                 visible: !!page.pkg.keelTier
             }
-            DetailItem {
-                label: qsTr("Download size")
-                value: page.pkg.sizeText || ""
-                visible: !!page.pkg.sizeText
-            }
 
-            SectionHeader { text: qsTr("Tested on") }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                wrapMode: Text.Wrap
-                color: Theme.secondaryHighlightColor
-                font.pixelSize: Theme.fontSizeSmall
-                text: page.pkg.deviceTested === false
-                      ? qsTr("Built for this phone's Sailfish OS (%1), but not yet tested on a phone running it. "
-                             + "If something doesn't work, please report it.").arg(Reef.installedRelease)
-                      : qsTr("Reef only offers versions tested on this phone's Sailfish OS (%1).").arg(Reef.installedRelease)
+            Item { width: 1; height: Theme.paddingLarge }
+            LinkItem {
+                objectName: "homepageLink"
+                iconSource: "image://theme/icon-m-website"
+                text: qsTr("Website")
+                url: page.pkg.homepage || ""
             }
-            Repeater {
-                model: page.pkg.deviceTested === false ? [] : (page.pkg.testedOn || [])
-                DetailItem {
-                    required property string modelData
-                    label: qsTr("Sailfish OS")
-                    value: modelData === Reef.installedRelease ? qsTr("%1 (this phone)").arg(modelData)
-                                                               : modelData
-                }
+            LinkItem {
+                objectName: "sourceLink"
+                iconSource: "image://theme/icon-m-developer-mode"
+                text: qsTr("Source code")
+                url: page.pkg.source || ""
             }
-
-            SectionHeader { text: qsTr("Permissions") }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                visible: page.pkg.sandboxed === false
-                wrapMode: Text.Wrap
-                color: Theme.highlightColor
-                font.pixelSize: Theme.fontSizeSmall
-                text: qsTr("Runs outside the Sailfish OS sandbox, with full access to your files and data.")
-            }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                visible: page.pkg.sandboxed === true && (!page.pkg.permissions || page.pkg.permissions.length === 0)
-                wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.highlightColor
-                text: qsTr("Runs in the Sailfish OS sandbox, with no extra permissions.")
-            }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                visible: !!page.pkg.sandboxed && !!page.pkg.permissions && page.pkg.permissions.length > 0
-                wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.highlightColor
-                text: visible ? qsTr("Runs in the Sailfish OS sandbox and may use: %1.")
-                                .arg(page.pkg.permissions.join(", ")) : ""
-            }
-
         }
 
         VerticalScrollDecorator {}
