@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # reef-backend
 
 The Rust half of the Reef store client. The QML UI (`../ui`) talks to a single CXX-Qt object (`reef/client/app/src/bridge.rs`), and that object is a thin shell over this crate. This crate does no networking of its own: the UI layer downloads the catalogue, tokens and revocation list and passes the bytes in. That keeps an HTTP stack out of the crate and every rule unit-testable.

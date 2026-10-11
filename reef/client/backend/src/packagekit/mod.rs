@@ -34,6 +34,9 @@ pub enum Error {
     },
     /// A name did not resolve to any package.
     NotFound(String),
+    /// The repository's signed metadata did not check out
+    /// ([`crate::metadata`]): nothing was installed.
+    Untrusted(String),
 }
 
 impl fmt::Display for Error {
@@ -55,6 +58,7 @@ impl fmt::Display for Error {
             } => write!(f, "{exit:?} (error {code}): {details}"),
             Error::Transaction { exit, error: None } => write!(f, "transaction ended {exit:?}"),
             Error::NotFound(name) => write!(f, "no package named {name}"),
+            Error::Untrusted(why) => write!(f, "Nothing was installed: {why}."),
         }
     }
 }

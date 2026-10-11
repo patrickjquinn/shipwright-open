@@ -29,6 +29,8 @@ zbus = { version = "5", default-features = false, features = ["async-io"] }
 [dev-dependencies]
 # Signs test licences; the shipped library only verifies.
 reef-licence = { path = "../../licence", features = ["sign", "handoff-client"] }
+# The metadata check test signs with a throwaway key in a temporary home.
+tempfile = "3"
 
 [build-dependencies]
 # Embeds SHIPWRIGHT_LICENCE_KEYS as EMBEDDED_KEYS (build.rs).

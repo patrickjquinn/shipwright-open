@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: MIT OR Apache-2.0
+-->
+
 # reef-licence
 
 Licence tokens for paid Reef apps, and their offline verification (docs/plan.md, "Payments and licences"). Apps link this crate and check their licence against an embedded Ed25519 public key with no network access. The licence service (`services/licence-service`) issues tokens with the `sign` feature, which apps never enable.

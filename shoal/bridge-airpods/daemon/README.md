@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: GPL-3.0-only
+-->
+
 # Shoal Bridge daemon (MagicPodsCore, patched)
 
 The AirPods daemon behind Shoal Bridge: [MagicPodsCore](https://github.com/steam3d/MagicPodsCore) by Aleksandr Maslov and Andrei Litvintsev, with our patches applied at build time. It talks to the earbuds over BlueZ (D-Bus) and a raw L2CAP socket (AAP, PSM 0x1001), and serves a JSON API on `ws://127.0.0.1:2020`. It runs as a systemd user service. Plan context: `docs/plan.md`, "Shoal Bridge: AirPods first".

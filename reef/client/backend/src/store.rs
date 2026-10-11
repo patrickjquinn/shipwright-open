@@ -134,6 +134,10 @@ pub struct Store<P> {
     /// What Reef installed; see [`InstallLedger`]. Without one, ownership
     /// rests on `PackageKit`'s data alone.
     pub ledger: Option<InstallLedger>,
+    /// Checks the repository's signed metadata before anything is
+    /// installed or updated ([`crate::metadata`]); `None` skips it (tests,
+    /// and hosts without the phone's paths).
+    pub metadata: Option<crate::metadata::MetadataCheck>,
 }
 
 impl<P: PackageManager> Store<P> {
@@ -142,6 +146,25 @@ impl<P: PackageManager> Store<P> {
             pm,
             alias: alias.into(),
             ledger: None,
+            metadata: None,
+        }
+    }
+
+    /// Verifies the repository metadata (signature, no rollback) before
+    /// every install and update.
+    #[must_use]
+    pub fn with_metadata_check(mut self, check: Option<crate::metadata::MetadataCheck>) -> Self {
+        self.metadata = check;
+        self
+    }
+
+    fn check_metadata(&self) -> Result<()> {
+        match &self.metadata {
+            Some(check) => check
+                .verify()
+                .map(drop)
+                .map_err(|e| crate::packagekit::Error::Untrusted(e.to_string())),
+            None => Ok(()),
         }
     }
 
@@ -180,6 +203,7 @@ impl<P: PackageManager> Store<P> {
     /// it is visible for this release (the UI only offers visible ones).
     pub async fn install(&self, name: &str, progress: &mut dyn FnMut(Progress)) -> Result<()> {
         let id = resolve_installable(&self.pm, name, &self.alias).await?;
+        self.check_metadata()?;
         self.pm.install(&[&id.raw], progress).await?;
         if let Some(ledger) = &self.ledger {
             // The install happened; a ledger that cannot be written only
@@ -197,6 +221,7 @@ impl<P: PackageManager> Store<P> {
         let Some(u) = updates.iter().find(|p| p.id.name == name) else {
             return Ok(false);
         };
+        self.check_metadata()?;
         self.pm.update(&[u.id.raw.as_str()], progress).await?;
         Ok(true)
     }
@@ -208,6 +233,7 @@ impl<P: PackageManager> Store<P> {
             return Ok(0);
         }
         let ids: Vec<&str> = updates.iter().map(|p| p.id.raw.as_str()).collect();
+        self.check_metadata()?;
         self.pm.update(&ids, progress).await?;
         Ok(updates.len())
     }

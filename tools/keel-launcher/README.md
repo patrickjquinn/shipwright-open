@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: MIT
+-->
+
 # keel-launcher: how the Qt 6 apps get their window
 
 Keel's `ApplicationWindow` is an `Item`, not a window

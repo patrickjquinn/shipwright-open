@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Reef client UI
 
 The Reef store client's QML, written against Keel (`import Sailfish.Silica 1.0` under Qt6, versionless `import QtQuick`). It uses Keel's Silica components: ApplicationWindow, Page, PageStack, Dialog, DialogHeader, PageHeader, PullDownMenu, MenuItem, ContextMenu, SilicaFlickable, SilicaListView, VerticalScrollDecorator, ListItem, Label, Theme, CoverBackground, CoverActionList, CoverAction, TextField (with `EnterKey`), TextSwitch, ComboBox, Button, SectionHeader, DetailItem, RemorsePopup, BusyIndicator, ProgressBar, ProgressCircle, Icon and ViewPlaceholder. The pages follow the Sailfish UI rules (`tools/lint/lint.sh style`). Everything else is plain QtQuick (`Column`, `Row`, `Repeater`, `Item`).

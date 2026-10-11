@@ -567,7 +567,12 @@ pub fn run_op(
             Ok(pm) => pm,
             Err(e) => return (Err(e.to_string()), None),
         };
-        let store = Store::new(pm, alias).with_ledger(ledger());
+        // Installs and updates go ahead only on the repository's signed
+        // metadata (reef_backend::metadata: zypp itself does not check it on
+        // Sailfish).
+        let store = Store::new(pm, alias)
+            .with_ledger(ledger())
+            .with_metadata_check(reef_backend::metadata::MetadataCheck::device(alias));
         let result = match op {
             Op::Install(name) => store.install(name, progress).await.map(|()| String::new()),
             Op::Remove(name) => store.remove(name, progress).await.map(|()| String::new()),

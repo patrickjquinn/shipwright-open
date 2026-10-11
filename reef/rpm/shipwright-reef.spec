@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        23
+Release:        24
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -249,6 +249,9 @@ exit 0
 %{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
 
 %changelog
+* Sun Oct 11 2026 Shipwright - 0.1.0-24
+- Reef checks the store's signed package list itself before installing or updating anything, and refuses one that is altered or older than one it has seen (Sailfish OS does not check it for third-party stores).
+
 * Sun Oct 11 2026 Shipwright - 0.1.0-23
 - Removing an app removes its add-ons with it (Pilot and Pilot gesture): Pilot could not be removed while its gesture was installed ("error 13"), and removing it another way left the gesture behind.
 - When other software needs a package, Reef says so instead of showing an error number.

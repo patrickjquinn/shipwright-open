@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # shipwright-reef-installer
 
 The one RPM a user downloads from the Reef website and installs by hand, after enabling "Allow untrusted software". It does five things (docs/plan.md, "Reef: Install flow"):

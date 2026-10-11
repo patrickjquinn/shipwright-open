@@ -28,6 +28,7 @@ pub mod catalogue;
 pub mod claim_codes;
 pub mod licenced;
 pub mod licences;
+pub mod metadata;
 pub mod packagekit;
 pub mod release;
 pub mod repo;

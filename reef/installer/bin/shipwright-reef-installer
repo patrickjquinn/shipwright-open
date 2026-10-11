@@ -111,11 +111,10 @@ for attempt in 1 2 3; do
   [ $check = 5 ] || break
   sleep $((attempt * 5))
 done
-if [ $check = 4 ]; then
-  log 3 "no Reef repository for Sailfish OS $release; removing $REEF_INSTALLER_PACKAGE"
-  notify_user "Reef cannot be installed" \
-    "Reef has no apps for Sailfish OS $release yet. reefstore.app/install lists the releases it supports." ||
-    log 4 "could not show the notification"
+# Says why on the screen, removes this package (its %preun unregisters the
+# repository) and stops: nothing is installed.
+give_up() {
+  notify_user "Reef cannot be installed" "$1" || log 4 "could not show the notification"
   # Detached, after this script: the removal deletes this file.
   # shellcheck disable=SC2016 # expanded by the inner shell
   setsid --fork sh -c '
@@ -124,14 +123,21 @@ if [ $check = 4 ]; then
     pkcon -py remove "$1"
     printf "%s [%s] removal exited %s\n" "$(date -Iseconds)" "$2" "$?"
   ' sh_reef_remove "$REEF_INSTALLER_PACKAGE" "$called" >>"$logfile" 2>&1 </dev/null
+}
+if [ $check = 4 ]; then
+  log 3 "no Reef repository for Sailfish OS $release; removing $REEF_INSTALLER_PACKAGE"
+  give_up "Reef has no apps for Sailfish OS $release yet. reefstore.app/install lists the releases it supports."
   exit 4
 fi
 
-# 3. Trust the Reef signing key.
+# 3. Trust the Reef signing key. Without it nothing from the repository can
+# be verified, so the install stops here rather than carry on unverified.
 if $REPO_TOOL import-key; then
   log 6 "imported $REEF_KEY_FILE"
 else
-  log 3 "rpm --import $REEF_KEY_FILE failed; packages from $REEF_ALIAS will not verify"
+  log 3 "rpm --import $REEF_KEY_FILE failed; removing $REEF_INSTALLER_PACKAGE"
+  give_up "Reef's signing key could not be added to the phone, so nothing was installed. Try installing Reef again."
+  exit 6
 fi
 
 # 4. Refresh our repository only, retrying as the Chum installer does.

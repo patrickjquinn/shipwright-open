@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: MIT
+-->
+
 # keel-compat
 
 Scans a Sailfish app's sources and reports which QML imports, Silica types and `SailfishApp` APIs it uses, whether Keel covers each one, a score (the share of distinct items reachable with Keel without source changes), and static estimates of the compatibility tiers A and B from `docs/plan.md`. The measured tiers come from loading the app on Keel (`corpus/harness`, `corpus/README.md`).

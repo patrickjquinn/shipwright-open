@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: MIT
+-->
+
 # Sailfish SDK builds
 
 Builds device RPMs in the Sailfish platform SDK Docker image (`coderus/sailfishos-platform-sdk-aarch64:<release>`), as the plan requires.

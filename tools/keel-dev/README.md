@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: MIT
+-->
+
 # keel-dev: the `keel` developer tool
 
 `keel` starts a Sailfish app on Keel and runs it on a desktop. The walk-through

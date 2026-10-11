@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Patrick Quinn
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # shipwright-reef (client application)
 
 The Reef store client executable: a Qt6 app that loads the QML in `../ui/qml` and exposes the `Reef` singleton (`import Shipwright.Reef 1.0`), implemented in Rust with CXX-Qt 0.10 over `reef-backend` (`../backend`) and `reef-licence` (`../../licence`). The object's API is exactly the one documented in `../ui/README.md` ("Backend object API"). The list models also have a `count` property and a `get(row)` method.
