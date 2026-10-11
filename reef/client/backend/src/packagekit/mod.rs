@@ -40,6 +40,15 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::DBus(e) => write!(f, "PackageKit unavailable: {e}"),
+            // PK_ERROR_ENUM_DEP_RESOLUTION_FAILED: what the person can do
+            // about it, not the number (a Store user saw "error 13").
+            Error::Transaction {
+                error: Some((13, details)),
+                ..
+            } => write!(
+                f,
+                "Other installed software needs this package, so it was left in place. {details}"
+            ),
             Error::Transaction {
                 exit,
                 error: Some((code, details)),
@@ -89,6 +98,9 @@ pub trait PackageManager {
 
     /// Available updates for everything installed, from every repository.
     async fn get_updates(&self) -> Result<Vec<PackageInfo>>;
+
+    /// Packages whose names contain any of `values` (`SearchNames`).
+    async fn search_names(&self, values: &[&str], filters: &[Filter]) -> Result<Vec<PackageInfo>>;
 
     /// Refreshes one repository's metadata (`RepoSetData(alias,
     /// "refresh-now", "true")`), as the Chum GUI installer does.

@@ -271,6 +271,21 @@ impl MockTransaction {
         Ok(())
     }
 
+    /// Nothing named like the package: removals find no parts.
+    async fn search_names(
+        &self,
+        filter: u64,
+        values: Vec<String>,
+        #[zbus(signal_emitter)] e: SignalEmitter<'_>,
+    ) -> fdo::Result<()> {
+        self.log
+            .lock()
+            .unwrap()
+            .push(format!("SearchNames {filter:#x} {values:?}"));
+        Self::finished(&e, 1, 5).await?;
+        Ok(())
+    }
+
     async fn repo_set_data(
         &self,
         repo_id: String,

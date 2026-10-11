@@ -214,6 +214,14 @@ impl<P: PackageManager> Store<P> {
 
     /// Removes an installed package, only if it is Reef's ([`reef_owned`]):
     /// Reef never removes an OS package, whatever the catalogue says.
+    ///
+    /// The app's own parts go with it, in the same transaction: the
+    /// installed Reef packages named after it (`shoal-pilot-gesture-patch`,
+    /// `shoal-pilot-piper` for `shoal-pilot`). Removing Pilot alone failed
+    /// with `PackageKit`'s dependency error 13, because its gesture patch
+    /// needs it, and removing it outside Reef left the patch behind. Any
+    /// other package that needs it still stops the removal (Keel is not
+    /// removed from under the apps built on it).
     pub async fn remove(&self, name: &str, progress: &mut dyn FnMut(Progress)) -> Result<()> {
         let found = resolve_with_offers(&self.pm, &[name]).await?;
         let owned = reef_owned(&found, &self.alias, &self.recorded());
@@ -221,11 +229,39 @@ impl<P: PackageManager> Store<P> {
             .iter()
             .find(|p| p.id.name == name)
             .ok_or_else(|| crate::packagekit::Error::NotFound(name.into()))?;
-        self.pm.remove(&[&id.id.raw], progress).await?;
+        let parts = self.parts(name).await?;
+        let mut ids: Vec<&str> = vec![&id.id.raw];
+        ids.extend(parts.iter().map(|p| p.id.raw.as_str()));
+        self.pm.remove(&ids, progress).await?;
         if let Some(ledger) = &self.ledger {
             let _ = ledger.forget(name);
+            for p in &parts {
+                let _ = ledger.forget(&p.id.name);
+            }
         }
         Ok(())
+    }
+
+    /// The installed Reef packages that are parts of `name`: named
+    /// `<name>-...`.
+    async fn parts(&self, name: &str) -> Result<Vec<PackageInfo>> {
+        let prefix = format!("{name}-");
+        let mut names: Vec<String> = self
+            .pm
+            .search_names(&[prefix.as_str()], &[Filter::Installed])
+            .await?
+            .into_iter()
+            .filter(|p| p.id.name.starts_with(&prefix) && p.id.is_installed())
+            .map(|p| p.id.name)
+            .collect();
+        names.sort();
+        names.dedup();
+        if names.is_empty() {
+            return Ok(Vec::new());
+        }
+        let refs: Vec<&str> = names.iter().map(String::as_str).collect();
+        let found = resolve_with_offers(&self.pm, &refs).await?;
+        Ok(reef_owned(&found, &self.alias, &self.recorded()))
     }
 }
 
@@ -365,9 +401,63 @@ mod tests {
         async fn get_updates(&self) -> Result<Vec<PackageInfo>> {
             Ok(self.updates.clone())
         }
+        async fn search_names(
+            &self,
+            values: &[&str],
+            filters: &[Filter],
+        ) -> Result<Vec<PackageInfo>> {
+            self.calls
+                .borrow_mut()
+                .push(format!("search {values:?} {filters:?}"));
+            Ok(self
+                .available
+                .iter()
+                .filter(|p| !filters.contains(&Filter::Installed) || p.id.is_installed())
+                .filter(|p| values.iter().any(|v| p.id.name.contains(v)))
+                .cloned()
+                .collect())
+        }
         async fn refresh_repo(&self, _: &str) -> Result<()> {
             Ok(())
         }
+    }
+
+    #[test]
+    fn an_app_goes_with_its_parts_and_nothing_else() {
+        let fake = Fake {
+            available: vec![
+                pkg("shoal-pilot;0.1.0-23;aarch64;installed"),
+                pkg("shoal-pilot;0.1.0-23;aarch64;shipwright-reef"),
+                // Its gesture patch (needs Pilot) and its voice (Pilot needs it).
+                pkg("shoal-pilot-gesture-patch;0.4.0-2;noarch;installed"),
+                pkg("shoal-pilot-gesture-patch;0.4.0-2;noarch;shipwright-reef"),
+                pkg("shoal-pilot-piper;1.2.0-1;aarch64;installed"),
+                pkg("shoal-pilot-piper;1.2.0-1;aarch64;shipwright-reef"),
+                // Named alike, but an OS package: never Reef's to remove.
+                pkg("shoal-pilot-extras;1-1;aarch64;installed"),
+                pkg("shoal-pilot-extras;1-1;aarch64;jolla"),
+                // Another app whose name starts the same.
+                pkg("shoal-pilotage;1-1;aarch64;installed"),
+                pkg("shoal-pilotage;1-1;aarch64;shipwright-reef"),
+            ],
+            ..Fake::default()
+        };
+        let store = Store::new(fake, "shipwright-reef");
+        futures_lite::future::block_on(store.remove("shoal-pilot", &mut |_| {})).unwrap();
+        let calls = store.pm.calls.borrow();
+        assert_eq!(
+            calls.last().unwrap(),
+            r#"remove ["shoal-pilot;0.1.0-23;aarch64;installed", "shoal-pilot-gesture-patch;0.4.0-2;noarch;installed", "shoal-pilot-piper;1.2.0-1;aarch64;installed"]"#
+        );
+    }
+
+    #[test]
+    fn a_dependency_failure_says_what_happened() {
+        let e = crate::packagekit::Error::Transaction {
+            exit: crate::packagekit::Exit::Failed,
+            error: Some((13, "shoal-pilot-gesture-patch requires shoal-pilot".into())),
+        };
+        assert!(e.to_string().starts_with("Other installed software needs this package"));
     }
 
     #[test]

@@ -66,6 +66,7 @@ trait Transaction {
         autoremove: bool,
     ) -> zbus::Result<()>;
     fn get_updates(&self, filter: u64) -> zbus::Result<()>;
+    fn search_names(&self, filter: u64, values: &[&str]) -> zbus::Result<()>;
     fn repo_set_data(&self, repo_id: &str, parameter: &str, value: &str) -> zbus::Result<()>;
 }
 
@@ -76,6 +77,7 @@ enum Op<'a> {
     Update(&'a [&'a str]),
     Remove(&'a [&'a str]),
     GetUpdates,
+    SearchNames(u64, &'a [&'a str]),
     RefreshRepo(&'a str),
 }
 
@@ -148,6 +150,7 @@ impl PackageKitClient {
             Op::Update(ids) => tx.update_packages(trusted, ids).await?,
             Op::Remove(ids) => tx.remove_packages(0, ids, false, false).await?,
             Op::GetUpdates => tx.get_updates(filter_bits(&[Filter::None])).await?,
+            Op::SearchNames(filter, values) => tx.search_names(filter, values).await?,
             Op::RefreshRepo(alias) => tx.repo_set_data(alias, "refresh-now", "true").await?,
         }
 
@@ -311,6 +314,11 @@ impl PackageManager for PackageKitClient {
 
     async fn get_updates(&self) -> Result<Vec<PackageInfo>> {
         self.run(Op::GetUpdates, &mut |_| {}).await
+    }
+
+    async fn search_names(&self, values: &[&str], filters: &[Filter]) -> Result<Vec<PackageInfo>> {
+        self.run(Op::SearchNames(filter_bits(filters), values), &mut |_| {})
+            .await
     }
 
     async fn refresh_repo(&self, alias: &str) -> Result<()> {
