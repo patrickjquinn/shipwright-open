@@ -52,7 +52,7 @@
 
 Name:           shipwright-shoal-bridge-airpods
 Version:        2.0.11
-Release:        4
+Release:        5
 Summary:        Wireless earbuds daemon for Shoal Bridge (MagicPodsCore)
 License:        GPL-3.0-only AND LGPL-2.1-or-later AND Apache-2.0 AND MIT
 URL:            https://github.com/steam3d/MagicPodsCore
@@ -75,6 +75,7 @@ Patch7:         0007-apple-gated-hearing-features.patch
 Patch8:         0008-multi-device.patch
 Patch9:         0009-ear-detection-pause.patch
 Patch10:        0010-build-warnings.patch
+Patch11:        0011-shared-bus-and-scan-on-demand.patch
 
 BuildRequires:  cmake >= 3.22
 BuildRequires:  gcc-c++ >= 10
@@ -201,6 +202,13 @@ systemctl-user daemon-reload || :
 %{_userunitdir}/post-user-session.target.wants/%{unit}
 
 %changelog
+* Mon Oct 12 2026 Shipwright - 2.0.11-5
+- The daemon keeps one system bus connection. It had one per Bluetooth
+  device it knew of: in a busy place it could use up the connections
+  your other apps need, so People, Email and others stopped working.
+- Bluetooth searches only while the AirPods app is open. It searched all
+  the time before, so Bluetooth settings always showed it searching.
+
 * Sat Oct 03 2026 Shipwright - 2.0.11-4
 - Patch 0010 fixes every compiler warning in the daemon build (inline enum
   helpers, initialiser order, unused variables, size comparisons) and logs

@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        26
+Release:        27
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -264,6 +264,10 @@ exit 0
 %{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
 
 %changelog
+* Mon Oct 12 2026 Shipwright - 0.1.0-27
+- Phones not set to English can install and update again: Reef read the store's signature check in English only, so it failed on every other language ("Firma correcta" on a Spanish phone).
+- Removing an app removes what came with it: background services and add-ons it installed, when nothing else needs them. Removing AirPods left its service running.
+
 * Sun Oct 11 2026 Shipwright - 0.1.0-26
 - A new home: the featured apps as banners, updates waiting at the top with Update all, a row of new and updated apps, and every app from A to Z. Search is in the pull-down menu.
 - App pages show what's new in the latest version, with the version history folded away, several screenshots, the price, size and date at a glance, the website and source as links, and licences in words.

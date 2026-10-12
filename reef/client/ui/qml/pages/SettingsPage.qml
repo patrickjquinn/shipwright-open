@@ -114,6 +114,19 @@ Page {
             }
 
             SectionHeader { text: qsTr("Licences") }
+            // Here, not in the store's pulley, which keeps to four items.
+            BackgroundItem {
+                objectName: "licencesItem"
+                width: parent.width
+                onClicked: pageStack.push(Qt.resolvedUrl("LicencesPage.qml"))
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Your licences")
+                    color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor
+                }
+            }
             TextField {
                 id: serverField
                 width: parent.width

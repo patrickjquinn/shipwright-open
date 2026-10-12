@@ -317,7 +317,7 @@ Page {
                         topPadding: Theme.paddingSmall
                         text: [page.pkg.publisher || "", page.pkg.category || ""]
                               .filter(function(s) { return s.length > 0 }).join(" · ")
-                        color: Theme.secondaryColor
+                        color: Theme.secondaryHighlightColor
                         font.pixelSize: Theme.fontSizeExtraSmall
                         truncationMode: TruncationMode.Fade
                     }
@@ -329,6 +329,7 @@ Page {
             // offline); buying happens on the web, through the merchant of
             // record. One action at a time: install first, then buy.
             Item {
+                id: actions
                 objectName: "actions"
                 readonly property bool buyNow: page.canBuy && page.pkg.installState === "installed"
                 width: parent.width
@@ -370,7 +371,7 @@ Page {
                     Button {
                         id: buyButton
                         objectName: "buyButton"
-                        visible: parent.parent.buyNow
+                        visible: actions.buyNow
                         preferredWidth: actionRow.buttonWidth
                         text: page.pkg.licenceModel === "subscription" ? qsTr("Subscribe") : qsTr("Buy")
                         onClicked: page.buy()

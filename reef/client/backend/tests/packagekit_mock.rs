@@ -286,6 +286,38 @@ impl MockTransaction {
         Ok(())
     }
 
+    /// Keel needs nothing of Reef's.
+    async fn depends_on(
+        &self,
+        filter: u64,
+        ids: Vec<String>,
+        recursive: bool,
+        #[zbus(signal_emitter)] e: SignalEmitter<'_>,
+    ) -> fdo::Result<()> {
+        self.log
+            .lock()
+            .unwrap()
+            .push(format!("DependsOn {filter:#x} {ids:?} {recursive}"));
+        Self::finished(&e, 1, 5).await?;
+        Ok(())
+    }
+
+    /// Nothing installed needs Keel.
+    async fn required_by(
+        &self,
+        filter: u64,
+        ids: Vec<String>,
+        recursive: bool,
+        #[zbus(signal_emitter)] e: SignalEmitter<'_>,
+    ) -> fdo::Result<()> {
+        self.log
+            .lock()
+            .unwrap()
+            .push(format!("RequiredBy {filter:#x} {ids:?} {recursive}"));
+        Self::finished(&e, 1, 5).await?;
+        Ok(())
+    }
+
     async fn repo_set_data(
         &self,
         repo_id: String,

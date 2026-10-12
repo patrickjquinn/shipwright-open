@@ -155,6 +155,25 @@ pub fn revision(repomd: &str) -> Option<u64> {
     repomd[start..end].trim().parse().ok()
 }
 
+/// Whether gpgv's status lines (`--status-fd`) report a good, valid
+/// signature: `GOODSIG` and `VALIDSIG`, with no `BADSIG`, `ERRSIG`,
+/// `EXPSIG`, `EXPKEYSIG` or `REVKEYSIG`.
+fn good_signature(status: &str) -> bool {
+    let tokens: Vec<&str> = status
+        .lines()
+        .filter_map(|l| l.strip_prefix("[GNUPG:] "))
+        .filter_map(|l| l.split_whitespace().next())
+        .collect();
+    tokens.contains(&"GOODSIG")
+        && tokens.contains(&"VALIDSIG")
+        && !tokens.iter().any(|t| {
+            matches!(
+                *t,
+                "BADSIG" | "ERRSIG" | "EXPSIG" | "EXPKEYSIG" | "REVKEYSIG"
+            )
+        })
+}
+
 /// `gpgv` with a keyring holding only `key`: the signature must be good and
 /// made by that key.
 fn verify_signature(
@@ -196,9 +215,18 @@ fn verify_signature(
             return Err(MetaError::Tool(format!("{gpg} --dearmor failed")));
         }
         std::fs::write(&keyring, &out.stdout).map_err(|e| MetaError::Tool(e.to_string()))?;
+        // The verdict comes from gpgv's machine-readable status lines, not
+        // its message: that is translated ("Firma correcta" on a Spanish
+        // phone), and reading the English one failed every phone not set
+        // to English (forum, 12 October 2026). The C locale keeps the
+        // message we pass on readable too.
         let out = Command::new(gpgv)
+            .env("LC_ALL", "C")
+            .env("LANGUAGE", "C")
             .arg("--homedir")
             .arg(&dir)
+            .arg("--status-fd")
+            .arg("1")
             .arg("--keyring")
             .arg(&keyring)
             .arg(sig)
@@ -206,7 +234,7 @@ fn verify_signature(
             .output()
             .map_err(|e| MetaError::Tool(format!("{gpgv}: {e}")))?;
         let said = String::from_utf8_lossy(&out.stderr).into_owned();
-        if out.status.success() && said.contains("Good signature") {
+        if out.status.success() && good_signature(&String::from_utf8_lossy(&out.stdout)) {
             Ok(())
         } else {
             Err(MetaError::BadSignature(
@@ -225,6 +253,60 @@ fn verify_signature(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_good_signature_in_any_language() {
+        let good = "[GNUPG:] NEWSIG\n[GNUPG:] GOODSIG 0123 Shipwright Reef <repo@reefstore.app>\n\
+                    [GNUPG:] VALIDSIG ABCD 2026-10-11 1791700000 0 4 0 1 10 00 ABCD\n";
+        assert!(good_signature(good));
+        assert!(!good_signature("[GNUPG:] BADSIG 0123 Shipwright Reef\n"));
+        assert!(!good_signature(
+            "[GNUPG:] ERRSIG 0123 1 10 00 1791700000 9 -\n"
+        ));
+        assert!(!good_signature(&format!(
+            "{good}[GNUPG:] EXPKEYSIG 0123 Shipwright Reef\n"
+        )));
+        assert!(!good_signature(""));
+    }
+
+    /// The forum's Spanish phone: gpgv says "Firma correcta" and succeeds.
+    /// A stand-in gpgv answers as it does there; the check must pass.
+    #[test]
+    #[cfg(unix)]
+    fn a_phone_not_in_english_verifies() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let t = tempfile::tempdir().unwrap();
+        let fake = t.path().join("gpgv-es");
+        std::fs::write(
+            &fake,
+            "#!/bin/sh\n\
+             echo 'gpgv: Firma correcta de \"Shipwright Reef <repo@reefstore.app>\"' >&2\n\
+             echo '[GNUPG:] GOODSIG 0123 Shipwright Reef <repo@reefstore.app>'\n\
+             echo '[GNUPG:] VALIDSIG ABCD 2026-10-11 1791700000 0 4 0 1 10 00 ABCD'\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
+        // gpg itself is only asked to dearmor the key: `cat` stands in.
+        let key = t.path().join("key.asc");
+        std::fs::write(&key, "not empty").unwrap();
+        let data = t.path().join("repomd.xml");
+        std::fs::write(&data, "<repomd/>").unwrap();
+        let sig = t.path().join("repomd.xml.asc");
+        std::fs::write(&sig, "sig").unwrap();
+        let fake_gpg = t.path().join("gpg-cat");
+        std::fs::write(&fake_gpg, "#!/bin/sh\ncat\n").unwrap();
+        std::fs::set_permissions(&fake_gpg, std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(
+            verify_signature(
+                fake_gpg.to_str().unwrap(),
+                fake.to_str().unwrap(),
+                &key,
+                &data,
+                &sig
+            ),
+            Ok(())
+        );
+    }
 
     #[test]
     fn finds_zypps_metadata_directory() {

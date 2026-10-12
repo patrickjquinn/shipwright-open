@@ -1,0 +1,235 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Mon, 12 Oct 2026 14:40:21 +0100
+Subject: [PATCH] Share one system bus connection and scan only while a client
+ is connected
+
+Every BlueZ proxy (one per device BlueZ knows, the adapter, the root)
+was created with sdbus::createProxy(destination, path), which gives it
+a system bus connection and an event loop thread of its own. With BLE
+discovery running, every device in range became a BlueZ object and so
+another connection: on a phone in a busy place the daemon reached the
+system bus's per-user limit (256), and the user's other programs could
+no longer use the system bus. All of them now share one connection
+with one event loop thread (SystemBus()).
+
+BLE discovery, for the case-open animation, ran from the session's
+start for as long as it lasted, whether or not anything showed the
+animation: the phone's Bluetooth settings showed it searching and the
+radio never rested. It now runs only while a WebSocket client (the app)
+is connected and the animation setting is on, and stops when the last
+client leaves.
+---
+ src/DevicesInfoFetcher.cpp  | 13 ++++++++++++-
+ src/DevicesInfoFetcher.h    |  7 +++++++
+ src/dbus/DBusBtAdapter.cpp  |  3 ++-
+ src/dbus/DBusDeviceInfo.cpp |  3 ++-
+ src/dbus/DBusService.cpp    |  3 ++-
+ src/dbus/SystemBus.h        | 29 +++++++++++++++++++++++++++++
+ src/main.cpp                | 11 +++++++++--
+ 7 files changed, 63 insertions(+), 6 deletions(-)
+ create mode 100644 src/dbus/SystemBus.h
+
+diff --git a/src/DevicesInfoFetcher.cpp b/src/DevicesInfoFetcher.cpp
+index f89e62f..53a5a74 100644
+--- a/src/DevicesInfoFetcher.cpp
++++ b/src/DevicesInfoFetcher.cpp
+@@ -27,7 +27,12 @@ namespace MagicPodsCore {
+ 
+         if (settingValue.is_boolean()){
+             bool value = settingValue.as_boolean()->get();
+-            if (value){
++            // Shoal (patch 0011): only while a client is connected. Discovery
++            // ran from the session's start for as long as it lasted: the
++            // phone's Bluetooth settings showed it searching, the radio never
++            // rested, and every device it found came in (and stayed) as BlueZ
++            // objects.
++            if (value && _watched.load()){
+                 _bleService->StartListening();
+                 _bleService->StartScan(true);
+                 Logger::Debug("Ble service started");
+@@ -43,6 +48,12 @@ namespace MagicPodsCore {
+         }
+     }
+ 
++    void DevicesInfoFetcher::SetWatched(bool watched)
++    {
++        if (_watched.exchange(watched) != watched)
++            UpdateBleState();
++    }
++
+     DevicesInfoFetcher::DevicesInfoFetcher(const std::shared_ptr<SettingsService> &settingsService): _settingsService{settingsService} {
+         _audioClient = std::make_shared<PulseAudioClient>();
+         _bleService = std::make_shared<DBusBasedBleAdvertisingService>(_dbusService);
+diff --git a/src/DevicesInfoFetcher.h b/src/DevicesInfoFetcher.h
+index dca73fe..6c8a940 100644
+--- a/src/DevicesInfoFetcher.h
++++ b/src/DevicesInfoFetcher.h
+@@ -4,6 +4,8 @@
+ 
+ #pragma once
+ 
++#include <atomic>
++
+ #include "device/Device.h"
+ #include "Event.h"
+ #include "./dbus/DBusService.h"
+@@ -38,6 +40,9 @@ namespace MagicPodsCore {
+         std::shared_ptr<SettingsService> _settingsService{};
+         size_t _onSettingsChangeId = 0;
+         void UpdateBleState();
++        // A client (the app) is connected: BLE scanning is for its case-open
++        // animation and runs only then (Shoal, patch 0011).
++        std::atomic<bool> _watched{false};
+ 
+         std::map<std::string, std::shared_ptr<Device>> _devicesMap{}; // address -> device
+         std::shared_ptr<Device> _activeDevice{};
+@@ -48,6 +53,8 @@ namespace MagicPodsCore {
+         Event<bool> _onDefaultAdapterChangeEnabled{};
+ 
+     public:
++        // Whether any client is connected (WebSocket open); scanning follows.
++        void SetWatched(bool watched);
+         DevicesInfoFetcher(const std::shared_ptr<SettingsService> &settingsService);
+         ~DevicesInfoFetcher();
+         // TODO: запретить копирование и перенос
+diff --git a/src/dbus/DBusBtAdapter.cpp b/src/dbus/DBusBtAdapter.cpp
+index d2a7b05..bc90b01 100644
+--- a/src/dbus/DBusBtAdapter.cpp
++++ b/src/dbus/DBusBtAdapter.cpp
+@@ -3,6 +3,7 @@
+ // License: GPL-3.0
+ 
+ #include "DBusBtAdapter.h"
++#include "./dbus/SystemBus.h"
+ #include "Logger.h"
+ #include "HostDeviceId.h"
+ 
+@@ -191,7 +192,7 @@ namespace MagicPodsCore {
+         std::shared_ptr<sdbus::IProxy> adapterProxy;
+ 
+         try {
+-            adapterProxy = sdbus::createProxy("org.bluez", objectPath);
++            adapterProxy = sdbus::createProxy(SystemBus(), "org.bluez", objectPath);
+             adapterProxy->uponSignal("PropertiesChanged").onInterface(DBUS_PROPERTIES_INTERFACE).call(
+                 [this, objectPath](std::string interfaceName,
+                                    std::map<std::string, sdbus::Variant> values,
+diff --git a/src/dbus/DBusDeviceInfo.cpp b/src/dbus/DBusDeviceInfo.cpp
+index a30b51f..2414f18 100644
+--- a/src/dbus/DBusDeviceInfo.cpp
++++ b/src/dbus/DBusDeviceInfo.cpp
+@@ -3,12 +3,13 @@
+ // License: GPL-3.0
+ 
+ #include "./dbus/DBusDeviceInfo.h"
++#include "./dbus/SystemBus.h"
+ 
+ #include "Logger.h"
+ 
+ namespace MagicPodsCore {
+ 
+-    DBusDeviceInfo::DBusDeviceInfo(const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces) : _deviceProxy{sdbus::createProxy("org.bluez", objectPath)}
++    DBusDeviceInfo::DBusDeviceInfo(const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfaces) : _deviceProxy{sdbus::createProxy(SystemBus(), "org.bluez", objectPath)}
+     {
+         auto deviceInterface = interfaces.at("org.bluez.Device1");
+ 
+diff --git a/src/dbus/DBusService.cpp b/src/dbus/DBusService.cpp
+index 00043e1..f154ac2 100644
+--- a/src/dbus/DBusService.cpp
++++ b/src/dbus/DBusService.cpp
+@@ -3,6 +3,7 @@
+ // License: GPL-3.0
+ 
+ #include "./dbus/DBusService.h"
++#include "./dbus/SystemBus.h"
+ #include "Logger.h"
+ 
+ #include <algorithm>
+@@ -28,7 +29,7 @@ namespace MagicPodsCore {
+         }
+     }
+ 
+-    DBusService::DBusService() : _rootProxy{sdbus::createProxy("org.bluez", "/")} {
++    DBusService::DBusService() : _rootProxy{sdbus::createProxy(SystemBus(), "org.bluez", "/")} {
+         //TODO: See comment DeviceFetcher.cpp
+         _rootProxy->uponSignal("InterfacesAdded").onInterface(DBUS_OBJECT_MANAGER_INTERFACE).call([this](sdbus::ObjectPath objectPath, InterfaceMap interfaces) {
+             HandleInterfacesAdded(objectPath, interfaces);
+diff --git a/src/dbus/SystemBus.h b/src/dbus/SystemBus.h
+new file mode 100644
+index 0000000..7c9eccf
+--- /dev/null
++++ b/src/dbus/SystemBus.h
+@@ -0,0 +1,29 @@
++// MagicPodsCore: https://github.com/steam3d/MagicPodsCore
++// Copyright: 2026 Patrick Quinn
++// License: GPL-3.0
++
++#pragma once
++
++#include <sdbus-c++/sdbus-c++.h>
++
++#include <memory>
++
++namespace MagicPodsCore {
++
++    // The one system bus connection every BlueZ proxy shares, with its own
++    // event loop thread. sdbus::createProxy(destination, path) gives each
++    // proxy a connection and a thread of its own, and there is a proxy per
++    // Bluetooth device BlueZ knows: on a phone in a busy place the daemon
++    // held hundreds of system bus connections, up to the per-user limit
++    // (256), after which nothing else of the user's could reach the system
++    // bus.
++    inline sdbus::IConnection& SystemBus() {
++        static const std::unique_ptr<sdbus::IConnection> connection = [] {
++            auto bus = sdbus::createSystemBusConnection();
++            bus->enterEventLoopAsync();
++            return bus;
++        }();
++        return *connection;
++    }
++
++}
+diff --git a/src/main.cpp b/src/main.cpp
+index 821f0e6..6b95650 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -534,6 +534,8 @@ int main(int argc, char** argv) {
+     std::atomic<bool> initialized{false};
+ 
+     std::unique_ptr<DevicesInfoFetcher> devicesInfoFetcher;
++    // Open WebSocket connections: BLE scanning runs only while there is one.
++    int clients = 0;
+ 
+     /* ws->getUserData returns one of these */
+     struct PerSocketData {
+@@ -568,13 +570,15 @@ int main(int argc, char** argv) {
+                 req->getHeader("sec-websocket-extensions"),
+                 context);
+         },
+-        .open = [&initialized](auto* ws) {
++        .open = [&initialized, &clients, &devicesInfoFetcher](auto* ws) {
+             if (!initialized.load()) {
+                 Logger::Info("Connection attempted before initialization complete, closing");
+                 ws->close();
+                 return;
+             }
+             Logger::Info("On open websocket connected");
++            if (++clients == 1 && devicesInfoFetcher)
++                devicesInfoFetcher->SetWatched(true);
+             ws->subscribe("onCapabilityChanged");
+             ws->subscribe("OnConnectedChanged");
+             ws->subscribe("OnActiveDeviceChanged");
+@@ -604,9 +608,12 @@ int main(int argc, char** argv) {
+         .pong = [](auto */*ws*/, std::string_view) {
+             /* Not implemented yet */
+         },
+-        .close = [](auto */*ws*/, int /*code*/, std::string_view /*message*/) {
++        .close = [&initialized, &clients, &devicesInfoFetcher](auto */*ws*/, int /*code*/, std::string_view /*message*/) {
+             /* You may access ws->getUserData() here */
+             Logger::Info("On open websocket closed");
++            // A connection closed before initialization never counted.
++            if (initialized.load() && clients > 0 && --clients == 0 && devicesInfoFetcher)
++                devicesInfoFetcher->SetWatched(false);
+         }
+     }).listen(GetWebSocketHost(), WEBSOCKET_PORT, LIBUS_LISTEN_EXCLUSIVE_PORT, [&](auto *listen_socket) {
+         if (listen_socket) {

@@ -21,6 +21,8 @@ Page {
     // The search field shows while searching: opened from the pull-down
     // menu, and kept while it holds text.
     property bool searching: Reef.searchText.length > 0
+    // The search field in the list's header, for the pulley's Search.
+    property Item searchField
     readonly property bool browsing: !searching
 
     function openApp(name) {
@@ -39,10 +41,6 @@ Page {
                 onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
             }
             MenuItem {
-                text: qsTr("Licences")
-                onClicked: pageStack.push(Qt.resolvedUrl("LicencesPage.qml"))
-            }
-            MenuItem {
                 text: Reef.updateCount > 0
                       ? qsTr("Installed (%n update(s))", "", Reef.updateCount)
                       : qsTr("Installed")
@@ -59,7 +57,8 @@ Page {
                 onDelayedClick: {
                     page.searching = true
                     list.positionViewAtBeginning()
-                    list.headerItem.searchField.forceActiveFocus()
+                    if (page.searchField)
+                        page.searchField.forceActiveFocus()
                 }
             }
         }
@@ -70,8 +69,8 @@ Page {
         onMovementStarted: scrolled = true
 
         header: Column {
-            property alias searchField: search
             width: list.width
+            Component.onCompleted: page.searchField = search
             onHeightChanged: if (!list.scrolled) list.positionViewAtBeginning()
 
             PageHeader {

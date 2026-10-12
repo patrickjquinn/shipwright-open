@@ -106,6 +106,14 @@ pub trait PackageManager {
     /// Packages whose names contain any of `values` (`SearchNames`).
     async fn search_names(&self, values: &[&str], filters: &[Filter]) -> Result<Vec<PackageInfo>>;
 
+    /// The installed packages that `ids` need directly (`DependsOn`,
+    /// installed only, not recursive).
+    async fn depends_on(&self, ids: &[&str]) -> Result<Vec<PackageInfo>>;
+
+    /// The installed packages that need `ids` directly (`RequiredBy`,
+    /// installed only, not recursive).
+    async fn required_by(&self, ids: &[&str]) -> Result<Vec<PackageInfo>>;
+
     /// Refreshes one repository's metadata (`RepoSetData(alias,
     /// "refresh-now", "true")`), as the Chum GUI installer does.
     async fn refresh_repo(&self, alias: &str) -> Result<()>;

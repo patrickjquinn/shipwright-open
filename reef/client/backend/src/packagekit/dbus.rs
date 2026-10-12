@@ -67,6 +67,8 @@ trait Transaction {
     ) -> zbus::Result<()>;
     fn get_updates(&self, filter: u64) -> zbus::Result<()>;
     fn search_names(&self, filter: u64, values: &[&str]) -> zbus::Result<()>;
+    fn depends_on(&self, filter: u64, package_ids: &[&str], recursive: bool) -> zbus::Result<()>;
+    fn required_by(&self, filter: u64, package_ids: &[&str], recursive: bool) -> zbus::Result<()>;
     fn repo_set_data(&self, repo_id: &str, parameter: &str, value: &str) -> zbus::Result<()>;
 }
 
@@ -78,6 +80,8 @@ enum Op<'a> {
     Remove(&'a [&'a str]),
     GetUpdates,
     SearchNames(u64, &'a [&'a str]),
+    DependsOn(&'a [&'a str]),
+    RequiredBy(&'a [&'a str]),
     RefreshRepo(&'a str),
 }
 
@@ -151,6 +155,14 @@ impl PackageKitClient {
             Op::Remove(ids) => tx.remove_packages(0, ids, false, false).await?,
             Op::GetUpdates => tx.get_updates(filter_bits(&[Filter::None])).await?,
             Op::SearchNames(filter, values) => tx.search_names(filter, values).await?,
+            Op::DependsOn(ids) => {
+                tx.depends_on(filter_bits(&[Filter::Installed]), ids, false)
+                    .await?;
+            }
+            Op::RequiredBy(ids) => {
+                tx.required_by(filter_bits(&[Filter::Installed]), ids, false)
+                    .await?;
+            }
             Op::RefreshRepo(alias) => tx.repo_set_data(alias, "refresh-now", "true").await?,
         }
 
@@ -319,6 +331,14 @@ impl PackageManager for PackageKitClient {
     async fn search_names(&self, values: &[&str], filters: &[Filter]) -> Result<Vec<PackageInfo>> {
         self.run(Op::SearchNames(filter_bits(filters), values), &mut |_| {})
             .await
+    }
+
+    async fn depends_on(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
+        self.run(Op::DependsOn(ids), &mut |_| {}).await
+    }
+
+    async fn required_by(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
+        self.run(Op::RequiredBy(ids), &mut |_| {}).await
     }
 
     async fn refresh_repo(&self, alias: &str) -> Result<()> {

@@ -18,7 +18,7 @@ fn main() {
             .with_ledger(InstallLedger::default_path().map(InstallLedger::new));
         store
             .remove(&name, &mut |p| {
-                eprintln!("{:?} {:?}", p.status, p.percentage)
+                eprintln!("{:?} {:?}", p.status, p.percentage);
             })
             .await
     });

@@ -241,31 +241,110 @@ impl<P: PackageManager> Store<P> {
     /// Removes an installed package, only if it is Reef's ([`reef_owned`]):
     /// Reef never removes an OS package, whatever the catalogue says.
     ///
-    /// The app's own parts go with it, in the same transaction: the
-    /// installed Reef packages named after it (`shoal-pilot-gesture-patch`,
-    /// `shoal-pilot-piper` for `shoal-pilot`). Removing Pilot alone failed
-    /// with `PackageKit`'s dependency error 13, because its gesture patch
-    /// needs it, and removing it outside Reef left the patch behind. Any
-    /// other package that needs it still stops the removal (Keel is not
-    /// removed from under the apps built on it).
+    /// Everything of Reef's that belongs to the app goes with it, in the same
+    /// transaction:
+    /// - its parts, the installed Reef packages named after it
+    ///   (`shoal-pilot-gesture-patch`, `shoal-pilot-piper` for `shoal-pilot`):
+    ///   removing Pilot alone failed with `PackageKit`'s dependency error 13,
+    ///   because its gesture patch needs it;
+    /// - Reef packages that need something going (an add-on such as the
+    ///   earbuds service's Device ID setting);
+    /// - Reef packages it needed that nothing staying needs and that were
+    ///   not installed for themselves (the earbuds service and volume
+    ///   watcher, pulled in by the earbuds app), with their own parts:
+    ///   removing that app left its service running, scanning for
+    ///   Bluetooth devices (forum, 12 October 2026). Keel goes once no app
+    ///   is left on it, unless installed for itself.
+    ///
+    /// An OS package that needs something going still stops the removal
+    /// (`PackageKit` refuses), as does anything Reef cannot tell is its own.
     pub async fn remove(&self, name: &str, progress: &mut dyn FnMut(Progress)) -> Result<()> {
+        let recorded = self.recorded();
         let found = resolve_with_offers(&self.pm, &[name]).await?;
-        let owned = reef_owned(&found, &self.alias, &self.recorded());
+        let owned = reef_owned(&found, &self.alias, &recorded);
         let id = owned
             .iter()
             .find(|p| p.id.name == name)
-            .ok_or_else(|| crate::packagekit::Error::NotFound(name.into()))?;
-        let parts = self.parts(name).await?;
-        let mut ids: Vec<&str> = vec![&id.id.raw];
-        ids.extend(parts.iter().map(|p| p.id.raw.as_str()));
+            .ok_or_else(|| crate::packagekit::Error::NotFound(name.into()))?
+            .clone();
+        let mut going: Vec<PackageInfo> = vec![id];
+        going.extend(self.parts(name).await?);
+        let is_going =
+            |going: &[PackageInfo], p: &PackageInfo| going.iter().any(|g| g.id.name == p.id.name);
+        loop {
+            let ids: Vec<&str> = going.iter().map(|p| p.id.raw.as_str()).collect();
+            // Reef's packages that need what goes.
+            let needing = self
+                .owned_installed(&self.pm.required_by(&ids).await?, &recorded)
+                .await?;
+            let mut added: Vec<PackageInfo> = needing
+                .into_iter()
+                .filter(|p| !is_going(&going, p))
+                .collect();
+            // Reef's packages only what goes needs, not installed for themselves.
+            for dep in self
+                .owned_installed(&self.pm.depends_on(&ids).await?, &recorded)
+                .await?
+            {
+                if is_going(&going, &dep)
+                    || is_going(&added, &dep)
+                    || recorded.contains(&dep.id.name)
+                {
+                    continue;
+                }
+                // Its own parts (the earbuds service's Device ID add-on) go
+                // with it, so they do not count as keeping it.
+                let part_of_dep = |u: &PackageInfo| {
+                    u.id.name
+                        .strip_prefix(dep.id.name.as_str())
+                        .is_some_and(|rest| rest.starts_with('-'))
+                };
+                let users = self.pm.required_by(&[dep.id.raw.as_str()]).await?;
+                if users
+                    .iter()
+                    .all(|u| is_going(&going, u) || u.id.name == dep.id.name || part_of_dep(u))
+                {
+                    for part in self.parts(&dep.id.name).await? {
+                        if !is_going(&going, &part) && !is_going(&added, &part) {
+                            added.push(part);
+                        }
+                    }
+                    added.push(dep);
+                }
+            }
+            if added.is_empty() {
+                break;
+            }
+            going.extend(added);
+        }
+        let ids: Vec<&str> = going.iter().map(|p| p.id.raw.as_str()).collect();
         self.pm.remove(&ids, progress).await?;
         if let Some(ledger) = &self.ledger {
-            let _ = ledger.forget(name);
-            for p in &parts {
+            for p in &going {
                 let _ = ledger.forget(&p.id.name);
             }
         }
         Ok(())
+    }
+
+    /// Those of `packages` that are installed and Reef's ([`reef_owned`]).
+    async fn owned_installed(
+        &self,
+        packages: &[PackageInfo],
+        recorded: &BTreeSet<String>,
+    ) -> Result<Vec<PackageInfo>> {
+        let mut names: Vec<&str> = packages
+            .iter()
+            .filter(|p| p.id.is_installed())
+            .map(|p| p.id.name.as_str())
+            .collect();
+        names.sort_unstable();
+        names.dedup();
+        if names.is_empty() {
+            return Ok(Vec::new());
+        }
+        let found = resolve_with_offers(&self.pm, &names).await?;
+        Ok(reef_owned(&found, &self.alias, recorded))
     }
 
     /// The installed Reef packages that are parts of `name`: named
@@ -394,6 +473,17 @@ mod tests {
         /// Copies only a `NotInstalled` resolve lists (zypp leaves a
         /// repository's copy of an installed version out of the others).
         offers: Vec<PackageInfo>,
+        /// Installed dependencies: (package, what it needs), by name.
+        needs: Vec<(&'static str, &'static str)>,
+    }
+
+    impl Fake {
+        fn installed(&self, name: &str) -> Option<PackageInfo> {
+            self.available
+                .iter()
+                .find(|p| p.id.name == name && p.id.is_installed())
+                .cloned()
+        }
     }
 
     impl PackageManager for Fake {
@@ -443,8 +533,101 @@ mod tests {
                 .cloned()
                 .collect())
         }
+        async fn depends_on(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
+            let names: Vec<String> = ids
+                .iter()
+                .map(|i| PackageId::parse(i).unwrap().name)
+                .collect();
+            Ok(self
+                .needs
+                .iter()
+                .filter(|(who, _)| names.iter().any(|n| n == who))
+                .filter_map(|(_, what)| self.installed(what))
+                .collect())
+        }
+        async fn required_by(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
+            let names: Vec<String> = ids
+                .iter()
+                .map(|i| PackageId::parse(i).unwrap().name)
+                .collect();
+            Ok(self
+                .needs
+                .iter()
+                .filter(|(_, what)| names.iter().any(|n| n == what))
+                .filter_map(|(who, _)| self.installed(who))
+                .collect())
+        }
         async fn refresh_repo(&self, _: &str) -> Result<()> {
             Ok(())
+        }
+    }
+
+    /// The forum's earbuds app: removing it left its service running and
+    /// scanning. Everything of Reef's that only it needed goes with it, and
+    /// its add-on; Keel (another app needs it) and the OS's packages stay.
+    #[test]
+    fn an_app_goes_with_what_only_it_needed() {
+        let both = |name: &'static str, v: &'static str| {
+            [
+                pkg(&format!("{name};{v};aarch64;installed")),
+                pkg(&format!("{name};{v};aarch64;shipwright-reef")),
+            ]
+        };
+        let mut available: Vec<PackageInfo> = [
+            both("shipwright-shoal-bridge-airpods-ui", "0.1.0-7"),
+            both("shipwright-shoal-bridge-airpods", "2.0.11-5"),
+            both("shipwright-shoal-bridge-airpods-volume", "0.1.0-2"),
+            both("shipwright-shoal-bridge-airpods-vendorid", "0.1.0-1"),
+            both("shipwright-keel-silica", "0.1.0-9"),
+            both("shipwright-shoal-mail", "0.1.0-4"),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        available.push(pkg("bluez5;5.66-1;aarch64;installed"));
+        available.push(pkg("bluez5;5.66-1;aarch64;jolla"));
+        let fake = Fake {
+            available,
+            needs: vec![
+                (
+                    "shipwright-shoal-bridge-airpods-ui",
+                    "shipwright-shoal-bridge-airpods",
+                ),
+                (
+                    "shipwright-shoal-bridge-airpods-ui",
+                    "shipwright-shoal-bridge-airpods-volume",
+                ),
+                (
+                    "shipwright-shoal-bridge-airpods-ui",
+                    "shipwright-keel-silica",
+                ),
+                (
+                    "shipwright-shoal-bridge-airpods-vendorid",
+                    "shipwright-shoal-bridge-airpods",
+                ),
+                ("shipwright-shoal-bridge-airpods", "bluez5"),
+                ("shipwright-shoal-bridge-airpods-volume", "bluez5"),
+                ("shipwright-shoal-mail", "shipwright-keel-silica"),
+            ],
+            ..Fake::default()
+        };
+        let store = Store::new(fake, "shipwright-reef");
+        futures_lite::future::block_on(
+            store.remove("shipwright-shoal-bridge-airpods-ui", &mut |_| {}),
+        )
+        .unwrap();
+        let calls = store.pm.calls.borrow();
+        let removed = calls.iter().find(|c| c.starts_with("remove")).unwrap();
+        for gone in [
+            "shipwright-shoal-bridge-airpods-ui;",
+            "shipwright-shoal-bridge-airpods;",
+            "shipwright-shoal-bridge-airpods-volume;",
+            "shipwright-shoal-bridge-airpods-vendorid;",
+        ] {
+            assert!(removed.contains(gone), "{gone} in {removed}");
+        }
+        for stays in ["shipwright-keel-silica", "bluez5", "shipwright-shoal-mail"] {
+            assert!(!removed.contains(stays), "{stays} in {removed}");
         }
     }
 

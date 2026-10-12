@@ -46,7 +46,7 @@ BackgroundItem {
         width: cardWidth
         height: Math.round(cardWidth * 2.2)
         radius: Theme.paddingMedium
-        color: Theme.rgba("black", 0.6)
+        color: Theme.rgba(Theme.overlayBackgroundColor, 0.6)
         border.color: Theme.rgba(Theme.highlightColor, 0.4)
         border.width: Math.max(1, Math.round(Theme.pixelRatio))
         visible: shot.status === Image.Ready
