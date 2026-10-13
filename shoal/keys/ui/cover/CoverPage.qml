@@ -39,7 +39,11 @@ CoverBackground {
             objectName: "coverState"
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
+            // Between words only; a word wider than the cover (a large
+            // text size) shrinks the text instead of breaking.
+            wrapMode: Text.WordWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: Theme.fontSizeExtraSmall
             font.pixelSize: Theme.fontSizeLarge
             text: ShoalKeys.busy ? qsTr("Working…")
                 : !ShoalKeys.vaultExists ? qsTr("No vault")
@@ -50,7 +54,11 @@ CoverBackground {
             objectName: "coverDetail"
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
+            // Between words only; a word wider than the cover (a large
+            // text size) shrinks the text instead of breaking.
+            wrapMode: Text.WordWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: Theme.fontSizeExtraSmall
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.secondaryColor
             visible: text.length > 0

@@ -81,7 +81,8 @@ Page {
 
         Label {
             width: parent.width
-            horizontalAlignment: Text.AlignHCenter
+            // Centred while it fits; too long, it starts at the left and fades out.
+            horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
             font.pixelSize: Theme.fontSizeLarge
             truncationMode: TruncationMode.Fade
             visible: !page.videoMode

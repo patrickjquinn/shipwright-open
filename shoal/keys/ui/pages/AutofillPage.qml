@@ -110,10 +110,12 @@ Page {
         delegate: ListItem {
             id: item
             required property var modelData
-            contentHeight: Theme.itemSizeMedium
+            // As tall as its lines need at a large text size.
+            contentHeight: Math.max(Theme.itemSizeMedium, rowText.height + 2 * Theme.paddingSmall)
             highlighted: down || item.modelData.id === page.info.preselected
             onClicked: page.answer(item.modelData.id)
             Column {
+                id: rowText
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
                 anchors.verticalCenter: parent.verticalCenter

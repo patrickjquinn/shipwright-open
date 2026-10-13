@@ -148,7 +148,8 @@ Page {
         spacing: Theme.paddingSmall / 2
         Label {
             width: parent.width
-            horizontalAlignment: Text.AlignHCenter
+            // Centred while it fits; too long, it starts at the left and fades out.
+            horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
             text: fact.value
             color: Theme.highlightColor
             font.pixelSize: Theme.fontSizeMedium
@@ -156,7 +157,8 @@ Page {
         }
         Label {
             width: parent.width
-            horizontalAlignment: Text.AlignHCenter
+            // Centred while it fits; too long, it starts at the left and fades out.
+            horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
             text: fact.name
             color: Theme.secondaryHighlightColor
             font.pixelSize: Theme.fontSizeExtraSmall
@@ -271,16 +273,23 @@ Page {
             id: column
             width: page.width
 
-            // The name and who publishes it, right-aligned beside the icon.
+            // The name and who publishes it, right-aligned beside the icon,
+            // below the camera cut-out (as PageHeader keeps clear of it): the
+            // heading is centred on the icon while it fits and grows down,
+            // never up, when a larger text size makes it taller.
             Item {
+                id: headingRow
+                objectName: "headingRow"
+                readonly property real headingTop: Math.max(Theme.paddingLarge * 2,
+                                                     (page.isPortrait ? Screen.topCutout.height : 0) + Theme.paddingMedium)
                 width: parent.width
-                height: Math.max(appIcon.height, heading.height) + Theme.paddingLarge * 3
+                height: Math.max(appIcon.y + appIcon.height, heading.y + heading.height) + Theme.paddingLarge
 
                 AppIcon {
                     id: appIcon
                     anchors.right: parent.right
                     anchors.rightMargin: Theme.horizontalPageMargin
-                    y: Theme.paddingLarge * 2
+                    y: headingRow.headingTop
                     iconPath: page.pkg.iconPath || ""
                     title: page.pkg.title || ""
                     size: Theme.iconSizeExtraLarge
@@ -292,7 +301,7 @@ Page {
                     anchors.leftMargin: Theme.horizontalPageMargin
                     anchors.right: appIcon.left
                     anchors.rightMargin: Theme.paddingLarge
-                    anchors.verticalCenter: appIcon.verticalCenter
+                    y: Math.max(headingRow.headingTop, appIcon.y + (appIcon.height - height) / 2)
 
                     Label {
                         objectName: "title"

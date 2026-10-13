@@ -9,6 +9,7 @@
 // Prints "SMOKE ok: ..." per check and exits 0 on success, 1 on failure.
 
 import QtQuick
+import Keel 1.0
 import Sailfish.Silica 1.0
 import Shipwright.Reef 1.0
 
@@ -86,6 +87,12 @@ QtObject {
             fail("timeout in stage " + stage + ": busy=" + Reef.busy + " count="
                  + Reef.catalogueModel.count + " lastError=" + JSON.stringify(Reef.lastError))
             return
+        }
+        if (auditing) {
+            if (layoutAudit.step())
+                return
+            auditing = false
+            check(layoutAudit.problems === 0, "layout audit: " + layoutAudit.problems + " problem(s) over every page")
         }
         if (Reef.busy)
             return
@@ -240,9 +247,37 @@ QtObject {
         check(cover !== null && cover !== undefined, "cover instantiated")
         var actions = cover._actionLists.filter(function(l) { return l.objectName === "coverActions" })
         check(actions.length === 1, "the cover has a refresh action")
-        eq(win.pageStack.depth, 1, "initial page on the stack")
+        // A first start asks about background checks before anything runs
+        // (Reef 28), over the store's first page.
+        eq(win.pageStack.depth, 2, "first page and the background-checks question on the stack")
+        eq(win.pageStack.currentPage.objectName, "backgroundChecksPage", "the question is on top")
         var p = createPage("PackagePage.qml", { packageName: "harbour-smoke-bridge" })
         check(p !== null && p.pkg.title === "Bridge", "PackagePage shows the package")
+        // The heading never rises above its row's top margin (which keeps
+        // clear of the camera cut-out), at Normal and at Gigantic text size,
+        // where it is taller than the icon.
+        function headingClear(size) {
+            var row = findIn(p, "headingRow")
+            var title = findIn(p, "title")
+            var y = title.mapToItem(row, 0, 0).y
+            check(y >= row.headingTop - 0.5, size + ": the app's title starts below the top margin (" + y + " >= " + row.headingTop + ")")
+        }
+        headingClear("normal text")
+        Ambience.applyForwarded("/desktop/jolla/theme/font/sizeCategory='gigantic'\n")
+        headingClear("gigantic text")
+        Ambience.applyForwarded("")
+        // Every page, at Normal and Gigantic text size.
+        var plan = JSON.stringify({ action: "install", target: "harbour-smoke-bridge", download_size: 2345678, items: [
+            { name: "harbour-smoke-bridge", title: "Bridge", version: "1.0.0-1", change: "install", requested: true, size: 123456 },
+            { name: "shipwright-keel-silica", title: "Keel, the Qt 6 Silica runtime that Shoal apps are built on", version: "0.1.0-30", change: "install", requested: false, size: 2341608 },
+            { name: "harbour-smoke-old", title: "An older app this replaces", version: "1.0-1", change: "remove", requested: false, stops_working: ["Old app"] } ] })
+        var pages = [["CataloguePage.qml", {}], ["PackagePage.qml", { packageName: "harbour-smoke-bridge" }],
+                     ["InstalledPage.qml", {}], ["SettingsPage.qml", {}], ["LicencesPage.qml", {}],
+                     ["BackgroundChecksPage.qml", {}], ["AddLicenceDialog.qml", {}], ["ConfirmPage.qml", { planJson: plan }]]
+        for (var pi = 0; pi < pages.length; ++pi) {
+            auditLayout(pages[pi][0], pages[pi][1], "normal")
+            auditLayout(pages[pi][0], pages[pi][1], "gigantic")
+        }
         // An operation that fails is shown on the page (no PackageKit here).
         Reef.install("harbour-smoke-bridge")
         h.packagePage = p
@@ -281,6 +316,20 @@ QtObject {
             check(createPage(pages[i]) !== null, pages[i] + " instantiated")
     }
 
+    // tools/ui-audit: overlapping text, text in the camera cut-out, text off
+    // the page.
+    // tools/ui-audit, run by tick() before anything else.
+    property var layoutAudit: null
+    property bool auditing: false
+    function auditLayout(file, props, size) {
+        if (!layoutAudit) {
+            var c = Qt.createComponent(uiDir + "/../../../../tools/ui-audit/LayoutAudit.qml")
+            check(c.status === Component.Ready, "LayoutAudit loads " + c.errorString())
+            layoutAudit = c.createObject(h)
+        }
+        layoutAudit.enqueue(win, Qt.resolvedUrl(uiDir + "/pages/" + file), props, size)
+        auditing = true
+    }
     function findIn(item, name) {
         if (!item)
             return null

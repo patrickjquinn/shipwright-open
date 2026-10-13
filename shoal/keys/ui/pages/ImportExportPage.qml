@@ -120,7 +120,8 @@ Page {
                     id: candidate
                     required property var modelData
                     width: column.width
-                    contentHeight: Theme.itemSizeMedium
+                    // As tall as its two lines need at a large text size.
+                    contentHeight: Math.max(Theme.itemSizeMedium, candidateText.height + 2 * Theme.paddingSmall)
                     enabled: !ShoalKeys.busy
                     onClicked: {
                         page.message = ""
@@ -133,6 +134,7 @@ Page {
                         source: "image://theme/icon-m-document"
                     }
                     Column {
+                        id: candidateText
                         anchors {
                             left: fileIcon.right
                             leftMargin: Theme.paddingMedium

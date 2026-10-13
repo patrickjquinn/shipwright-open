@@ -431,6 +431,10 @@ pub struct Core {
     /// What the person asked for and the plan the confirmation sheet shows,
     /// until they confirm or decline it. Nothing else starts meanwhile.
     pending: Option<(Ask, Plan)>,
+    /// Every listed package as the models show it, from the last rebuild:
+    /// a search filters these instead of rebuilding everything (and
+    /// re-verifying every licence) on each keystroke.
+    package_rows: Vec<rows::PackageRow>,
 }
 
 #[allow(
@@ -643,7 +647,7 @@ impl cxx_qt::Initialize for qobject::Reef {
             .on_licence_server_changed(qobject::Reef::save_settings)
             .release();
         self.as_mut()
-            .on_search_text_changed(qobject::Reef::rebuild_models)
+            .on_search_text_changed(qobject::Reef::apply_search)
             .release();
 
         self.as_mut().rebuild_models();
@@ -725,6 +729,18 @@ impl qobject::Reef {
             .map_or_else(String::new, |p| jobs::asset_path(&jobs::asset_dir(p), rel))
     }
 
+    /// The catalogue model for the current search, from the rows the last
+    /// rebuild made (nothing else depends on the search text).
+    fn apply_search(self: Pin<&mut Self>) {
+        let shown = rows::filter_rows(&self.core.package_rows, &self.search_text.to_string());
+        // SAFETY: as in rebuild_models: a QObject child of `self`, used only
+        // here on the GUI thread.
+        unsafe {
+            model_mut(self.catalogue_model)
+                .set_rows(shown.iter().map(rows::PackageRow::values).collect());
+        }
+    }
+
     /// Rebuilds all four models and `updateCount` from the current state.
     fn rebuild_models(mut self: Pin<&mut Self>) {
         let now = jobs::unix_now();
@@ -771,6 +787,7 @@ impl qobject::Reef {
                 .count(),
         );
 
+        self.as_mut().rust_mut().core.package_rows = package_rows;
         // SAFETY: the models were created in `initialize` as QObject
         // children of `self` and live as long as it does; they are used only
         // here, on the GUI thread (model_mut's contract).

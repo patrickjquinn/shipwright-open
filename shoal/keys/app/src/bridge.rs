@@ -192,6 +192,10 @@ pub mod qobject {
         #[qinvokable]
         #[cxx_name = "checkAutoLock"]
         fn check_auto_lock(self: Pin<&mut ShoalKeys>) -> bool;
+        /// Milliseconds until a timed auto-lock is due; -1 for none.
+        #[qinvokable]
+        #[cxx_name = "msUntilAutoLock"]
+        fn ms_until_auto_lock(self: &ShoalKeys) -> i32;
         #[qinvokable]
         #[cxx_name = "installLicence"]
         fn install_licence(self: Pin<&mut ShoalKeys>, token: &QString) -> QString;
@@ -751,6 +755,10 @@ impl qobject::ShoalKeys {
 
     fn set_active(self: Pin<&mut Self>, active: bool) {
         self.ctl_mut().set_active(active);
+    }
+
+    fn ms_until_auto_lock(&self) -> i32 {
+        self.ctl().ms_until_autolock()
     }
 
     fn check_auto_lock(mut self: Pin<&mut Self>) -> bool {

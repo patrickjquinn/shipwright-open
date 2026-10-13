@@ -840,6 +840,17 @@ impl Controller {
         false
     }
 
+    /// Milliseconds until a timed auto-lock is due; -1 when locked or when
+    /// none can fire.
+    pub fn ms_until_autolock(&self) -> i32 {
+        if self.is_locked() {
+            return -1;
+        }
+        self.autolock
+            .next_due(boottime())
+            .map_or(-1, |d| i32::try_from(d.as_millis()).unwrap_or(i32::MAX))
+    }
+
     pub fn idle_remaining_secs(&self) -> i32 {
         self.autolock
             .idle_remaining(boottime())

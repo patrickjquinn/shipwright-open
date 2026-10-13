@@ -61,12 +61,14 @@ Page {
         }
 
         delegate: ListItem {
-            contentHeight: Theme.itemSizeMedium
+            // As tall as its lines need at a large text size.
+            contentHeight: Math.max(Theme.itemSizeMedium, rowText.height + 2 * Theme.paddingSmall)
             onClicked: pageStack.push(Qt.resolvedUrl("BridgedChatPage.qml"),
                                       { contactName: modelData.name,
                                         number: modelData.number })
 
             Column {
+                id: rowText
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter

@@ -72,7 +72,8 @@ Page {
             required property string status
             required property string expiresText
 
-            contentHeight: Theme.itemSizeMedium
+            // As tall as its lines need at a large text size.
+            contentHeight: Math.max(Theme.itemSizeMedium, rowText.height + 2 * Theme.paddingSmall)
             menu: ContextMenu {
                 MenuItem {
                     text: qsTr("Forget")
@@ -81,6 +82,7 @@ Page {
             }
 
             Column {
+                id: rowText
                 anchors {
                     left: parent.left
                     right: parent.right
@@ -105,7 +107,12 @@ Page {
             }
         }
 
+        // Below the header and any failure it shows, however tall a large
+        // text size makes them (it sits a third of the way down otherwise).
         ViewPlaceholder {
+            id: placeholder
+            verticalOffset: Math.max(0, (list.headerItem ? list.headerItem.height : 0) + Theme.paddingLarge
+                                        - (list.height / 3 - placeholder.height / 2))
             enabled: list.count === 0
             text: qsTr("No licences")
             hintText: qsTr("Apps you buy on reefstore.app come with a licence. Pull down to add one.")

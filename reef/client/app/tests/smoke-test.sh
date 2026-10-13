@@ -90,7 +90,7 @@ printf '[Desktop Entry]\nType=Application\nName=$1\nExec=/usr/bin/$1\n' \
 EOF
     rpmbuild -bb --quiet --define "_topdir $work/rpmbuild" "$work/$1.spec" >/dev/null
 }
-mkrpm harbour-smoke-bridge 1.0.0 "Headphone bridge"
+mkrpm harbour-smoke-bridge 1.0.0 "Battery, noise control and settings for wireless earbuds"
 mkrpm harbour-smoke-notes 0.2.0 "Plain notes"
 mkrpm harbour-smoke-messages 0.3.0 "Messages"
 
@@ -178,10 +178,16 @@ run() { # mode registered-url
 
     echo "== $mode"
     status=0
+    # The Jolla Phone's screen, cut-out, corners and pixel ratio (as
+    # keel/silica/tests' screencutouts), so the layout audit sees the pages
+    # as the phone shows them.
+    printf '{"screens":[{"name":"phone","x":0,"y":0,"width":1032,"height":2272,"logicalDpi":96,"logicalBaseDpi":96,"dpr":1}]}\n' > "$work/phone-screen.json"
     env -i PATH="$work/bin:/usr/bin:/bin" HOME="$home" \
         XDG_CONFIG_HOME="$home/config" XDG_CACHE_HOME="$home/cache" \
         XDG_DATA_HOME="$home/data" XDG_RUNTIME_DIR="$state" \
-        LANG=C.UTF-8 QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true;default.debug=true;qt.qml.invalidOverride.warning=false;qt.qml.propertyCache.append.warning=false" \
+        KEEL_SCREEN_CUTOUTS="[[310, 0, 414, 66]]" KEEL_SCREEN_ROUNDED_CORNERS="[[35, 35, 35], [-35, 35, 35], [40, -40, 40], [-40, -40, 40]]" \
+        KEEL_THEME_PIXEL_RATIO=1.5 KEEL_SCREEN_DIAGONAL=6.36 KEEL_WINDOW_SIZE=1032x2272 \
+        LANG=C.UTF-8 QT_QPA_PLATFORM="offscreen:configfile=$work/phone-screen.json" QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true;default.debug=true;qt.qml.invalidOverride.warning=false;qt.qml.propertyCache.append.warning=false" \
         QML_IMPORT_PATH="$keel_qml" \
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/reef-smoke-no-bus" \
         REEF_SYSROOT="$work/root" REEF_URL_TEMPLATE="$template" \
@@ -243,20 +249,33 @@ check_run() { # mode
         timeout 60 "$bin" --check-updates > "$state/out-$1" 2>&1
 }
 echo "== background check"
-check_run never-unset   # no settings file: the default (daily) applies
-[ -s "$work/home-check-never-unset/cache/shipwright-reef/catalogue.json" ] ||
-    { cat "$work/state-check/out-never-unset"; echo "smoke-test: --check-updates cached nothing" >&2; exit 1; }
-[ -s "$work/home-check-never-unset/cache/shipwright-reef/last-check" ] ||
+# No settings file: nothing runs in the background until the person has been
+# asked (Reef 28), so no check, and the timer is turned off.
+check_run never-unset
+if [ -e "$work/home-check-never-unset/cache/shipwright-reef/last-check" ]; then
+    echo "smoke-test: --check-updates ran before the person was asked" >&2
+    exit 1
+fi
+grep -q 'not turned on' "$work/state-check/out-never-unset" ||
+    { cat "$work/state-check/out-never-unset"; echo "smoke-test: no 'not turned on' message" >&2; exit 1; }
+# Asked, and daily: the check runs and caches the catalogue.
+mkdir -p "$work/home-check-daily/config/shipwright-reef"
+printf '{"background_check_days": 1, "background_check_asked": true}' > "$work/home-check-daily/config/shipwright-reef/settings.json"
+check_run daily
+[ -s "$work/home-check-daily/cache/shipwright-reef/catalogue.json" ] ||
+    { cat "$work/state-check/out-daily"; echo "smoke-test: --check-updates cached nothing" >&2; exit 1; }
+[ -s "$work/home-check-daily/cache/shipwright-reef/last-check" ] ||
     { echo "smoke-test: --check-updates did not record the check" >&2; exit 1; }
 mkdir -p "$work/home-check-never/config/shipwright-reef"
-printf '{"background_check_days": 0}' > "$work/home-check-never/config/shipwright-reef/settings.json"
+printf '{"background_check_days": 0, "background_check_asked": true}' > "$work/home-check-never/config/shipwright-reef/settings.json"
 check_run never
 if [ -e "$work/home-check-never/cache/shipwright-reef/last-check" ]; then
     echo "smoke-test: --check-updates ran although the setting is Never" >&2
     exit 1
 fi
-grep -q 'not due' "$work/state-check/out-never" ||
-    { cat "$work/state-check/out-never"; echo "smoke-test: no 'not due' message" >&2; exit 1; }
+# Never is "off", as before the person was asked: the timer is turned off.
+grep -q 'not turned on' "$work/state-check/out-never" ||
+    { cat "$work/state-check/out-never"; echo "smoke-test: no 'not turned on' message" >&2; exit 1; }
 echo "smoke-test: background check ok"
 
 # The repair ran the backend's commands, in order, through ssu and pkcon.

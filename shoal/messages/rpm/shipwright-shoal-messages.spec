@@ -9,7 +9,7 @@ Summary:    Private messaging on Matrix
 # Shoal Messages' own version (semver). Upstream base: see UPSTREAM.md.
 # Must match core/Cargo.toml (scripts/build-core.sh and the .pro check it).
 Version:    0.1.0
-Release:    9
+Release:    10
 License:    ASL 2.0 and MIT and MPLv2.0 and BSD and ISC and zlib and Unicode and Boost and CC0 and CDLA-Permissive and Unlicense
 URL:        https://reefstore.app/#app-shipwright-shoal-messages
 Source0:    %{name}-%{version}.tar.bz2
@@ -148,6 +148,11 @@ strip %{buildroot}%{_bindir}/%{name}
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Tue Oct 13 2026 Shipwright - 0.1.0-10
+- Names too long for the call and profile pages start at the left and fade out instead of being cut off at both ends.
+- At large text sizes, list rows take the room their lines need instead of running into the next row.
+- The cover's text wraps between words at the larger text sizes (a word too wide for the cover shrinks instead of breaking in the middle).
+
 * Mon Oct 12 2026 Shipwright - 0.1.0-9
 - No five-minute wake-ups in the background while push notifications work:
   push wakes the app when something arrives. If push stops working, the

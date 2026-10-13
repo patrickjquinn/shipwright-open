@@ -15,21 +15,23 @@ CoverBackground {
 
     readonly property bool hasProgress: Reef.busy && Reef.progress >= 0
 
+    // Never under the cover action: at the larger text sizes, in the
+    // smaller cover, the state shrinks to fit what is left above it.
     Column {
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: parent.top
-            topMargin: Theme.paddingLarge
-            leftMargin: Theme.paddingLarge
-            rightMargin: Theme.paddingLarge
-        }
+        id: content
+        x: Theme.paddingLarge
+        y: Theme.paddingLarge
+        width: parent.width - 2 * Theme.paddingLarge
+        height: cover.coverActionArea.y - y - Theme.paddingSmall
         spacing: Theme.paddingSmall
 
+        // The number or progress, at most half of what is above the cover
+        // action (the smaller cover at a large text size has little).
         Item {
+            id: badge
             anchors.horizontalCenter: parent.horizontalCenter
-            width: Theme.iconSizeExtraLarge
-            height: Theme.iconSizeExtraLarge
+            width: Math.min(Theme.iconSizeExtraLarge, Math.round(content.height / 2))
+            height: width
 
             // Updates waiting: their number, large.
             Label {
@@ -37,7 +39,7 @@ CoverBackground {
                 anchors.centerIn: parent
                 visible: !Reef.busy && Reef.updateCount > 0
                 text: Reef.updateCount
-                font.pixelSize: Theme.fontSizeHuge
+                font.pixelSize: Math.min(Theme.fontSizeHuge, badge.height)
             }
             // An operation with progress: a circle with the percentage.
             ProgressCircle {
@@ -65,15 +67,39 @@ CoverBackground {
             }
         }
         Label {
+            id: stateLabel
             objectName: "coverState"
             width: parent.width
+            // As tall as its text needs at full size (one line or two),
+            // at most what is left: only then does it shrink.
+            readonly property real needed: (stateMetrics.advanceWidth > width ? 2 : 1) * stateLine.lineSpacing
+            height: Math.max(0, Math.min(needed, content.height - badge.height - content.spacing
+                                                 - (name.visible ? name.height + content.spacing : 0)))
             horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
+            // Between words only: a word too wide shrinks the text instead.
+            wrapMode: Text.WordWrap
+            maximumLineCount: 2
+            fontSizeMode: Text.Fit
+            minimumPixelSize: Theme.fontSizeExtraSmall
             text: Reef.busy ? Texts.busyText(Reef.busyText)
                 : Reef.updateCount > 0 ? qsTr("update(s)", "", Reef.updateCount)
                 : qsTr("Up to date")
+
+            TextMetrics {
+                id: stateMetrics
+                font.pixelSize: Theme.fontSizeMedium
+                text: stateLabel.text
+            }
+            FontMetrics {
+                id: stateLine
+                font.pixelSize: Theme.fontSizeMedium
+            }
         }
+        // The app's name, where there is room for it under the state (not
+        // in the smaller cover at the larger text sizes).
         Label {
+            id: name
+            visible: content.height - badge.height - stateLabel.needed - 2 * content.spacing >= height
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: Theme.fontSizeExtraSmall

@@ -24,7 +24,7 @@
 
 Name:           shipwright-shoal-keys
 Version:        0.1.0
-Release:        12
+Release:        13
 Summary:        Passwords and one-time codes
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/#app-shipwright-shoal-keys
@@ -125,6 +125,12 @@ systemctl-user daemon-reload >/dev/null 2>&1 || :
 %config %{_sysconfdir}/sailjail/permissions/ShoalKeysAutofill.permission
 
 %changelog
+* Tue Oct 13 2026 Shipwright - 0.1.0-13
+- An open vault no longer wakes the phone every second to check whether it should lock: Keys now waits until a lock is due (at most 30 seconds at a time, so a lock that fell due while the phone slept still comes promptly).
+- At large text sizes, entries and import files take the room their two lines need instead of running into the next row.
+- At large text sizes, list rows take the room their lines need instead of running into the next row.
+- The cover's text wraps between words at the larger text sizes (a word too wide for the cover shrinks instead of breaking in the middle).
+
 * Mon Oct 12 2026 Shipwright - 0.1.0-12
 - A request from another app (Pacific asking for a login, or to save one) waits at most 25 seconds, as long as the app waits for an answer; then it is declined and its page in Keys closes. No more pages for requests nobody is waiting for.
 - At most eight requests wait at once; more are declined straight away.

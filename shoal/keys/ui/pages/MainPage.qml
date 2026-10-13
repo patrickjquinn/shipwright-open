@@ -106,10 +106,12 @@ Page {
         delegate: ListItem {
             id: item
             required property var modelData
-            contentHeight: Theme.itemSizeMedium
+            // As tall as its two lines need at a large text size.
+            contentHeight: Math.max(Theme.itemSizeMedium, entryText.height + 2 * Theme.paddingSmall)
             onClicked: pageStack.push(Qt.resolvedUrl("EntryPage.qml"), { entryId: modelData.id })
 
             Column {
+                id: entryText
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 anchors.verticalCenter: parent.verticalCenter

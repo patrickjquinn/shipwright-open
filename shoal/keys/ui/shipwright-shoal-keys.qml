@@ -41,6 +41,7 @@ ApplicationWindow {
     Connections {
         target: ShoalKeys
         function onLockedChanged() {
+            autoLockTimer.rearm()
             if (ShoalKeys.locked)
                 app.pageStack.replaceAbove(null, Qt.resolvedUrl("pages/UnlockPage.qml"), {},
                                        PageStackAction.Immediate)
@@ -58,7 +59,10 @@ ApplicationWindow {
         }
     }
 
-    onApplicationActiveChanged: ShoalKeys.setActive(applicationActive)
+    onApplicationActiveChanged: {
+        ShoalKeys.setActive(applicationActive)
+        autoLockTimer.rearm()
+    }
 
     // Requests from other apps (autofill) waiting to be shown: after an
     // unlock if the vault is locked, one at a time.
@@ -99,13 +103,28 @@ ApplicationWindow {
         onTriggered: ShoalKeys.clearClipboard()
     }
 
-    // Auto-lock clock. The core measures time with CLOCK_BOOTTIME, so time
-    // spent suspended counts even though this timer does not run then.
+    // Auto-lock clock: set for when the next timed lock is due, not a
+    // once-a-second poll. The core measures time with CLOCK_BOOTTIME, so time
+    // spent suspended counts; this timer does not run then, so it waits at
+    // most 30 s at a time and a lock that fell due while suspended follows
+    // soon after the phone wakes. Input only pushes the lock later, so it
+    // needs no new timer; unlocking, the app's state and settings do.
     Timer {
-        interval: 1000
-        repeat: true
-        running: !ShoalKeys.locked
-        onTriggered: ShoalKeys.checkAutoLock()
+        id: autoLockTimer
+        repeat: false
+        function rearm() {
+            var ms = ShoalKeys.locked ? -1 : ShoalKeys.msUntilAutoLock()
+            if (ms < 0) {
+                stop()
+                return
+            }
+            interval = Math.max(250, Math.min(ms, 30000))
+            restart()
+        }
+        onTriggered: {
+            if (!ShoalKeys.checkAutoLock())
+                rearm()
+        }
     }
 
     // Any touch counts as activity; the press still reaches the page.

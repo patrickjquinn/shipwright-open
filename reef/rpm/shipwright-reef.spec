@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        28
+Release:        29
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -321,6 +321,14 @@ exit 0
 %ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Tue Oct 13 2026 Shipwright - 0.1.0-29
+- A name too long for its tile, such as with a larger text size, starts at the left and fades out instead of being cut off at both ends.
+- Search keeps up with typing: it filters the list instead of rebuilding every list and checking every licence on each key.
+- An app's page keeps its name clear of the camera cut-out, and a name that takes several lines at a larger text size grows down instead of up off the top.
+- Installed: when Reef cannot find out what is installed, it says why instead of also saying nothing is installed. Licences: the empty-list text stays below the page's header at large text sizes.
+- At large text sizes, list rows take the room their lines need instead of running into the next row.
+- The cover keeps clear of its refresh button: with many apps open (smaller covers) at a large text size, "Up to date" no longer wraps into the button and the app's name; the number shrinks to the room there is and the name gives way first.
+
 * Mon Oct 12 2026 Shipwright - 0.1.0-28
 - Updating Reef brings the Keel it needs along with it.
 - Reef asks before every install, update and removal, and shows everything that comes with it: each add-on, library and background service, what the services do and when they start, what changes on the phone, the download size, and for a removal what else goes (apps that would stop working highlighted). Nothing is installed or removed without a tap on that screen, and if what it would do changes before the tap, Reef asks again.

@@ -51,7 +51,8 @@ ListItem {
                                          ? "Signal"
                                          : (model.bridge === "telegram" ? "Telegram" : "")
 
-    contentHeight: Theme.itemSizeMedium
+    // As tall as its lines need at a large text size.
+    contentHeight: Math.max(Theme.itemSizeMedium, infoColumn.height + 2 * Theme.paddingSmall)
 
     Avatar {
         id: roomAvatar

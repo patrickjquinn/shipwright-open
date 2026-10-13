@@ -11,10 +11,12 @@
 //! - the device screen locks, if `lock_on_screen_lock` is set.
 //!
 //! The UI calls [`AutoLock::touch`] on input, [`AutoLock::set_active`] on
-//! application state changes, and [`AutoLock::should_lock`] from a
-//! once-a-second timer. Timers do not run while the phone is suspended, so
-//! the clock must be one that keeps counting through suspend
-//! (`CLOCK_BOOTTIME`), which [`boottime`] reads.
+//! application state changes, and [`AutoLock::should_lock`] from a timer
+//! set for [`AutoLock::next_due`] (not a once-a-second poll, which woke the
+//! phone every second while a vault was open). Timers do not run while the
+//! phone is suspended, so the clock must be one that keeps counting through
+//! suspend (`CLOCK_BOOTTIME`), which [`boottime`] reads, and the UI caps its
+//! wait so a lock that fell due during suspend is seen soon after.
 
 use std::time::Duration;
 
@@ -103,6 +105,19 @@ impl AutoLock {
         None
     }
 
+    /// How long until a timed lock is due, if no input or state change comes
+    /// first: the idle lock in front, the background lock behind. `None`
+    /// when neither can fire (the screen lock arrives as an event).
+    pub fn next_due(&self, now: Duration) -> Option<Duration> {
+        match self.backgrounded_at {
+            Some(since) => self
+                .settings
+                .background_timeout
+                .map(|t| t.saturating_sub(now.saturating_sub(since))),
+            None => self.idle_remaining(now),
+        }
+    }
+
     /// Seconds until the idle lock fires (for a countdown), if it is armed.
     pub fn idle_remaining(&self, now: Duration) -> Option<Duration> {
         let t = self.settings.idle_timeout?;
@@ -183,6 +198,66 @@ mod tests {
         let mut a = AutoLock::new(AutoLockSettings::default(), s(0));
         a.set_screen_locked(true);
         assert_eq!(a.should_lock(s(1)), Some(LockReason::ScreenLock));
+    }
+
+    #[test]
+    fn next_due() {
+        let mut a = AutoLock::new(AutoLockSettings::default(), s(0));
+        // In front: the idle lock, 5 minutes after the last touch.
+        assert_eq!(a.next_due(s(0)), Some(s(300)));
+        a.touch(s(100));
+        assert_eq!(a.next_due(s(150)), Some(s(250)));
+        // In the background: the background lock instead (30 s).
+        a.set_active(false, s(200));
+        assert_eq!(a.next_due(s(210)), Some(s(20)));
+        // Overdue: now.
+        assert_eq!(a.next_due(s(260)), Some(Duration::ZERO));
+        // Back in front: idle again, from now.
+        a.set_active(true, s(270));
+        assert_eq!(a.next_due(s(270)), Some(s(300)));
+        // Every timed lock off: nothing to wait for.
+        let none = AutoLock::new(
+            AutoLockSettings {
+                idle_timeout: None,
+                background_timeout: None,
+                lock_on_screen_lock: true,
+            },
+            s(0),
+        );
+        assert_eq!(none.next_due(s(5)), None);
+        // No idle lock, in front: nothing due until the app goes to the background.
+        let mut bg_only = AutoLock::new(
+            AutoLockSettings {
+                idle_timeout: None,
+                background_timeout: Some(s(60)),
+                lock_on_screen_lock: false,
+            },
+            s(0),
+        );
+        assert_eq!(bg_only.next_due(s(5)), None);
+        bg_only.set_active(false, s(10));
+        assert_eq!(bg_only.next_due(s(10)), Some(s(60)));
+    }
+
+    #[test]
+    fn next_due_agrees_with_should_lock() {
+        // Whatever next_due says, should_lock is None just before it and
+        // Some at it.
+        let mut a = AutoLock::new(AutoLockSettings::default(), s(0));
+        a.touch(s(42));
+        let due = a.next_due(s(50)).unwrap();
+        assert_eq!(
+            a.should_lock((s(50) + due).checked_sub(Duration::from_millis(1)).unwrap()),
+            None
+        );
+        assert_eq!(a.should_lock(s(50) + due), Some(LockReason::Idle));
+        a.set_active(false, s(60));
+        let due = a.next_due(s(61)).unwrap();
+        assert_eq!(
+            a.should_lock((s(61) + due).checked_sub(Duration::from_millis(1)).unwrap()),
+            None
+        );
+        assert_eq!(a.should_lock(s(61) + due), Some(LockReason::Background));
     }
 
     #[test]

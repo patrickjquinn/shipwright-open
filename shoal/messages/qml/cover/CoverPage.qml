@@ -37,7 +37,11 @@ CoverBackground {
         Label {
             width: parent.width
             font.pixelSize: Theme.fontSizeLarge
-            wrapMode: Text.Wrap
+            // Between words only; a word wider than the cover (a large
+            // text size) shrinks the text instead of breaking.
+            wrapMode: Text.WordWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: Theme.fontSizeExtraSmall
             text: "Shoal Messages"
         }
 
@@ -45,7 +49,11 @@ CoverBackground {
             width: parent.width
             font.pixelSize: Theme.fontSizeExtraSmall
             color: Theme.secondaryColor
-            wrapMode: Text.Wrap
+            // Between words only; a word wider than the cover (a large
+            // text size) shrinks the text instead of breaking.
+            wrapMode: Text.WordWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: Theme.fontSizeExtraSmall
             // Only while there is no session: the cover sits on the home screen, and the
             // account's identifier is nobody's business there.
             visible: matrix.sessionState !== "signed-in"
@@ -59,7 +67,11 @@ CoverBackground {
             width: parent.width
             font.pixelSize: Theme.fontSizeExtraSmall
             color: Theme.secondaryColor
-            wrapMode: Text.Wrap
+            // Between words only; a word wider than the cover (a large
+            // text size) shrinks the text instead of breaking.
+            wrapMode: Text.WordWrap
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: Theme.fontSizeExtraSmall
             visible: matrix.sessionState === "signed-in"
                      && matrix.syncState === "offline"
             text: qsTr("Offline. Waiting for a connection")

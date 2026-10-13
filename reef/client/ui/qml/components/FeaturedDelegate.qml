@@ -37,7 +37,8 @@ ListItem {
         anchors.topMargin: Theme.paddingSmall
         width: parent.width - 2 * Theme.paddingSmall
         anchors.horizontalCenter: parent.horizontalCenter
-        horizontalAlignment: Text.AlignHCenter
+        // Centred while it fits; too long, it starts at the left and fades out.
+        horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
         text: tile.title
         color: tile.highlighted ? Theme.highlightColor : Theme.primaryColor
         font.pixelSize: Theme.fontSizeExtraSmall
@@ -49,7 +50,8 @@ ListItem {
         anchors.top: titleLabel.bottom
         width: parent.width - 2 * Theme.paddingSmall
         anchors.horizontalCenter: parent.horizontalCenter
-        horizontalAlignment: Text.AlignHCenter
+        // Centred while it fits; too long, it starts at the left and fades out.
+        horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
         text: tile.installState === "update_available" ? qsTr("Update")
             : tile.isNew ? qsTr("New")
             : Texts.date(tile.updated).replace(/\s*\d{4}$/, "")

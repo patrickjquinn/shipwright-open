@@ -80,8 +80,12 @@ run() { # mode
         "$here/harness/smoke.qml.in" > "$work/smoke-$mode.qml"
     echo "== $mode"
     status=0
+# The Jolla Phone's screen, cut-out, corners and pixel ratio (as
+# keel/silica/tests' screencutouts), so the layout audit sees the pages as
+# the phone shows them.
+printf '{"screens":[{"name":"phone","x":0,"y":0,"width":1032,"height":2272,"logicalDpi":96,"logicalBaseDpi":96,"dpr":1}]}\n' > "$work/phone-screen.json"
     env -i PATH="/usr/bin:/bin" HOME="$work/home" XDG_RUNTIME_DIR="$work/runtime" \
-        LANG=C.UTF-8 QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true;default.debug=true;qt.qml.invalidOverride.warning=false;qt.qml.propertyCache.append.warning=false" QML_IMPORT_PATH="$KEEL_QML" \
+        LANG=C.UTF-8 KEEL_SCREEN_CUTOUTS="[[310, 0, 414, 66]]" KEEL_SCREEN_ROUNDED_CORNERS="[[35, 35, 35], [-35, 35, 35], [40, -40, 40], [-40, -40, 40]]" KEEL_THEME_PIXEL_RATIO=1.5 KEEL_SCREEN_DIAGONAL=6.36 QT_QPA_PLATFORM="offscreen:configfile=$work/phone-screen.json" QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true;default.debug=true;qt.qml.invalidOverride.warning=false;qt.qml.propertyCache.append.warning=false" QML_IMPORT_PATH="$KEEL_QML" \
         DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/keys-smoke-no-bus" \
         DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/keys-smoke-no-bus" \
         SHOAL_KEYS_DIR="$work/data" SHOAL_KEYS_DOWNLOADS="$work/dl" \
@@ -90,6 +94,7 @@ run() { # mode
     cat "$work/out-$mode"
     [ "$status" -eq 0 ] || { echo "smoke-test: $mode: exit status $status" >&2; exit 1; }
     grep -q 'SMOKE PASS' "$work/out-$mode" || { echo "smoke-test: $mode: no PASS" >&2; exit 1; }
+    if grep -q 'SMOKE FAIL' "$work/out-$mode"; then echo "smoke-test: $mode: a check failed" >&2; exit 1; fi
     # Any QML warning from the UI or the harness is a failure.
     if grep -E '\.qml:[0-9]+' "$work/out-$mode" | grep -v 'SMOKE' ; then
         echo "smoke-test: $mode: QML warnings above" >&2
@@ -114,7 +119,7 @@ run reopen
 # ApplicationWindow is an Item and needs SailfishApp's view (cpp/launcher.cpp).
 echo "== main window"
 env -i PATH="/usr/bin:/bin" HOME="$work/home" XDG_RUNTIME_DIR="$work/runtime" \
-    LANG=C.UTF-8 QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true;default.debug=true;qt.qml.invalidOverride.warning=false;qt.qml.propertyCache.append.warning=false" QML_IMPORT_PATH="$KEEL_QML" \
+    LANG=C.UTF-8 KEEL_SCREEN_CUTOUTS="[[310, 0, 414, 66]]" KEEL_SCREEN_ROUNDED_CORNERS="[[35, 35, 35], [-35, 35, 35], [40, -40, 40], [-40, -40, 40]]" KEEL_THEME_PIXEL_RATIO=1.5 KEEL_SCREEN_DIAGONAL=6.36 QT_QPA_PLATFORM="offscreen:configfile=$work/phone-screen.json" QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true;default.debug=true;qt.qml.invalidOverride.warning=false;qt.qml.propertyCache.append.warning=false" QML_IMPORT_PATH="$KEEL_QML" \
     DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/keys-smoke-no-bus" \
     DBUS_SYSTEM_BUS_ADDRESS="unix:path=/nonexistent/keys-smoke-no-bus" \
     SHOAL_KEYS_DIR="$work/data" SHOAL_KEYS_DOWNLOADS="$work/dl" \

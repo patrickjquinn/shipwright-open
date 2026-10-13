@@ -273,7 +273,8 @@ Page {
                 width: Math.min(implicitWidth,
                                 parent.width - 2 * Theme.horizontalPageMargin)
                 truncationMode: TruncationMode.Fade
-                horizontalAlignment: Text.AlignHCenter
+                // Centred while it fits; too long, it starts at the left and fades out.
+                horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
                 color: addressArea.pressed ? Theme.secondaryHighlightColor
                                            : Theme.highlightColor
                 textFormat: Text.PlainText

@@ -24,6 +24,7 @@ QtObject {
     property int waited: 0
     property var last: null      // last finished(op, ok, message)
     property string entryId: ""
+    property var layoutAudit: null
     property var cands: null     // last importCandidates(json), parsed
 
     function fail(msg) {
@@ -103,7 +104,7 @@ QtObject {
         onTriggered: {
             if (++h.waited > 1200)          // 60 s per step
                 h.fail("timed out in step " + h.step)
-            else if (h.steps[h.step]())
+            else if (h.steps[h.step]() && !h.failed)
             {
                 h.step++
                 h.waited = 0
@@ -314,6 +315,28 @@ QtObject {
             eq(page(), "mainPage", "cover search returns to the entry list")
             check(win.pageStack.currentPage.searchField !== null, "entry list has its search field")
             eq(ShoalKeys.idleLockSecs, 60, "opening Settings changed nothing")
+            return true
+        },
+        // tools/ui-audit: every page and dialog of the open vault at Normal
+        // and Gigantic text size on the phone's screen; then lock.
+        function() {
+            if (!layoutAudit) {
+                var c = Qt.createComponent(uiDir + "/../../../tools/ui-audit/LayoutAudit.qml")
+                if (!check(c.status === Component.Ready, "LayoutAudit loads " + c.errorString())) return false
+                layoutAudit = c.createObject(h)
+                var e = JSON.parse(ShoalKeys.entry(entryId))
+                var pages = [["MainPage.qml", {}], ["EntryPage.qml", { entryId: entryId }], ["EditDialog.qml", { entry: e }],
+                             ["EditDialog.qml", {}], ["GeneratorPage.qml", {}], ["GeneratorDialog.qml", {}],
+                             ["ExportDialog.qml", {}], ["ChangePasswordDialog.qml", {}], ["LicenceDialog.qml", {}],
+                             ["HistoryPage.qml", { entryId: entryId }], ["ImportExportPage.qml", {}],
+                             ["SettingsPage.qml", {}], ["HealthPage.qml", {}]]
+                for (var i = 0; i < pages.length; ++i) {
+                    layoutAudit.enqueue(win, Qt.resolvedUrl(uiDir + "/pages/" + pages[i][0]), pages[i][1], "normal")
+                    layoutAudit.enqueue(win, Qt.resolvedUrl(uiDir + "/pages/" + pages[i][0]), pages[i][1], "gigantic")
+                }
+            }
+            if (layoutAudit.step()) return false
+            eq(layoutAudit.problems, 0, "layout audit: problems over every page")
             ShoalKeys.lock()
             return true
         },

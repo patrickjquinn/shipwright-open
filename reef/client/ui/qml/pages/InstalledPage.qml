@@ -86,8 +86,11 @@ Page {
             }
         }
 
+        // Not while a failure is shown: Reef could not find out what is
+        // installed, so "nothing installed" would be wrong (and the two
+        // overlapped at large text sizes).
         ViewPlaceholder {
-            enabled: list.count === 0 && !Reef.busy
+            enabled: list.count === 0 && !Reef.busy && Reef.lastError.length === 0
             text: qsTr("Nothing installed from Reef")
             hintText: qsTr("Apps you install from Reef appear here, with their updates")
         }

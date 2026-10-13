@@ -56,7 +56,7 @@ ApplicationWindow {
     Connections {
         target: Reef
         function onPlanReady(name, plan) {
-            pageStack.push(Qt.resolvedUrl("pages/ConfirmPage.qml"), { planJson: plan })
+            app.pageStack.push(Qt.resolvedUrl("pages/ConfirmPage.qml"), { planJson: plan })
             app.activate()
         }
     }
