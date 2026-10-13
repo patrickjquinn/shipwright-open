@@ -249,3 +249,34 @@ function changelog(json) {
         return []
     }
 }
+
+// Disclosure lines grouped under what they share: an app that brings
+// several packages lists "Runs scripts as the system administrator when
+// installed or removed: <what>" once per package. Lines "<head>: <rest>"
+// whose head appears more than once become one { text: head, items: [rest,
+// ...] }, in the order the head first appears; the others stay
+// { text: line, items: [] }.
+function groupLines(lines) {
+    var heads = {}
+    var split = lines.map(function(line) {
+        var at = String(line).indexOf(": ")
+        var head = at > 0 ? line.substring(0, at) : ""
+        if (head)
+            heads[head] = (heads[head] || 0) + 1
+        return { line: String(line), head: head, rest: at > 0 ? line.substring(at + 2) : "" }
+    })
+    var out = []
+    var groups = {}
+    split.forEach(function(s) {
+        if (s.head && heads[s.head] > 1) {
+            if (!groups[s.head]) {
+                groups[s.head] = { text: s.head, items: [] }
+                out.push(groups[s.head])
+            }
+            groups[s.head].items.push(s.rest)
+        } else {
+            out.push({ text: s.line, items: [] })
+        }
+    })
+    return out
+}

@@ -603,27 +603,70 @@ Page {
                 text: qsTr("Runs in the background")
                 visible: page.services.length > 0
             }
-            Repeater {
-                model: page.services
-                IconLine {
-                    required property var modelData
-                    objectName: "serviceLine"
-                    source: "image://theme/icon-s-warning"
-                    text: qsTr("%1 (%2)").arg(modelData.description || modelData.name)
-                                         .arg(Texts.startsText(modelData.starts))
+            Column {
+                width: parent.width
+                spacing: Theme.paddingSmall
+                Repeater {
+                    model: page.services
+                    IconLine {
+                        required property var modelData
+                        objectName: "serviceLine"
+                        source: "image://theme/icon-s-warning"
+                        text: qsTr("%1 (%2)").arg(modelData.description || modelData.name)
+                                             .arg(Texts.startsText(modelData.starts))
+                    }
                 }
             }
             SectionHeader {
                 text: qsTr("Changes to your phone")
                 visible: page.systemChanges.length > 0
             }
-            Repeater {
-                model: page.systemChanges
-                IconLine {
-                    required property var modelData
-                    objectName: "systemChangeLine"
-                    source: "image://theme/icon-s-warning"
-                    text: modelData.description
+            // Lines that share a head (each package's install scripts)
+            // under it once, what each does indented below; a gap between
+            // separate lines.
+            Column {
+                width: parent.width
+                spacing: Theme.paddingSmall
+                Repeater {
+                    model: Texts.groupLines(page.systemChanges.map(function(c) { return c.description }))
+                    Column {
+                        id: changeGroup
+                        required property var modelData
+                        width: parent.width
+                        IconLine {
+                            objectName: "systemChangeLine"
+                            source: "image://theme/icon-s-warning"
+                            text: changeGroup.modelData.items.length > 0
+                                  ? qsTr("%1:").arg(changeGroup.modelData.text) : changeGroup.modelData.text
+                        }
+                        Repeater {
+                            model: changeGroup.modelData.items
+                            // A bullet with its lines hanging after it.
+                            Item {
+                                id: changeItem
+                                required property string modelData
+                                x: Theme.horizontalPageMargin + Theme.iconSizeSmallPlus + Theme.paddingMedium
+                                width: parent.width - x - Theme.horizontalPageMargin
+                                height: itemText.height + Theme.paddingSmall
+                                Label {
+                                    id: bullet
+                                    text: "•"
+                                    color: Theme.highlightColor
+                                    font.pixelSize: Theme.fontSizeSmall
+                                }
+                                Label {
+                                    id: itemText
+                                    objectName: "systemChangeItem"
+                                    x: bullet.width + Theme.paddingSmall
+                                    width: parent.width - x
+                                    text: changeItem.modelData
+                                    wrapMode: Text.Wrap
+                                    color: Theme.highlightColor
+                                    font.pixelSize: Theme.fontSizeSmall
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

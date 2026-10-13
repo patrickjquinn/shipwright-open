@@ -241,6 +241,18 @@ QtObject {
         eq(Reef.backgroundCheckDays, 1, "backgroundCheckDays normalised")
         Reef.licenceServer = "https://licences.smoke.invalid"
 
+        // The package page groups disclosure lines that share a head (one
+        // "Runs scripts ...:" per package the app brings).
+        var texts = Qt.createQmlObject('import QtQuick; import "' + uiDir + '/components/Texts.js" as T; '
+                                       + 'QtObject { function group(l) { return T.groupLines(l) } }', h)
+        var grouped = texts.group(["Runs scripts: Starts helpers", "Puts files in /etc", "Runs scripts: Stops helpers"])
+        eq(grouped.length, 2, "two disclosure groups")
+        eq(grouped[0].text, "Runs scripts", "the shared head once")
+        eq(grouped[0].items.join("|"), "Starts helpers|Stops helpers", "what each does, in order")
+        eq(grouped[1].items.length, 0, "a line of its own stays as it is")
+        eq(texts.group(["Only: one"])[0].text, "Only: one", "a head used once is not split")
+        texts.destroy()
+
         // Every page instantiates against the real object.
         // Keel loads the cover when keel-shell asks for it; load it here.
         var cover = win._loadCover()

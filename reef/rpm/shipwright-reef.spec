@@ -328,6 +328,7 @@ exit 0
 - Installed: when Reef cannot find out what is installed, it says why instead of also saying nothing is installed. Licences: the empty-list text stays below the page's header at large text sizes.
 - At large text sizes, list rows take the room their lines need instead of running into the next row.
 - The cover keeps clear of its refresh button: with many apps open (smaller covers) at a large text size, "Up to date" no longer wraps into the button and the app's name; the number shrinks to the room there is and the name gives way first.
+- An app's page lists "Runs scripts as the system administrator when installed or removed" once, with what each part of the app does below it, instead of once per part; separate lines in "Runs in the background" and "Changes to your phone" have a gap between them.
 
 * Mon Oct 12 2026 Shipwright - 0.1.0-28
 - Updating Reef brings the Keel it needs along with it.
