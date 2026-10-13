@@ -117,7 +117,8 @@ pub struct SsuRepo {
     pub enabled: bool,
 }
 
-/// Parses `ssu lr`. Lines look like ` - <alias> ... <url>` under section
+/// Parses `ssu lr`, which must run with `LC_ALL=C` (`jobs::ssu_repos`, the
+/// spec's `%post`): the section headers are matched in English. Lines look like ` - <alias> ... <url>` under section
 /// headers starting `Enabled repositories` or `Disabled repositories` (the
 /// Chum GUI installer parses the same shape with `sed 's/^ - / /;s/ ... / /'`).
 pub fn parse_ssu_lr(text: &str) -> Vec<SsuRepo> {

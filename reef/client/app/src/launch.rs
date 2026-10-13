@@ -30,7 +30,7 @@ pub fn desktop_entry(root: &Path, package: &str) -> Option<String> {
     if NOT_OPENED.contains(&package) {
         return None;
     }
-    let out = Command::new("rpm")
+    let out = reef_backend::c_locale(&mut Command::new("rpm"))
         .args(["-q", "--qf", "[%{FILENAMES}\\n]", package])
         .stdin(Stdio::null())
         .stderr(Stdio::null())
@@ -80,10 +80,22 @@ fn shown(entry: &str) -> bool {
     application
 }
 
+/// Runs `cmd` with the person's own group instead of Reef's effective
+/// `privileged` group (Reef is started privileged to talk to `PackageKit`).
+/// A program started with an effective group other than its real one runs
+/// in secure mode: systemd and libdbus then ignore `XDG_RUNTIME_DIR` and
+/// `DBUS_SESSION_BUS_ADDRESS` and cannot reach the person's session.
+pub fn as_person(cmd: &mut Command) -> &mut Command {
+    use std::os::unix::process::CommandExt;
+    // SAFETY: getgid has no preconditions and cannot fail.
+    let gid = unsafe { libc::getgid() };
+    cmd.gid(gid)
+}
+
 /// Starts the app of `entry` (a file name from [`desktop_entry`]).
 pub fn open(entry: &str) -> std::io::Result<()> {
     use std::os::unix::process::CommandExt;
-    let mut child = Command::new("/usr/bin/lca-tool")
+    let mut child = as_person(&mut Command::new("/usr/bin/lca-tool"))
         .args(["--triggerdesktop", entry])
         .stdin(Stdio::null())
         .stdout(Stdio::null())

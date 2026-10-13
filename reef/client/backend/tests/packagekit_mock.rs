@@ -23,8 +23,9 @@ use futures_lite::future::block_on;
 use reef_backend::packagekit::dbus::PackageKitClient;
 use reef_backend::packagekit::{
     Error, Exit, Filter, Info, PackageManager, Progress, TRANSACTION_FLAG_ONLY_TRUSTED,
+    TRANSACTION_FLAG_SIMULATE,
 };
-use reef_backend::store::Store;
+use reef_backend::store::{InstallLedger, Store};
 use zbus::object_server::SignalEmitter;
 use zbus::zvariant::OwnedObjectPath;
 use zbus::{connection, fdo, Connection, ObjectServer};
@@ -107,6 +108,10 @@ struct MockDaemon {
 
 #[zbus::interface(name = "org.freedesktop.PackageKit")]
 impl MockDaemon {
+    fn suggest_daemon_quit(&self) {
+        self.log.lock().unwrap().push("SuggestDaemonQuit".into());
+    }
+
     async fn create_transaction(
         &self,
         #[zbus(object_server)] server: &ObjectServer,
@@ -137,6 +142,7 @@ const REPO_PKG: &str = "shipwright-keel-silica;0.1.0-1;aarch64;shipwright-reef";
 const INSTALLED_PKG: &str = "shipwright-keel-silica;0.1.0-1;aarch64;installed";
 const UPDATE_PKG: &str = "shipwright-keel-silica;0.2.0-1;aarch64;shipwright-reef";
 const SYSTEM_UPDATE: &str = "glibc;2.99-1;aarch64;jolla";
+const DEPENDENCY: &str = "airpods-service;2.0-1;aarch64;shipwright-reef";
 
 #[zbus::interface(name = "org.freedesktop.PackageKit.Transaction")]
 impl MockTransaction {
@@ -177,6 +183,15 @@ impl MockTransaction {
             .lock()
             .unwrap()
             .push(format!("InstallPackages {flags:#x} {ids:?}"));
+        if flags & TRANSACTION_FLAG_SIMULATE != 0 {
+            // What zypp announces: the package, and a dependency it brings.
+            for id in &ids {
+                Self::package(&e, 12, id, "").await?;
+            }
+            Self::package(&e, 12, DEPENDENCY, "Earbuds service").await?;
+            Self::finished(&e, 1, 5).await?;
+            return Ok(());
+        }
         if ids.iter().any(|id| id.contains("stall")) {
             // Accepted, then silence: no progress, no Finished.
             return Ok(());
@@ -237,6 +252,29 @@ impl MockTransaction {
             .lock()
             .unwrap()
             .push(format!("UpdatePackages {flags:#x} {ids:?}"));
+        if flags & TRANSACTION_FLAG_SIMULATE != 0 {
+            for id in &ids {
+                Self::package(&e, 11, id, "").await?;
+            }
+        }
+        Self::finished(&e, 1, 5).await?;
+        Ok(())
+    }
+
+    /// Sizes the new way (`a{sv}`), as `PackageKit` 1.1 and later send them.
+    async fn get_details(
+        &self,
+        ids: Vec<String>,
+        #[zbus(signal_emitter)] e: SignalEmitter<'_>,
+    ) -> fdo::Result<()> {
+        self.log.lock().unwrap().push(format!("GetDetails {ids:?}"));
+        for id in &ids {
+            let mut details: std::collections::HashMap<&str, zbus::zvariant::Value<'_>> =
+                std::collections::HashMap::new();
+            details.insert("package-id", id.as_str().into());
+            details.insert("size", 2_000_000u64.into());
+            Self::details(&e, details).await?;
+        }
         Self::finished(&e, 1, 5).await?;
         Ok(())
     }
@@ -252,6 +290,11 @@ impl MockTransaction {
         self.log.lock().unwrap().push(format!(
             "RemovePackages {flags:#x} {ids:?} {allow_deps} {autoremove}"
         ));
+        if flags & TRANSACTION_FLAG_SIMULATE != 0 {
+            for id in &ids {
+                Self::package(&e, 13, id, "").await?;
+            }
+        }
         Self::finished(&e, 1, 5).await?;
         Ok(())
     }
@@ -352,6 +395,12 @@ impl MockTransaction {
         id: &str,
         status: u32,
         percentage: u32,
+    ) -> zbus::Result<()>;
+
+    #[zbus(signal)]
+    async fn details(
+        e: &SignalEmitter<'_>,
+        data: std::collections::HashMap<&str, zbus::zvariant::Value<'_>>,
     ) -> zbus::Result<()>;
 
     #[zbus(signal)]
@@ -487,30 +536,77 @@ fn a_silent_transaction_times_out() {
 #[test]
 fn store_updates_only_reef_packages_and_refreshes_one_repo() {
     let Some(h) = harness("update") else { return };
-    let store = Store::new(h.client.clone(), "shipwright-reef");
+    // Keel is installed with zypp's plain "installed": Reef's to remove
+    // only because the ledger says Reef installed it.
+    let dir = std::env::temp_dir().join(format!("reef-pk-ledger-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let ledger = InstallLedger::new(dir.join("installed.json"));
+    ledger.record("shipwright-keel-silica").unwrap();
+    let store = Store::new(h.client.clone(), "shipwright-reef").with_ledger(Some(ledger));
     block_on(async {
-        assert_eq!(store.update_all(&mut |_| {}).await.unwrap(), 1);
+        let all = store.preview_update_all(None).await.unwrap();
+        assert_eq!(store.update_all(&all, &mut |_| {}).await.unwrap(), 1);
         store.pm.refresh_repo("shipwright-reef").await.unwrap();
+        let plan = store
+            .preview_remove("shipwright-keel-silica", None)
+            .await
+            .unwrap();
         store
-            .remove("shipwright-keel-silica", &mut |_| {})
+            .remove("shipwright-keel-silica", &plan, &mut |_| {})
             .await
             .unwrap();
     });
+    std::fs::remove_dir_all(dir).unwrap();
     let log = h.log.lock().unwrap();
-    assert_eq!(log[0], "GetUpdates 0x2");
-    assert_eq!(
-        log[1],
-        format!("UpdatePackages {TRANSACTION_FLAG_ONLY_TRUSTED:#x} [\"{UPDATE_PKG}\"]")
-    );
-    assert_eq!(log[2], "RepoSetData shipwright-reef refresh-now true");
-    // After the lookups the removal makes (how many is the store's business).
-    let remove = log
+    let simulate = TRANSACTION_FLAG_ONLY_TRUSTED | TRANSACTION_FLAG_SIMULATE;
+    let real: Vec<&String> = log
         .iter()
-        .skip(3)
-        .find(|l| l.starts_with("RemovePackages"))
-        .unwrap_or_else(|| panic!("no RemovePackages in {log:?}"));
+        .filter(|l| !l.starts_with("Resolve") && !l.starts_with("GetDetails"))
+        .collect();
+    assert_eq!(real[0], "GetUpdates 0x2");
+    assert_eq!(
+        real[1],
+        &format!("UpdatePackages {simulate:#x} [\"{UPDATE_PKG}\"]")
+    );
+    // Update all looks again, simulates again, then updates for real.
+    assert_eq!(
+        real[4],
+        &format!("UpdatePackages {TRANSACTION_FLAG_ONLY_TRUSTED:#x} [\"{UPDATE_PKG}\"]")
+    );
+    assert_eq!(real[5], "RepoSetData shipwright-reef refresh-now true");
+    // After the lookups the removal makes (how many is the store's business).
+    let removes: Vec<&&String> = real
+        .iter()
+        .filter(|l| l.starts_with("RemovePackages"))
+        .collect();
+    assert_eq!(removes.len(), 2, "{log:?}");
+    assert!(
+        removes[0].starts_with("RemovePackages 0x4"),
+        "simulated first"
+    );
+    let remove = removes[1];
     assert!(remove.starts_with("RemovePackages 0x0"), "{remove}");
-    // The installed copy, which the Reef repository also offers (B-06).
+    // The installed copy.
     assert!(remove.contains(INSTALLED_PKG), "{remove}");
     assert!(remove.ends_with("false false"), "{remove}");
+}
+
+#[test]
+fn a_simulated_install_lists_what_comes_with_it_and_its_size() {
+    let Some(h) = harness("simulate") else { return };
+    let store = Store::new(h.client.clone(), "shipwright-reef");
+    let plan = block_on(store.preview_install("shipwright-keel-silica", None)).unwrap();
+    let names: Vec<&str> = plan.items.iter().map(|i| i.name.as_str()).collect();
+    assert_eq!(names, ["shipwright-keel-silica", "airpods-service"]);
+    assert!(plan.items[0].requested && !plan.items[1].requested);
+    assert_eq!(plan.download_size, Some(4_000_000));
+    let log = h.log.lock().unwrap();
+    let simulate = TRANSACTION_FLAG_ONLY_TRUSTED | TRANSACTION_FLAG_SIMULATE;
+    assert!(log.contains(&format!("InstallPackages {simulate:#x} [\"{REPO_PKG}\"]")));
+    assert!(
+        !log.iter().any(|l| l.starts_with(&format!(
+            "InstallPackages {TRANSACTION_FLAG_ONLY_TRUSTED:#x}"
+        ))),
+        "a preview installs nothing: {log:?}"
+    );
 }

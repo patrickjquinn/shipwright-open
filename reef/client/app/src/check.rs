@@ -4,8 +4,10 @@
 //! `shipwright-reef --check-updates`: the background update check behind
 //! the "Check in the background" setting. No window and no Qt: the systemd
 //! user timer `shipwright-reef-check.timer` (packaging/systemd/) starts it
-//! every 4 hours, and it decides from the setting whether a check is due
-//! (never, every few hours, or weekly). A check is the same refresh the app
+//! every 4 hours once the person has turned background checks on in Reef
+//! (Reef asks at first start; the package no longer enables the timer),
+//! and it decides from the setting whether a check is due (every few hours
+//! or weekly) and, with "Wi-Fi only", whether the phone is on Wi-Fi. A check is the same refresh the app
 //! runs: catalogue (cached for the next start), `ssu lr`, `PackageKit`'s
 //! Reef updates, and licence refreshes.
 //!
@@ -62,14 +64,111 @@ fn read_stamp(path: &Path) -> Option<i64> {
     std::fs::read_to_string(path).ok()?.trim().parse().ok()
 }
 
+/// The user timer that starts the check.
+pub const TIMER: &str = "shipwright-reef-check.timer";
+
+/// The command that turns the timer on or off for this user, now and at
+/// later logins: Reef runs it when the person chooses ("Never" disables the
+/// timer rather than leaving it to wake the phone for nothing).
+pub fn timer_command(enabled: bool) -> Vec<&'static str> {
+    vec![
+        "systemctl",
+        "--user",
+        if enabled { "enable" } else { "disable" },
+        "--now",
+        TIMER,
+    ]
+}
+
+/// Runs [`timer_command`], as the person ([`crate::launch::as_person`]):
+/// with Reef's privileged group it ran in secure mode, ignored the session's
+/// `XDG_RUNTIME_DIR` and failed ("Failed to connect to bus"), so the person's
+/// choice never reached the timer (found on the phone, 12 October 2026).
+pub fn set_timer(enabled: bool) -> Result<(), String> {
+    let cmd = timer_command(enabled);
+    let out = crate::launch::as_person(std::process::Command::new(cmd[0]).args(&cmd[1..]))
+        .output()
+        .map_err(|e| format!("{}: {e}", cmd.join(" ")))?;
+    if out.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{} failed: {}",
+            cmd.join(" "),
+            String::from_utf8_lossy(&out.stderr).trim()
+        ))
+    }
+}
+
+/// Whether the connection in use is Wi-Fi or wired, from `ConnMan`'s
+/// services `(type, state)` in its order (the default route first): the
+/// first that is `ready` or `online` decides.
+pub fn unmetered(services: &[(String, String)]) -> bool {
+    services
+        .iter()
+        .find(|(_, state)| state == "ready" || state == "online")
+        .is_some_and(|(kind, _)| kind == "wifi" || kind == "ethernet")
+}
+
+/// [`unmetered`] for this phone (`net.connman.Manager.GetServices` on the
+/// system bus); `None` when `ConnMan` cannot be asked.
+pub fn on_unmetered() -> Option<bool> {
+    use std::collections::HashMap;
+    use zbus::zvariant::{OwnedObjectPath, OwnedValue};
+    futures_lite::future::block_on(async {
+        let conn = zbus::Connection::system().await.ok()?;
+        let reply = conn
+            .call_method(
+                Some("net.connman"),
+                "/",
+                Some("net.connman.Manager"),
+                "GetServices",
+                &(),
+            )
+            .await
+            .ok()?;
+        let services: Vec<(OwnedObjectPath, HashMap<String, OwnedValue>)> =
+            reply.body().deserialize().ok()?;
+        let text = |props: &HashMap<String, OwnedValue>, key: &str| {
+            props
+                .get(key)
+                .and_then(|v| <&str>::try_from(&**v).ok())
+                .unwrap_or_default()
+                .to_owned()
+        };
+        let pairs: Vec<(String, String)> = services
+            .iter()
+            .map(|(_, props)| (text(props, "Type"), text(props, "State")))
+            .collect();
+        Some(unmetered(&pairs))
+    })
+}
+
 /// Runs one background check if the setting says it is due. Returns the
 /// process exit status: 0 for "nothing to do" and for a check that ran
 /// (its errors are logged), 1 when the phone's release is unknown.
+///
+/// Until the person has chosen background checks in Reef, or after they
+/// chose "Never", the timer should not be running at all: if it is (left
+/// from an older Reef, or a failed `systemctl` when they chose), the check
+/// turns it off and does nothing else.
 pub fn run() -> i32 {
     let settings = Settings::default_path()
         .as_deref()
         .map(Settings::load)
         .unwrap_or_default();
+    jobs::secure_ledger();
+    if !settings.background_checks_on() {
+        log::info!("background checks are not turned on in Reef; turning the timer off");
+        if let Err(e) = set_timer(false) {
+            log::warn!("{e}");
+        }
+        return 0;
+    }
+    if settings.background_wifi_only && on_unmetered() != Some(true) {
+        log::info!("background check skipped: not on Wi-Fi");
+        return 0;
+    }
     let now = jobs::unix_now();
     let stamp = stamp_path();
     let last = stamp.as_deref().and_then(read_stamp);
@@ -264,6 +363,37 @@ mod tests {
         assert!(due(1, Some(now + DAY), now));
         assert!(due(7, Some(now + 365 * DAY), now));
         assert!(!due(0, Some(now + DAY), now));
+    }
+
+    #[test]
+    fn the_timer_follows_the_choice() {
+        assert_eq!(
+            timer_command(true).join(" "),
+            "systemctl --user enable --now shipwright-reef-check.timer"
+        );
+        assert_eq!(
+            timer_command(false).join(" "),
+            "systemctl --user disable --now shipwright-reef-check.timer"
+        );
+    }
+
+    #[test]
+    fn wifi_only_follows_the_default_route() {
+        let s = |pairs: &[(&str, &str)]| {
+            pairs
+                .iter()
+                .map(|(a, b)| ((*a).to_string(), (*b).to_string()))
+                .collect::<Vec<_>>()
+        };
+        assert!(unmetered(&s(&[("wifi", "online"), ("cellular", "ready")])));
+        assert!(!unmetered(&s(&[("cellular", "online"), ("wifi", "ready")])));
+        // A Wi-Fi network in range but not connected does not count.
+        assert!(!unmetered(&s(&[("wifi", "idle"), ("cellular", "online")])));
+        assert!(unmetered(&s(&[
+            ("bluetooth", "idle"),
+            ("ethernet", "ready")
+        ])));
+        assert!(!unmetered(&[]));
     }
 
     fn up(title: &str, key: &str) -> Update {

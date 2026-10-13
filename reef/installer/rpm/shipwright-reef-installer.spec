@@ -20,7 +20,7 @@ Name:           shipwright-reef-installer
 # The client obsoletes installers below 1 (reef/rpm/shipwright-reef.spec):
 # raise that bound before this version reaches 1.
 Version:        0.1.0
-Release:        7
+Release:        8
 Summary:        Installs the Reef store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -102,9 +102,12 @@ exit 0
 # Last thing in every install or upgrade transaction: hand over to the
 # detached script, which waits for this transaction to end, then imports the
 # key, refreshes the repository and installs the client via PackageKit.
+# It waits for $PPID, the process running this transaction (rpm or zypper;
+# under PackageKit the daemon itself, which the wait's 10 s limit covers):
+# $$, this scriptlet's shell, ended at once and the wait did nothing.
 . %{reef_share}/repo.conf
 umask 022
-setsid --fork sh -c '(%{_bindir}/shipwright-reef-installer "$1" "$2")' sh_reef_installer "$$" "$REEF_LOG" >> "$REEF_LOG" 2>&1 </dev/null
+setsid --fork sh -c '(%{_bindir}/shipwright-reef-installer "$1" "$2")' sh_reef_installer "$PPID" "$REEF_LOG" >> "$REEF_LOG" 2>&1 </dev/null
 exit 0
 
 %preun
@@ -130,13 +133,15 @@ if [ "$1" = 0 ]; then
       while [ $i -lt 30 ]; do
         sleep 2
         i=$((i + 1))
-        all=$(rpm -qa gpg-pubkey --qf "%%{NAME}-%%{VERSION}-%%{RELEASE}\t%%{SUMMARY}\n" 2>&1)
+        all=$(LC_ALL=C LANGUAGE=C rpm -qa gpg-pubkey --qf "%%{NAME}-%%{VERSION}-%%{RELEASE}\t%%{SUMMARY}\n" 2>&1)
         case "$all" in *error:*) echo "$all"; continue ;; esac
         keys=$(echo "$all" | grep -F "$2" | cut -f 1)
         [ -z "$keys" ] && break
         for k in $keys; do rpm -e "$k" && echo "removed key $k"; done
       done
-    ' sh_reef_rmkey "$PPID" "$REEF_KEY_UID" >> "$REEF_LOG" 2>&1 </dev/null
+      # The log went with the package (%%ghost); this removal wrote it again.
+      rm -f "$3"
+    ' sh_reef_rmkey "$PPID" "$REEF_KEY_UID" "$REEF_LOG" >> "$REEF_LOG" 2>&1 </dev/null
   fi
 fi
 exit 0
@@ -147,8 +152,18 @@ exit 0
 %dir %{reef_share}
 %{reef_share}/repo.conf
 %{reef_share}/RPM-GPG-KEY-shipwright-reef
+# Written by %%post and the detached installer. Owned so that removing the
+# installer removes it; Reef owns it too, so the installer's own removal
+# when Reef takes over keeps it (the installer is still writing it then)
+# until Reef is removed.
+%ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Mon Oct 12 2026 Shipwright - 0.1.0-8
+- Removing the installer before Reef took over removes its log, /var/log/shipwright-reef-installer.log (once Reef is installed, the log stays until Reef is removed).
+- The installer waits for the installation that started it to finish before it installs Reef (it waited for nothing before), and no longer stops other installations or restarts PackageKit when the store cannot be reached: it tries again, and says on the screen when the install fails.
+- Removing the store works on phones not in English.
+
 * Sat Oct 10 2026 Shipwright - 0.1.0-7
 - On a Sailfish OS release Reef has no apps for (5.1, for now), the installer says so in a notification and removes itself, instead of failing to reach the repository four times, restarting PackageKit and failing the install with nothing on the screen.
 

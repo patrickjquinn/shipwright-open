@@ -12,8 +12,10 @@
 #     that installed us is still open;
 #   * waits for the %posttrans shell (whose PID it is given) to exit;
 #   * refreshes only our repository with `pkcon repo-set-data <alias>
-#     refresh-now true`, retrying and escalating (TERM, then INT, then
-#     restarting packagekit) because pkcon occasionally hangs when hammered;
+#     refresh-now true`, retrying with longer waits. Unlike the Chum
+#     installer it never kills pkcon or restarts PackageKit: those are
+#     everyone's (an OS update or a Jolla Store install may be running), and
+#     killing them aborted other people's work (sweep, 12 October 2026);
 #   * finally runs `pkcon -y install <client>` detached again, because
 #     installing the client obsoletes this package and deletes this file.
 # Additions for Reef: `rpm --import` of the signing key happens here, after
@@ -31,11 +33,19 @@ called=shipwright-reef-installer
 REEF_CONF=${REEF_CONF:-/usr/share/shipwright-reef-installer/repo.conf}
 REPO_TOOL=${REPO_TOOL:-/usr/bin/shipwright-reef-repo}
 
-if [ $# != 2 ]; then
+# --notify SUMMARY BODY: only the notification (the detached install's
+# failure, step 5).
+if [ "${1:-}" = --notify ] && [ $# = 3 ]; then
+  notify_mode=1
+elif [ $# != 2 ]; then
   echo "[$called] expected 2 arguments (posttrans PID, logfile), got $#" >&2
   exit 67
 fi
-ppid_wait=$1
+if [ "${notify_mode:-0}" = 1 ]; then
+  ppid_wait=0
+else
+  ppid_wait=$1
+fi
 case "$ppid_wait" in
   '' | *[!0-9]*)
     echo "[$called] first argument $ppid_wait is not a PID" >&2
@@ -52,7 +62,7 @@ cd /
 # A notification on the phone's screen, from root: sent on the session bus
 # of the user logged in on the seat (the first one at uid 100000 or above).
 notify_user() {
-  for dir in /run/user/*; do
+  for dir in "${REEF_RUN_USER:-/run/user}"/*; do
     uid=${dir##*/}
     case "$uid" in '' | *[!0-9]*) continue ;; esac
     [ "$uid" -ge 100000 ] && [ -S "$dir/dbus/user_bus_socket" ] || continue
@@ -76,6 +86,11 @@ log() {
   printf '%s [%s] %s\n' "$(date -Iseconds)" "$called" "$*"
   systemd-cat -t "$called" -p "$prio" printf '%s' "$*" 2>/dev/null || true
 }
+
+if [ "${notify_mode:-0}" = 1 ]; then
+  notify_user "$2" "$3"
+  exit $?
+fi
 
 log 6 "started, logging to $logfile"
 # shellcheck disable=SC1091
@@ -140,36 +155,31 @@ else
   exit 6
 fi
 
-# 4. Refresh our repository only, retrying as the Chum installer does.
+# 4. Refresh our repository only. A failure (offline, PackageKit busy with
+# someone else's transaction) is retried with longer waits, up to about
+# three minutes; nothing of anyone else's is stopped. Still failing, the
+# install below is tried anyway (PackageKit refreshes what it needs) and
+# says on the screen if it fails.
 refresh="pkcon -pv repo-set-data $REEF_ALIAS refresh-now true"
 retc=1
-for attempt in 1 2 3 4; do
+for attempt in 1 2 3 4 5; do
   log 6 "[step 1/2] $refresh (attempt $attempt)"
-  $refresh
+  # Never left hanging: a refresh that has not finished in 2 minutes is
+  # this script's own pkcon, and only that one is stopped.
+  $refresh &
+  rpid=$!
+  i=0
+  while [ $i -lt 120 ] && kill -0 $rpid 2>/dev/null; do sleep 1; i=$((i + 1)); done
+  kill $rpid 2>/dev/null && log 4 "refresh still running after 120 s; stopped this script's pkcon ($rpid)"
+  wait $rpid
   retc=$?
   [ $retc = 0 ] && break
-  wait_s=$((attempt * 2 + 1))
-  case $attempt in
-    1) log 5 "refresh failed ($retc); retrying in $wait_s s" ;;
-    2)
-      log 4 "refresh failed ($retc); sending TERM to pkcon, retrying in $wait_s s"
-      killall -q -TERM pkcon
-      ;;
-    3)
-      log 4 "refresh failed ($retc); sending INT then TERM to pkcon"
-      killall -q -INT pkcon
-      sleep 2
-      killall -q -TERM pkcon
-      ;;
-    4)
-      log 3 "refresh failed ($retc); restarting packagekit and installing anyway"
-      killall -q -KILL pkcon
-      pkcon -p quit >/dev/null 2>&1
-      systemctl restart packagekit.service
-      ;;
-  esac
+  [ $attempt = 5 ] && break
+  wait_s=$((attempt * attempt * 4))
+  log 5 "refresh failed ($retc); retrying in $wait_s s"
   sleep $wait_s
 done
+[ $retc = 0 ] || log 4 "refresh failed $attempt times ($retc); installing anyway"
 
 # 5. Install the client, detached: installing it removes this script.
 install="pkcon -pvy install $REEF_CLIENT_PACKAGE"
@@ -181,8 +191,12 @@ setsid --fork sh -c '
   printf "%s [%s] [step 2/2] %s\n" "$(date -Iseconds)" "$3" "$2"
   systemd-cat -t "$3" -p 6 printf "%s" "executing: $2" 2>/dev/null
   $2
-  printf "%s [%s] %s exited %s\n" "$(date -Iseconds)" "$3" "$2" "$?"
-' sh_reef_install "$$" "$install" "$called" >>"$logfile" 2>&1 </dev/null
+  s=$?
+  printf "%s [%s] %s exited %s\n" "$(date -Iseconds)" "$3" "$2" "$s"
+  # Failed, the client did not replace this package: its script is still
+  # here to say so on the screen.
+  [ $s = 0 ] || "$4" --notify "Reef could not be installed" "The download did not finish. Check the connection, then install Reef again from reefstore.app/install."
+' sh_reef_install "$$" "$install" "$called" "$0" >>"$logfile" 2>&1 </dev/null
 
 log 7 "main script finished (refresh exit $retc)"
 exit $retc

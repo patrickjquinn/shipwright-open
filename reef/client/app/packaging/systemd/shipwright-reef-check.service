@@ -3,7 +3,7 @@
 #
 # Reef's background update check (reef/client/app/src/check.rs). Started by
 # shipwright-reef-check.timer; the "Check in the background" setting decides
-# whether a check is due, so with "Never" this exits at once.
+# whether a check is due; with "Never" Reef disables the timer itself.
 [Unit]
 Description=Reef background update check
 After=network-online.target

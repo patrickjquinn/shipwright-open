@@ -4127,7 +4127,7 @@ Page {
     Connections {
         target: matrix.sendQueue
         // "No longer queued": sent or removed, not a failure.
-        onFailed: page.showNotice(message.indexOf("no longer queued") >= 0
+        onFailed: page.showNotice(code === "queue.gone"
                                   ? qsTr("It is no longer waiting to be sent.")
                                   : qsTr("That did not work. Try again in a moment."))
     }

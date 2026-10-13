@@ -50,9 +50,27 @@ ApplicationWindow {
         Reef.refresh()
     }
 
+    // Every install, update and removal waits here for the person: the
+    // confirmation sheet lists everything it will do, and only its button
+    // starts it. Also for a Keel Action, which brings Reef to the front.
+    Connections {
+        target: Reef
+        function onPlanReady(name, plan) {
+            pageStack.push(Qt.resolvedUrl("pages/ConfirmPage.qml"), { planJson: plan })
+            app.activate()
+        }
+    }
+
     Component.onCompleted: {
         if (Reef.refreshOnStart) {
             Reef.refresh()
+        }
+        // Nothing runs in the background until the person says so.
+        // (Once the initial page is on the stack.)
+        if (!Reef.backgroundCheckAsked) {
+            Qt.callLater(function() {
+                pageStack.push(Qt.resolvedUrl("pages/BackgroundChecksPage.qml"))
+            })
         }
     }
 

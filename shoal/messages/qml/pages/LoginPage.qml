@@ -274,15 +274,16 @@ Page {
                     color: Theme.secondaryHighlightColor
                     textFormat: Text.PlainText
                     visible: text.length > 0
+                    // By the core's error code, not its English message.
                     text: {
-                        var message = matrix.lastError
-                        if (message.indexOf("SSO") >= 0) {
+                        var code = matrix.lastErrorCode
+                        if (code === "login.sso") {
                             return qsTr("This is the server's own web sign-in. Your password is fine, but the app can't use this method yet.")
                         }
-                        if (message.indexOf("unreachable") >= 0) {
+                        if (code === "server.unreachable") {
                             return qsTr("Check the server address and your connection.")
                         }
-                        if (message.indexOf("no sign-in method") >= 0) {
+                        if (code === "login.unsupported") {
                             return qsTr("The server expects a sign-in this app does not implement.")
                         }
                         return ""

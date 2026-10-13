@@ -26,6 +26,9 @@ if [ -z "${REEF_CONF:-}" ]; then
   [ -r "$REEF_CONF" ] || REEF_CONF=/usr/share/shipwright-reef/repo.conf
 fi
 REEF_ROOT=${REEF_ROOT:-}
+# The output of version, rpm and ssu is read below: in the C locale, never
+# translated (a phone set to German prints rpm's errors in German).
+export LC_ALL=C LANGUAGE=C
 SSU=${SSU:-ssu}
 RPM=${RPM:-rpm}
 VERSION_CMD=${VERSION_CMD:-version}

@@ -1386,6 +1386,15 @@ pub fn reply_ok(id: u64, data: Value) -> Value {
     json!({ "type": "reply", "id": id, "ok": true, "data": data })
 }
 
+/// A failed reply with a `code` the UI acts on (`login.sso`,
+/// `server.unreachable`, `queue.gone`): it tells failures apart by code,
+/// never by the English message.
+pub fn reply_error_code(id: u64, code: &str, message: impl Into<String>) -> Value {
+    let mut reply = reply_error(id, message);
+    reply["code"] = Value::from(code);
+    reply
+}
+
 /// A failed reply. `message` is shown to the user, so it must never contain a
 /// token, a full user ID or anything else worth keeping out of a screenshot.
 pub fn reply_error(id: u64, message: impl Into<String>) -> Value {
@@ -1441,6 +1450,27 @@ pub fn event(name: &str, data: Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Pages tell failures apart by `code` (LoginPage, RoomPage), not by
+    /// the English message.
+    #[test]
+    fn coded_errors_carry_their_code() {
+        let r = reply_error_code(
+            7,
+            "login.sso",
+            "this server signs in through its own web page (SSO)",
+        );
+        assert_eq!(r["ok"], false);
+        assert_eq!(r["code"], "login.sso");
+        assert_eq!(r["id"], 7);
+        assert!(reply_error(7, "x").get("code").is_none());
+        let unreachable = crate::session::BuildFailure::Unreachable("dns".into());
+        assert_eq!(unreachable.code(), "server.unreachable");
+        assert_eq!(
+            crate::session::BuildFailure::Store("x".into()).code(),
+            "store.unreadable"
+        );
+    }
 
     /// A message in another script has to survive the way in - UTF-8 JSON, a
     /// NUL-terminated C string, serde. Asked after a Cyrillic message was reported.

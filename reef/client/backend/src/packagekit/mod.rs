@@ -19,7 +19,7 @@ use std::fmt;
 
 pub use types::{
     filter_bits, Exit, Filter, Info, Overall, PackageId, PackageInfo, Progress, Status,
-    SteadyProgress, TRANSACTION_FLAG_ONLY_TRUSTED,
+    SteadyProgress, TRANSACTION_FLAG_ONLY_TRUSTED, TRANSACTION_FLAG_SIMULATE,
 };
 
 #[derive(Debug)]
@@ -37,6 +37,14 @@ pub enum Error {
     /// The repository's signed metadata did not check out
     /// ([`crate::metadata`]): nothing was installed.
     Untrusted(String),
+    /// What the transaction would do now is not what the person agreed to
+    /// (the repository changed in between): nothing was done, and the
+    /// person is asked again with the new list.
+    PlanChanged,
+    /// Reef did not install the package (no record of it, and `PackageKit`
+    /// does not name Reef's repository as its origin), so Reef leaves it
+    /// alone.
+    NotReefs(String),
 }
 
 impl fmt::Display for Error {
@@ -59,6 +67,14 @@ impl fmt::Display for Error {
             Error::Transaction { exit, error: None } => write!(f, "transaction ended {exit:?}"),
             Error::NotFound(name) => write!(f, "no package named {name}"),
             Error::Untrusted(why) => write!(f, "Nothing was installed: {why}."),
+            Error::PlanChanged => write!(
+                f,
+                "What this would install or remove changed since you looked, so nothing was done. Please look again."
+            ),
+            Error::NotReefs(name) => write!(
+                f,
+                "Reef did not install {name}, so it does not remove it. Remove it where it came from."
+            ),
         }
     }
 }
@@ -117,6 +133,33 @@ pub trait PackageManager {
     /// Refreshes one repository's metadata (`RepoSetData(alias,
     /// "refresh-now", "true")`), as the Chum GUI installer does.
     async fn refresh_repo(&self, alias: &str) -> Result<()>;
+
+    /// Makes `PackageKit` read what is installed afresh: its view goes stale
+    /// when packages change outside it (rpm -U, another tool), and neither
+    /// a resolve nor a repository refresh reads the RPM database again (on
+    /// the Jolla Phone, 12 October 2026). `SuggestDaemonQuit` lets the
+    /// daemon exit once idle (it never stops a transaction); the next call
+    /// starts it again with a new view.
+    async fn reload_installed(&self) -> Result<()>;
+
+    /// What [`install`](Self::install) would do, doing nothing
+    /// ([`TRANSACTION_FLAG_SIMULATE`]): every package the transaction would
+    /// install, update or remove, dependencies included.
+    async fn simulate_install(&self, ids: &[&str]) -> Result<Vec<PackageInfo>>;
+
+    /// What [`update`](Self::update) would do, doing nothing.
+    async fn simulate_update(&self, ids: &[&str]) -> Result<Vec<PackageInfo>>;
+
+    /// What [`remove`](Self::remove) would do, doing nothing (with the same
+    /// rules: fails when other installed software needs a package).
+    async fn simulate_remove(&self, ids: &[&str]) -> Result<Vec<PackageInfo>>;
+
+    /// Download sizes in bytes (`GetDetails`), for the ids `PackageKit`
+    /// has a size for. Informational: an empty answer is not an error.
+    async fn download_sizes(&self, ids: &[&str]) -> Result<Vec<(String, u64)>> {
+        let _ = ids;
+        Ok(Vec::new())
+    }
 }
 
 /// Updates Reef may offer: only packages coming from Reef's own repository.

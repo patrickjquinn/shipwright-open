@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Mon, 12 Oct 2026 18:30:00 +0100
+Subject: [PATCH] Stop the Bluetooth search 60 seconds after the last client
+ refresh
+
+Patch 0011 ran BLE discovery while any WebSocket client was connected.
+The app keeps its connection while it sits on the home screen as a cover
+(for the battery levels shown there), so the search still ran for as
+long as the app was open anywhere, which could be all day.
+
+Discovery now runs in 60-second windows. A client connecting opens one,
+and a new RefreshScan request (no reply, like SetCapabilities) extends
+it; with nobody refreshing it the search stops, even with clients still
+connected, and the next RefreshScan starts it again. The Shoal Bridge
+app sends RefreshScan every 30 seconds only while it is in front.
+
+The window is a uSockets timer on the event loop (fallthrough, so it
+never keeps the loop alive), re-armed by each refresh; everything stays
+on the loop thread.
+---
+ src/main.cpp |  40 +++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 37 insertions(+), 3 deletions(-)
+
+diff --git a/src/main.cpp b/src/main.cpp
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -319,6 +319,34 @@
+     ws->send(emptyResponse, opCode, emptyResponse.length() < 16 * 1024);
+ }
+ 
++// Shoal (patch 0012): Bluetooth search for the case-open animation runs in
++// windows of SCAN_WINDOW_MS. A client connecting, or sending RefreshScan,
++// opens or extends one; when nobody has refreshed it for that long, the
++// search stops even with a client still connected (the app sitting on the
++// home screen as a cover keeps its connection but stops refreshing). All on
++// the event loop thread; the timer does not keep the loop alive, and it
++// fires once per window, at its end.
++namespace {
++    constexpr int SCAN_WINDOW_MS = 60000;
++    struct us_timer_t* scanTimer = nullptr;
++    DevicesInfoFetcher* scanFetcher = nullptr;
++
++    void ScanWindowExpired(struct us_timer_t* /*timer*/) {
++        if (scanFetcher) {
++            Logger::Info("No client refreshed the Bluetooth search for %d s; stopping it", SCAN_WINDOW_MS / 1000);
++            scanFetcher->SetWatched(false);
++        }
++    }
++
++    void RefreshScan() {
++        if (!scanFetcher || !scanTimer)
++            return;
++        scanFetcher->SetWatched(true);
++        // Re-arming replaces the pending expiry.
++        us_timer_set(scanTimer, ScanWindowExpired, SCAN_WINDOW_MS, 0);
++    }
++}
++
+ void HandleRequest(auto *ws, std::string_view message, uWS::OpCode opCode, uWS::App& app, DevicesInfoFetcher& devicesInfoFetcher, SettingsService& settingsService) {
+     try {
+         auto json = nlohmann::json::parse(message);
+@@ -352,6 +380,8 @@
+                 HandleGetSettingRequest(ws, json, opCode, settingsService);
+             else if (methodName == "SetSetting")
+                 HandleSaveSettingRequest(ws, json, opCode, settingsService);
++            else if (methodName == "RefreshScan")
++                RefreshScan(); // no reply, like SetCapabilities
+             else
+                 HandleIncorrectResponse(ws, opCode);
+     }
+@@ -570,15 +600,16 @@
+                 req->getHeader("sec-websocket-extensions"),
+                 context);
+         },
+-        .open = [&initialized, &clients, &devicesInfoFetcher](auto* ws) {
++        .open = [&initialized, &clients](auto* ws) {
+             if (!initialized.load()) {
+                 Logger::Info("Connection attempted before initialization complete, closing");
+                 ws->close();
+                 return;
+             }
+             Logger::Info("On open websocket connected");
+-            if (++clients == 1 && devicesInfoFetcher)
+-                devicesInfoFetcher->SetWatched(true);
++            ++clients;
++            // A client arriving opens a search window (patch 0012).
++            RefreshScan();
+             ws->subscribe("onCapabilityChanged");
+             ws->subscribe("OnConnectedChanged");
+             ws->subscribe("OnActiveDeviceChanged");
+@@ -632,6 +663,9 @@
+             #endif
+ 
+             devicesInfoFetcher = std::make_unique<DevicesInfoFetcher>(settingsService);
++            scanFetcher = devicesInfoFetcher.get();
++            // fallthrough = 1: the timer never keeps the loop alive by itself.
++            scanTimer = us_create_timer((struct us_loop_t*) uWS::Loop::get(), 1, 0);
+ 
+             SubscribeAndHandleBroadcastEvents(app, *devicesInfoFetcher, *settingsService);
+ 

@@ -245,13 +245,16 @@ pub mod qobject {
 
 use core::pin::Pin;
 use std::path::PathBuf;
+use std::time::Instant;
 
 use cxx_qt::{CxxQtThread, CxxQtType, Threading};
 use cxx_qt_lib::QString;
 
 use shoal_keys_core::generator::PasswordOptions;
 
-use crate::autofill::{logins_for, normalise_origin, Ask, AutofillError, Pending};
+use crate::autofill::{
+    fill_answer, logins_for, normalise_origin, Ask, AutofillError, Pending, Secret, REQUEST_TTL,
+};
 use crate::controller::{
     adopt_reef_licence, import_candidates, keystore_from_env, Controller, KeysError, KeysResult,
     Paths, Settings, Shared,
@@ -576,6 +579,8 @@ impl qobject::ShoalKeys {
     /// finishes, and reads as locked meanwhile.
     fn lock(mut self: Pin<&mut Self>) {
         self.as_mut().clear_clipboard();
+        // Nothing waits to be answered from a vault that is now closed.
+        self.as_mut().rust_mut().autofill.decline_all();
         self.as_mut().ctl_mut().lock();
         self.as_mut().sync_state();
         self.as_mut().bump_revision();
@@ -754,6 +759,7 @@ impl qobject::ShoalKeys {
         }
         let locked = self.as_mut().ctl_mut().check_autolock();
         if locked {
+            self.as_mut().rust_mut().autofill.decline_all();
             self.as_mut().clear_clipboard();
             self.as_mut().sync_state();
             self.as_mut().bump_revision();
@@ -804,14 +810,25 @@ impl qobject::ShoalKeys {
         ask: Ask,
         reply: async_channel::Sender<crate::autofill::Reply>,
     ) {
-        let id = self.as_mut().rust_mut().autofill.add(ask, reply);
-        self.as_mut()
-            .autofill_requested(i32::try_from(id).unwrap_or(i32::MAX));
+        let now = Instant::now();
+        // Full: the request has been declined.
+        if let Some(id) = self.as_mut().rust_mut().autofill.add(ask, reply, now) {
+            self.as_mut()
+                .autofill_requested(i32::try_from(id).unwrap_or(i32::MAX));
+        }
+    }
+
+    /// GUI thread: declines the requests whose caller stopped waiting, and
+    /// closes their page (it reads the request again on `revision`).
+    fn autofill_expire(mut self: Pin<&mut Self>) {
+        if self.as_mut().rust_mut().autofill.expire(Instant::now()) {
+            self.bump_revision();
+        }
     }
 
     fn autofill_request(&self, request: i32) -> QString {
         let id = u32::try_from(request).unwrap_or(0);
-        let Some(ask) = self.autofill.ask(id) else {
+        let Some(ask) = self.autofill.ask(id, Instant::now()) else {
             return q("{}");
         };
         // A save in progress holds the vault for a moment: say so, and the
@@ -835,12 +852,13 @@ impl qobject::ShoalKeys {
     }
 
     fn autofill_pending(&self) -> QString {
-        q(&serde_json::to_string(&self.autofill.ids()).unwrap_or_else(|_| "[]".into()))
+        q(&serde_json::to_string(&self.autofill.ids(Instant::now()))
+            .unwrap_or_else(|_| "[]".into()))
     }
 
     fn autofill_answer(mut self: Pin<&mut Self>, request: i32, entry_id: &QString) -> QString {
         let id = u32::try_from(request).unwrap_or(0);
-        let Some(ask) = self.autofill.ask(id).cloned() else {
+        let Some(ask) = self.autofill.ask(id, Instant::now()).cloned() else {
             return q("The request has gone.");
         };
         // A save in progress holds the vault: the request stays, and the
@@ -851,11 +869,8 @@ impl qobject::ShoalKeys {
                 .autofill_credentials(&origin, &entry_id.to_string())
             {
                 Ok((username, password)) => {
-                    let body = zeroize::Zeroizing::new(
-                        serde_json::json!({ "username": username, "password": password })
-                            .to_string(),
-                    );
-                    Ok(body.to_string())
+                    let password = zeroize::Zeroizing::new(password);
+                    Ok(fill_answer(&username, &password))
                 }
                 Err(KeysError::Busy) => return q(&KeysError::Busy.to_string()),
                 Err(e) => Err(AutofillError::Invalid(e.to_string())),
@@ -868,7 +883,6 @@ impl qobject::ShoalKeys {
                 if self.busy {
                     return q(&KeysError::Busy.to_string());
                 }
-                let password = zeroize::Zeroizing::new(password);
                 match self
                     .as_mut()
                     .ctl_mut()
@@ -879,7 +893,7 @@ impl qobject::ShoalKeys {
                         self.as_mut().bump_revision();
                         self.as_mut()
                             .run("save", |s| s.save().map(|()| String::new()));
-                        Ok(if updated { "updated" } else { "saved" }.to_string())
+                        Ok(Secret::from(if updated { "updated" } else { "saved" }))
                     }
                     Err(KeysError::Busy) => return q(&KeysError::Busy.to_string()),
                     Err(e) => Err(AutofillError::Denied(e.to_string())),
@@ -927,9 +941,19 @@ impl AutofillServer {
         self.thread
             .queue(move |o| f(o, tx))
             .map_err(|_| AutofillError::Denied("Shoal Keys is closing".into()))?;
-        rx.recv()
-            .await
-            .unwrap_or_else(|_| Err(AutofillError::Denied("Shoal Keys is closing".into())))
+        // The caller gives up after the D-Bus reply timeout; so does the
+        // request, and its page in Keys closes.
+        let answer = futures_lite::future::or(async { Some(rx.recv().await) }, async {
+            async_io::Timer::after(REQUEST_TTL).await;
+            None
+        })
+        .await;
+        let Some(answer) = answer else {
+            drop(rx);
+            let _ = self.thread.queue(qobject::ShoalKeys::autofill_expire);
+            return Err(AutofillError::Denied("no answer in time".into()));
+        };
+        answer.unwrap_or_else(|_| Err(AutofillError::Denied("Shoal Keys is closing".into())))
     }
 }
 
@@ -958,7 +982,7 @@ impl AutofillServer {
     }
 
     #[zbus(name = "Fill")]
-    async fn fill(&self, origin: String, id: String) -> Result<String, AutofillError> {
+    async fn fill(&self, origin: String, id: String) -> Result<Secret, AutofillError> {
         let origin = web_origin(&origin)?;
         self.on_gui(move |o, tx| o.autofill_ask(Ask::Fill { origin, id }, tx))
             .await
@@ -970,7 +994,8 @@ impl AutofillServer {
         origin: String,
         username: String,
         password: String,
-    ) -> Result<String, AutofillError> {
+    ) -> Result<Secret, AutofillError> {
+        let password = zeroize::Zeroizing::new(password);
         let origin = web_origin(&origin)?;
         self.on_gui(move |o, tx| {
             o.autofill_ask(

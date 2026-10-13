@@ -146,7 +146,9 @@ Page {
                     anchors.verticalCenter: parent.verticalCenter
                     Label {
                         width: parent.width
-                        text: qsTr("%n update(s) ready", "", Reef.updateCount)
+                        // Apps, and the libraries and services they use:
+                        // Update all lists them all before applying them.
+                        text: Texts.updatesText(Reef.appUpdateCount, Reef.updateCount)
                         color: Theme.highlightColor
                         truncationMode: TruncationMode.Fade
                     }

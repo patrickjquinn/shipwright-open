@@ -14,9 +14,12 @@ use matrix_sdk::{
 };
 use serde_json::{json, Value};
 
-use crate::protocol::{reply_error, reply_ok, Command};
+use crate::protocol::{reply_error, reply_error_code, reply_ok, Command};
 use crate::runtime::Sink;
 use crate::text::scrub_ids;
+
+/// A discard of a request that was sent or removed meanwhile (`queue.gone`).
+const NO_LONGER_QUEUED: &str = "it is no longer queued";
 
 pub async fn handle(command: Command, client: Option<Client>, sink: &Arc<Sink>) {
     let Some(client) = client else {
@@ -50,6 +53,10 @@ pub async fn handle(command: Command, client: Option<Client>, sink: &Arc<Sink>) 
     };
     match outcome {
         Ok(data) => sink.emit(reply_ok(id, data)),
+        // Sent or taken out meanwhile: not a failure, and the page says so.
+        Err(message) if message == NO_LONGER_QUEUED => {
+            sink.emit(reply_error_code(id, "queue.gone", message));
+        }
         Err(message) => sink.emit(reply_error(id, message)),
     }
 }
@@ -183,7 +190,7 @@ async fn discard(client: &Client, room_id: &str, txn_id: &str) -> Result<bool, S
     match aborted {
         Ok(Some(reload)) => Ok(reload),
         // Gone meanwhile: sent or taken out.
-        Ok(None) => Err("it is no longer queued".to_owned()),
+        Ok(None) => Err(NO_LONGER_QUEUED.to_owned()),
         Err(error) => Err(format!(
             "could not discard it: {}",
             scrub_ids(&error.to_string())

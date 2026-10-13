@@ -28,7 +28,7 @@ public:
     void reportRoomStuck(const QString &roomId);
     /// A retry or discard was answered: the list is asked for again either way.
     void reportDone(const QJsonObject &data);
-    void reportFailure(const QString &error);
+    void reportFailure(const QString &error, const QString &code);
     /// No answer will come; the page stops waiting.
     void reportUnanswered();
 
@@ -37,7 +37,9 @@ signals:
     void stuckChanged();
     /// A removed reaction echo hid a server reaction: the timeline is rebuilt.
     void reloadRequested();
-    void failed(const QString &message);
+    /// `code` is `queue.gone` when the request was sent or removed
+    /// meanwhile (not a failure); empty otherwise.
+    void failed(const QString &message, const QString &code);
 
 private:
     QString m_roomId;

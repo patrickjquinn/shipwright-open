@@ -25,6 +25,12 @@ pub fn filter_bits(filters: &[Filter]) -> u64 {
 /// packages whose signature does not verify against an imported key.
 pub const TRANSACTION_FLAG_ONLY_TRUSTED: u64 = 1 << 1;
 
+/// `PkTransactionFlagEnum` `SIMULATE` (2): `PackageKit` resolves the
+/// transaction and reports every package it would install, update or
+/// remove (`Package` signals), and changes nothing. Reef shows that list
+/// before the person agrees to an install, update or removal.
+pub const TRANSACTION_FLAG_SIMULATE: u64 = 1 << 2;
+
 /// `PkInfoEnum`: what a `Package` signal says about a package.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Info {
@@ -40,7 +46,11 @@ pub enum Info {
     Updating,
     Installing,
     Removing,
+    /// Replaced by a package being installed (an RPM `Obsoletes`).
+    Obsoleting,
     Finished,
+    Reinstalling,
+    Downgrading,
     Other(u32),
 }
 
@@ -59,7 +69,10 @@ impl From<u32> for Info {
             11 => Info::Updating,
             12 => Info::Installing,
             13 => Info::Removing,
+            15 => Info::Obsoleting,
             18 => Info::Finished,
+            19 => Info::Reinstalling,
+            20 => Info::Downgrading,
             other => Info::Other(other),
         }
     }
@@ -299,6 +312,8 @@ mod tests {
         assert_eq!(filter_bits(&[Filter::Newest]), 0x10000);
         assert_eq!(filter_bits(&[Filter::None]), 0x2);
         assert_eq!(TRANSACTION_FLAG_ONLY_TRUSTED, 0x2);
+        // PackageKit-Qt: TransactionFlagSimulate = 1 << 2.
+        assert_eq!(TRANSACTION_FLAG_SIMULATE, 0x4);
     }
 
     #[test]
@@ -323,6 +338,8 @@ mod tests {
         assert_eq!(Exit::from(1), Exit::Success);
         assert_eq!(Exit::from(99), Exit::Other(99));
         assert_eq!(Info::from(8), Info::Security);
+        assert_eq!(Info::from(15), Info::Obsoleting);
+        assert_eq!(Info::from(20), Info::Downgrading);
         assert_eq!(Status::from(14), Status::SigCheck);
         assert_eq!(percentage(101), None);
         assert_eq!(percentage(42), Some(42));

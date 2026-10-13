@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Patrick Quinn
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Reef's Keel Actions (ADR-0018): search the store and install an app.
-// Installing always asks the person first (confirm), downloads from the
-// Reef repository (open world) and answers when the installation finished.
+// Reef's Keel Actions (ADR-0018): search the store, and install, update or
+// remove an app. None of the three acts on a caller's word: each brings
+// Reef's window to the front with the same confirmation sheet a tap in the
+// store shows (everything the transaction will install, update or remove,
+// pages/ConfirmPage.qml), and answers only once the person has tapped it
+// and the transaction finished, or with Cancelled when they declined.
+// keel-mcp also refuses these confirm actions to clients that cannot speak
+// for the person.
 
 import QtQuick
 import Keel.Actions 1.0
@@ -12,8 +17,11 @@ import Shipwright.Reef 1.0
 Item {
     id: actions
 
-    property var pendingInstall: null
+    // The one call waiting for the person and the transaction, the RPM name
+    // it is for, and how to answer it once the transaction succeeded.
+    property var pendingCall: null
     property string pendingName: ""
+    property var pendingReply: null
 
     function rows() {
         // get() answers {} past the last row.
@@ -31,7 +39,7 @@ Item {
     function summary(row) {
         return { id: row.name, title: row.title || row.name, summary: row.summary || "",
                  category: row.category || "", version: row.version || "",
-                 installed: row.installState === "installed" }
+                 installed: row.installState === "installed" || row.installState === "update_available" }
     }
 
     function matches(query) {
@@ -40,18 +48,53 @@ Item {
                              .toLowerCase().indexOf(q) >= 0)
     }
 
+    // The app an entity reference names, or a failed call (null).
+    function appFor(args, call) {
+        const name = args.app.substring(args.app.lastIndexOf("/") + 1)
+        const details = Reef.packageDetails(name)
+        if (!details.name) {
+            call.fail("Failed", "no app " + name + " in the store")
+            return null
+        }
+        return details
+    }
+
+    // Asks Reef for `name` (start(name) shows the sheet); `reply` makes the
+    // answer from the package's details once the transaction succeeded.
+    function begin(call, name, start, reply) {
+        if (Reef.busy || actions.pendingCall || Reef.pendingPlan.length > 0) {
+            call.fail("NotAvailable", "Reef is busy with another package")
+            return
+        }
+        actions.pendingCall = call
+        actions.pendingName = name
+        actions.pendingReply = reply
+        start(name)
+    }
+
+    function finish() {
+        const call = actions.pendingCall
+        actions.pendingCall = null
+        actions.pendingReply = null
+        return call
+    }
+
     Connections {
         target: Reef
-        function onBusyChanged() {
-            if (Reef.busy || !actions.pendingInstall)
+        function onOperationFinished(name, ok, message) {
+            if (!actions.pendingCall || name !== actions.pendingName)
                 return
-            const call = actions.pendingInstall
-            const details = Reef.packageDetails(actions.pendingName)
-            actions.pendingInstall = null
-            if (details.installState === "installed")
-                call.reply({ installed: true, version: details.installedVersion || details.version || "" })
+            const reply = actions.pendingReply
+            const call = actions.finish()
+            if (ok)
+                call.reply(reply(Reef.packageDetails(name)))
             else
-                call.fail("Failed", Reef.lastError || "the installation did not finish")
+                call.fail("Failed", message || "the operation did not finish")
+        }
+        function onPlanDeclined(name) {
+            if (!actions.pendingCall || name !== actions.pendingName)
+                return
+            actions.finish().fail("Cancelled", "the person declined on Reef's confirmation screen")
         }
     }
 
@@ -94,10 +137,11 @@ Item {
     KeelAction {
         name: "reef.install"
         title: qsTr("Install an app")
-        description: "Install an app from the Reef store on this phone. The person confirms first; the package is downloaded from the Reef repository."
+        description: "Install an app from the Reef store on this phone. Reef opens its confirmation screen listing everything the install brings (add-ons, libraries, background services); nothing is installed unless the person taps Install there. Fails with Cancelled when they decline."
         confirm: true
         openWorld: true
         idempotent: true
+        // The person reads the screen and decides, then the download.
         timeout: 600000
         parameters: [ KeelParam { name: "app"; type: "entity"; entity: "app"; required: true } ]
         returns: KeelResult {
@@ -106,23 +150,76 @@ Item {
             KeelParam { name: "version"; type: "string"; maxLength: 64; required: true }
         }
         onInvoked: (args, call) => {
-            const name = args.app.substring(args.app.lastIndexOf("/") + 1)
-            const details = Reef.packageDetails(name)
-            if (!details.name) {
-                call.fail("Failed", "no app " + name + " in the store")
+            const details = actions.appFor(args, call)
+            if (!details)
                 return
-            }
-            if (details.installState === "installed") {
+            if (details.installState !== "not_installed") {
                 call.reply({ installed: true, version: details.installedVersion || details.version || "" })
                 return
             }
-            if (Reef.busy || actions.pendingInstall) {
-                call.fail("NotAvailable", "Reef is busy with another package")
+            actions.begin(call, details.name, n => Reef.install(n),
+                          d => ({ installed: d.installState !== "not_installed",
+                                  version: d.installedVersion || d.version || "" }))
+        }
+    }
+
+    KeelAction {
+        name: "reef.update"
+        title: qsTr("Update an app")
+        description: "Update an installed app from the Reef store. Reef opens its confirmation screen listing everything the update installs or replaces; nothing changes unless the person taps Update there. Fails with Cancelled when they decline."
+        confirm: true
+        openWorld: true
+        idempotent: true
+        timeout: 600000
+        parameters: [ KeelParam { name: "app"; type: "entity"; entity: "app"; required: true } ]
+        returns: KeelResult {
+            type: "object"
+            KeelParam { name: "updated"; type: "boolean"; required: true }
+            KeelParam { name: "version"; type: "string"; maxLength: 64; required: true }
+        }
+        onInvoked: (args, call) => {
+            const details = actions.appFor(args, call)
+            if (!details)
+                return
+            if (details.installState !== "update_available") {
+                if (details.installState === "not_installed")
+                    call.fail("Failed", details.name + " is not installed")
+                else
+                    call.reply({ updated: false, version: details.installedVersion || "" })
                 return
             }
-            actions.pendingInstall = call
-            actions.pendingName = name
-            Reef.install(name)
+            actions.begin(call, details.name, n => Reef.update(n),
+                          d => ({ updated: d.installState === "installed", version: d.installedVersion || "" }))
+        }
+    }
+
+    KeelAction {
+        name: "reef.remove"
+        title: qsTr("Remove an app")
+        description: "Remove an app Reef installed. Reef opens its confirmation screen listing everything that would be removed with it, apps that would stop working highlighted; nothing is removed unless the person taps Remove there. Fails with Cancelled when they decline."
+        confirm: true
+        destructive: true
+        idempotent: true
+        timeout: 600000
+        parameters: [ KeelParam { name: "app"; type: "entity"; entity: "app"; required: true } ]
+        returns: KeelResult {
+            type: "object"
+            KeelParam { name: "removed"; type: "boolean"; required: true }
+        }
+        onInvoked: (args, call) => {
+            const details = actions.appFor(args, call)
+            if (!details)
+                return
+            if (details.installState === "not_installed") {
+                call.reply({ removed: true })
+                return
+            }
+            if (details.removable !== true) {
+                call.fail("Failed", "Reef did not install " + details.name + ", so it does not remove it")
+                return
+            }
+            actions.begin(call, details.name, n => Reef.remove(n),
+                          d => ({ removed: d.installState === "not_installed" || d.installState === undefined }))
         }
     }
 }

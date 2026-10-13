@@ -192,8 +192,8 @@ Page {
             }
             DetailItem {
                 label: qsTr("Modified")
-                value: page.entry.modified ? Qt.formatDateTime(new Date(page.entry.modified * 1000),
-                                                                      "d MMM yyyy, " + Qt.locale().timeFormat(Locale.ShortFormat)) : ""
+                value: page.entry.modified ? Qt.locale().toString(new Date(page.entry.modified * 1000),
+                                                                         "d MMM yyyy, " + Qt.locale().timeFormat(Locale.ShortFormat)) : ""
                 visible: (page.entry.modified || 0) > 0
             }
         }

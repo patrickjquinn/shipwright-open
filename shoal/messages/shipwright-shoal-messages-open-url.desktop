@@ -14,14 +14,13 @@ X-Nemo-Application-Type=generic
 # one. Measured on the device with `sailjail -D`: this file prints the full
 # firejail line ending in the link, the main file prints nothing.
 Exec=shipwright-shoal-messages %u
-# A Matrix link comes in two shapes, and only one has a scheme of its own.
-# `matrix:` is the specified one (MSC2312) and almost nobody sends it; what
-# people actually share is a matrix.to address, which is an ordinary https
-# link. There is no way to register for one host only - a desktop file knows
-# schemes, not hosts - so taking matrix.to means being offered for every web
-# address. Shoal Messages then appears in the "open with" list for links it has nothing
-# to do with, and drops them: see AppService::requestLink.
-MimeType=x-scheme-handler/matrix;x-scheme-handler/https;
+# Only `matrix:` links (MSC2312). A matrix.to address is an ordinary https
+# link, and a desktop file knows schemes, not hosts: taking matrix.to would
+# mean claiming every web address on the phone and appearing in "open with"
+# for all of them. So matrix.to links tapped in other apps open in the
+# browser; inside the app they open directly (MatrixLinks.js), and pasted
+# into "Join room" they are read there.
+MimeType=x-scheme-handler/matrix;
 
 [X-Sailjail]
 # Without this block the start goes through a compatibility mode that runs the

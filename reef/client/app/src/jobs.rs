@@ -17,6 +17,7 @@ use reef_backend::claim_codes::{PendingClaim, PendingClaims};
 use reef_backend::licences::{LicenceStore, EMBEDDED_KEYS};
 use reef_backend::packagekit::dbus::PackageKitClient;
 use reef_backend::packagekit::{PackageInfo, PackageManager, Progress};
+use reef_backend::plan::Plan;
 use reef_backend::release::SailfishRelease;
 use reef_backend::repo::{parse_ssu_lr, Command, PinState, RepoConfig, SsuRepo};
 use reef_backend::store::Store;
@@ -205,9 +206,10 @@ pub fn fetch_assets(base: &str, dir: &Path, rels: &[String]) -> Vec<String> {
     errors
 }
 
-/// `ssu lr`, parsed.
+/// `ssu lr`, parsed, in the C locale: `parse_ssu_lr` reads its English
+/// section headers ("Enabled repositories").
 pub fn ssu_repos() -> Result<Vec<SsuRepo>, String> {
-    let out = Process::new("ssu")
+    let out = reef_backend::c_locale(&mut Process::new("ssu"))
         .arg("lr")
         .output()
         .map_err(|e| format!("cannot run ssu: {e}"))?;
@@ -247,6 +249,9 @@ pub fn run_commands(commands: &[Command]) -> Result<(), String> {
 pub struct PkState {
     pub installed: Vec<PackageInfo>,
     pub updates: Vec<PackageInfo>,
+    /// The names among `installed` Reef may remove (it installed them):
+    /// the others are shown as installed, without Remove.
+    pub removable: Vec<String>,
 }
 
 async fn pk_state<P: PackageManager>(
@@ -258,7 +263,11 @@ async fn pk_state<P: PackageManager>(
         None => Vec::new(),
     };
     let updates = store.updates().await?;
-    Ok(PkState { installed, updates })
+    Ok(PkState {
+        removable: store.removable(&installed),
+        installed,
+        updates,
+    })
 }
 
 /// Inputs to a refresh, copied off the GUI thread's state.
@@ -325,8 +334,37 @@ pub fn refresh(input: &RefreshInput) -> RefreshOutput {
 
     let mut pinned = false;
     match ssu_repos() {
-        Ok(repos) => {
-            pinned = input.config.pin_state(&repos, release, &input.arch) == PinState::Pinned;
+        Ok(mut repos) => {
+            let mut state = input.config.pin_state(&repos, release, &input.arch);
+            if reenable_due(
+                &state,
+                &std::fs::read_to_string(NO_REPOSITORY_MARKER).unwrap_or_default(),
+                release,
+                out.catalogue.is_some(),
+                &reenabled_note().map_or_else(String::new, |p| {
+                    std::fs::read_to_string(p).unwrap_or_default()
+                }),
+            ) {
+                // The package turned the repository off because this
+                // release had none; it has one now.
+                log::info!(
+                    "Reef's repository for {} is published: turning it on",
+                    release.full()
+                );
+                match run_commands(&input.config.repair_commands(&state, release)) {
+                    Ok(()) => {
+                        if let Some(p) = reenabled_note() {
+                            let _ = std::fs::write(p, release.full());
+                        }
+                        if let Ok(r) = ssu_repos() {
+                            repos = r;
+                            state = input.config.pin_state(&repos, release, &input.arch);
+                        }
+                    }
+                    Err(e) => out.errors.push(e),
+                }
+            }
+            pinned = state == PinState::Pinned;
             out.repos = Some(repos);
         }
         Err(e) => out.errors.push(e),
@@ -363,6 +401,34 @@ pub fn refresh(input: &RefreshInput) -> RefreshOutput {
     out
 }
 
+/// Written by the package's `%triggerin` (reef/rpm/shipwright-reef.spec):
+/// the release for which it turned Reef's repository off, because Reef
+/// published nothing for it; empty or absent otherwise.
+pub const NO_REPOSITORY_MARKER: &str = "/var/lib/shipwright-reef/no-repository";
+
+/// Where Reef notes the release it turned the repository back on for, so
+/// that it does so once: a person who turns it off again later is obeyed.
+fn reenabled_note() -> Option<PathBuf> {
+    cache_dir().map(|d| d.join("repository-reenabled"))
+}
+
+/// Whether a refresh turns Reef's repository back on: it is disabled, the
+/// package turned it off for this very release (`marker`), the release's
+/// catalogue now downloads, and Reef has not done this for the release
+/// before (`done_for`).
+pub fn reenable_due(
+    state: &PinState,
+    marker: &str,
+    release: &SailfishRelease,
+    catalogue_ok: bool,
+    done_for: &str,
+) -> bool {
+    *state == PinState::Disabled
+        && catalogue_ok
+        && marker.trim() == release.full()
+        && done_for.trim() != release.full()
+}
+
 /// Writes the catalogue cache atomically (a temporary file, then rename),
 /// so a crash never leaves a truncated cache, and reports serialisation
 /// errors instead of writing an empty file. The temporary name is unique to
@@ -390,6 +456,16 @@ pub fn write_cache(path: &Path, catalogue: &Catalogue) -> std::io::Result<()> {
 /// The record of what Reef installed (reef-backend's `InstallLedger`).
 fn ledger() -> Option<reef_backend::store::InstallLedger> {
     reef_backend::store::InstallLedger::default_path().map(reef_backend::store::InstallLedger::new)
+}
+
+/// Makes the install ledger and its directory the owner's only, as Reef 27
+/// and earlier left them world-writable on a phone (fix at every start).
+pub fn secure_ledger() {
+    if let Some(ledger) = ledger() {
+        if let Err(e) = ledger.repair_permissions() {
+            log::warn!("making the install record private: {e}");
+        }
+    }
 }
 
 /// Errors for `lastError`, one per line: the UI translates keyed messages
@@ -534,28 +610,74 @@ fn redeem_claims(
     redeemed
 }
 
-/// A package operation started from the UI.
+/// A package operation the person asked for in the UI (or through a Keel
+/// Action), before they have seen what it does.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Op {
+pub enum Ask {
     Install(String),
     Update(String),
     UpdateAll,
     Remove(String),
 }
 
-impl Op {
+impl Ask {
     /// The RPM name for `busyPackage` and `operationFinished`, or empty.
     pub fn package(&self) -> &str {
         match self {
-            Op::Install(n) | Op::Update(n) | Op::Remove(n) => n,
-            Op::UpdateAll => "",
+            Ask::Install(n) | Ask::Update(n) | Ask::Remove(n) => n,
+            Ask::UpdateAll => "",
         }
     }
 }
 
-/// Runs one package operation, then re-reads install state so the models
-/// follow. Returns the operation's outcome (message on success, error text
-/// on failure) and the new state when it could be read.
+/// An operation the person agreed to: what they asked for, and the plan
+/// they saw on the confirmation sheet and tapped.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Op {
+    pub ask: Ask,
+    pub plan: Plan,
+}
+
+impl Op {
+    pub fn package(&self) -> &str {
+        self.ask.package()
+    }
+}
+
+/// The store as the app uses it: the install ledger, and installs and
+/// updates only on the repository's signed metadata
+/// (`reef_backend::metadata`: zypp itself does not check it on Sailfish).
+fn store(pm: PackageKitClient, alias: &str) -> Store<PackageKitClient> {
+    Store::new(pm, alias)
+        .with_ledger(ledger())
+        .with_metadata_check(reef_backend::metadata::MetadataCheck::device(alias))
+}
+
+/// What `ask` would do: the plan the confirmation sheet shows. Nothing is
+/// installed, updated or removed.
+pub fn preview(ask: &Ask, alias: &str, catalogue: Option<&Catalogue>) -> Result<Plan, String> {
+    block_on(async {
+        let store = store(PackageKitClient::system().await?, alias);
+        match ask {
+            Ask::Install(name) => store.preview_install(name, catalogue).await.map(Some),
+            Ask::Update(name) => store.preview_update(name, catalogue).await,
+            Ask::UpdateAll => store
+                .preview_update_all(catalogue)
+                .await
+                .map(|p| Some(p).filter(|p| !p.items.is_empty())),
+            Ask::Remove(name) => store.preview_remove(name, catalogue).await.map(Some),
+        }
+    })
+    .map_err(|e: reef_backend::packagekit::Error| e.to_string())?
+    .ok_or_else(|| match ask {
+        Ask::UpdateAll => message("all_up_to_date", &[]),
+        other => message("up_to_date", &[other.package()]),
+    })
+}
+
+/// Runs one operation the person agreed to, then re-reads install state so
+/// the models follow. Returns the operation's outcome (message on success,
+/// error text on failure) and the new state when it could be read.
 pub fn run_op(
     op: &Op,
     alias: &str,
@@ -563,25 +685,26 @@ pub fn run_op(
     progress: &mut dyn FnMut(Progress),
 ) -> (Result<String, String>, Option<PkState>) {
     block_on(async {
-        let pm = match PackageKitClient::system().await {
-            Ok(pm) => pm,
+        let store = match PackageKitClient::system().await {
+            Ok(pm) => store(pm, alias),
             Err(e) => return (Err(e.to_string()), None),
         };
-        // Installs and updates go ahead only on the repository's signed
-        // metadata (reef_backend::metadata: zypp itself does not check it on
-        // Sailfish).
-        let store = Store::new(pm, alias)
-            .with_ledger(ledger())
-            .with_metadata_check(reef_backend::metadata::MetadataCheck::device(alias));
-        let result = match op {
-            Op::Install(name) => store.install(name, progress).await.map(|()| String::new()),
-            Op::Remove(name) => store.remove(name, progress).await.map(|()| String::new()),
-            Op::UpdateAll => store
-                .update_all(progress)
+        let plan = &op.plan;
+        let result = match &op.ask {
+            Ask::Install(name) => store
+                .install(name, plan, progress)
+                .await
+                .map(|()| String::new()),
+            Ask::Remove(name) => store
+                .remove(name, plan, progress)
+                .await
+                .map(|()| String::new()),
+            Ask::UpdateAll => store
+                .update_all(plan, progress)
                 .await
                 .map(|n| message("updated", &[&n.to_string()])),
             // Store::update applies Reef's update only (A-06).
-            Op::Update(name) => store.update(name, progress).await.map(|done| {
+            Ask::Update(name) => store.update(name, plan, progress).await.map(|done| {
                 if done {
                     String::new()
                 } else {
@@ -1068,8 +1191,35 @@ mod tests {
     }
 
     #[test]
+    fn the_repository_comes_back_once_the_release_has_one() {
+        let r = SailfishRelease::parse("5.2.0.19").unwrap();
+        let due = |state: &PinState, marker: &str, ok: bool, done: &str| {
+            reenable_due(state, marker, &r, ok, done)
+        };
+        assert!(due(&PinState::Disabled, "5.2.0.19\n", true, ""));
+        // Not published yet, or turned off by the person (no marker, or a
+        // marker for another release), or already turned on once.
+        assert!(!due(&PinState::Disabled, "5.2.0.19", false, ""));
+        assert!(!due(&PinState::Disabled, "", true, ""));
+        assert!(!due(&PinState::Disabled, "5.2.0.18", true, ""));
+        assert!(!due(&PinState::Disabled, "5.2.0.19", true, "5.2.0.19"));
+        assert!(!due(&PinState::Pinned, "5.2.0.19", true, ""));
+    }
+
+    #[test]
     fn op_names() {
-        assert_eq!(Op::Install("a".into()).package(), "a");
-        assert_eq!(Op::UpdateAll.package(), "");
+        assert_eq!(Ask::Install("a".into()).package(), "a");
+        assert_eq!(Ask::UpdateAll.package(), "");
+        let plan = Plan {
+            action: reef_backend::plan::Action::Remove,
+            target: "b".into(),
+            items: Vec::new(),
+            download_size: None,
+        };
+        let op = Op {
+            ask: Ask::Remove("b".into()),
+            plan,
+        };
+        assert_eq!(op.package(), "b");
     }
 }

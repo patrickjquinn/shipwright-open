@@ -3,8 +3,8 @@
 #
 # Runs the Reef background check every 4 hours (the setting picks every
 # few hours, weekly or never from there, src/check.rs); Persistent catches
-# up after the phone was off. The package's %post starts it in the running
-# session; the wants symlink starts it at later logins.
+# up after the phone was off. Enabled (systemctl --user enable --now) only
+# when the person turns background checks on in Reef; "Never" disables it.
 [Unit]
 Description=Reef update check
 

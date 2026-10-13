@@ -1,4 +1,4 @@
-// Modified by Shipwright, 2026: rebranded as Shoal Messages; stale pusher after a hosted move, contact names in banners; rustfmt and clippy fixes; see CHANGES-FROM-UPSTREAM.md.
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; stale pusher after a hosted move, contact names in banners; Shoal Push started on demand; rustfmt and clippy fixes; see CHANGES-FROM-UPSTREAM.md.
 //! Push over UnifiedPush: the distributor is the daemon, this is only the
 //! connector. Nothing registers until the user asks; see docs/PUSH.md.
 
@@ -78,7 +78,13 @@ pub fn start(path: PathBuf, sink: Arc<Sink>) -> PushHandle {
     std::thread::spawn(move || {
         // Not `Runtime::block_on`. See the module comment.
         zbus::block_on(async move {
-            let storage = FileStorage::open(path);
+            // For the bus driver only (ListActivatableNames, StartServiceByName):
+            // the crate keeps its own connection to itself.
+            let bus = zbus::Connection::session().await.ok();
+            // Before the crate first looks: it forgets a saved distributor
+            // that is not on the bus, registration and all.
+            wake_chosen_shoal_push(bus.as_ref(), saved_distributor(&path).as_deref()).await;
+            let storage = FileStorage::open(path.clone());
             let unifiedpush =
                 match UnifiedPush::new(DBUS_NAME, storage, EventChannel(events_tx), handle).await {
                     Ok(unifiedpush) => unifiedpush,
@@ -96,7 +102,7 @@ pub fn start(path: PathBuf, sink: Arc<Sink>) -> PushHandle {
                     }
                 };
 
-            report(&sink, &unifiedpush).await;
+            report(&sink, &unifiedpush, bus.as_ref()).await;
 
             while let Some(command) = rx.recv().await {
                 match command {
@@ -104,14 +110,21 @@ pub fn start(path: PathBuf, sink: Arc<Sink>) -> PushHandle {
                         // Before every register: unregistering makes the crate forget the
                         // distributor. The choice itself is `choose_distributor`: the user's
                         // pick, then UNIFIEDPUSH_DISTRIBUTOR, then Shoal Push, then the first.
-                        let names = unifiedpush.list_distributors().await;
+                        let names = available_distributors(&unifiedpush, bus.as_ref()).await;
                         let env_default = std::env::var("UNIFIEDPUSH_DISTRIBUTOR").ok();
                         match choose_distributor(
                             &names,
                             preferred.as_deref(),
                             env_default.as_deref(),
                         ) {
-                            Some(chosen) => unifiedpush.save_distributor(&chosen).await,
+                            Some(chosen) => {
+                                // Shoal Push runs only while an app is registered: this
+                                // is the moment it starts.
+                                if chosen == SHOAL_DISTRIBUTOR {
+                                    start_shoal_push(bus.as_ref()).await;
+                                }
+                                unifiedpush.save_distributor(&chosen).await;
+                            }
                             None => {
                                 sink.emit(event(
                                     "push.state",
@@ -120,16 +133,20 @@ pub fn start(path: PathBuf, sink: Arc<Sink>) -> PushHandle {
                                 continue;
                             }
                         }
-                        report_with(&sink, &unifiedpush, Some("registering")).await;
+                        report_with(&sink, &unifiedpush, bus.as_ref(), Some("registering")).await;
                         unifiedpush
                             .register(INSTANCE, Some("shoal-messages"), None)
                             .await;
                     }
                     Command::Disable => {
                         unifiedpush.unregister(INSTANCE).await;
-                        report_with(&sink, &unifiedpush, Some("off")).await;
+                        report_with(&sink, &unifiedpush, bus.as_ref(), Some("off")).await;
                     }
-                    Command::Status => report(&sink, &unifiedpush).await,
+                    Command::Status => {
+                        wake_chosen_shoal_push(bus.as_ref(), saved_distributor(&path).as_deref())
+                            .await;
+                        report(&sink, &unifiedpush, bus.as_ref()).await;
+                    }
                 }
             }
         });
@@ -140,8 +157,13 @@ pub fn start(path: PathBuf, sink: Arc<Sink>) -> PushHandle {
 
 /// What is on the device and what this app holds, as one object. Every
 /// `push.state` goes through here - a partial one blanks the page.
-async fn report_with(sink: &Arc<Sink>, unifiedpush: &UnifiedPush, state: Option<&str>) {
-    let distributors = unifiedpush.list_distributors().await;
+async fn report_with(
+    sink: &Arc<Sink>,
+    unifiedpush: &UnifiedPush,
+    bus: Option<&zbus::Connection>,
+    state: Option<&str>,
+) {
+    let distributors = available_distributors(unifiedpush, bus).await;
     let chosen = unifiedpush.get_distributor().await;
     let derived = if distributors.is_empty() {
         "no-distributor"
@@ -169,8 +191,81 @@ async fn report_with(sink: &Arc<Sink>, unifiedpush: &UnifiedPush, state: Option<
 }
 
 /// The whole picture, with the state derived from it.
-async fn report(sink: &Arc<Sink>, unifiedpush: &UnifiedPush) {
-    report_with(sink, unifiedpush, None).await;
+async fn report(sink: &Arc<Sink>, unifiedpush: &UnifiedPush, bus: Option<&zbus::Connection>) {
+    report_with(sink, unifiedpush, bus, None).await;
+}
+
+/// Shipwright: Shoal Push runs only while some app is registered with it,
+/// and starts by D-Bus activation. The crate finds distributors with
+/// `ListNames` alone, so an installed but idle Shoal Push would read as "no
+/// distributor"; it is added here when the bus can activate it.
+async fn available_distributors(
+    unifiedpush: &UnifiedPush,
+    bus: Option<&zbus::Connection>,
+) -> Vec<String> {
+    let running = unifiedpush.list_distributors().await;
+    let activatable = match bus {
+        Some(bus) => shoal_push_activatable(bus).await,
+        None => false,
+    };
+    with_activatable_shoal_push(running, activatable)
+}
+
+/// The running distributors plus Shoal Push when it is installed but idle.
+pub fn with_activatable_shoal_push(mut running: Vec<String>, activatable: bool) -> Vec<String> {
+    if activatable && !running.iter().any(|name| name == SHOAL_DISTRIBUTOR) {
+        running.push(SHOAL_DISTRIBUTOR.to_owned());
+    }
+    running
+}
+
+/// Whether this app's saved choice is Shoal Push, which must then be running
+/// before the crate checks the bus: a saved distributor missing from
+/// `ListNames` makes the crate drop the registration and report it gone.
+pub fn must_wake_shoal_push(saved: Option<&str>) -> bool {
+    saved == Some(SHOAL_DISTRIBUTOR)
+}
+
+async fn shoal_push_activatable(bus: &zbus::Connection) -> bool {
+    let Ok(dbus) = zbus::fdo::DBusProxy::new(bus).await else {
+        return false;
+    };
+    dbus.list_activatable_names()
+        .await
+        .map(|names| names.iter().any(|name| name.as_str() == SHOAL_DISTRIBUTOR))
+        .unwrap_or(false)
+}
+
+/// Starts Shoal Push if it is not running; a no-op when it is. Errors are
+/// logged and otherwise left to the register call that follows, which then
+/// reports the distributor as unavailable.
+async fn start_shoal_push(bus: Option<&zbus::Connection>) {
+    let Some(bus) = bus else {
+        return;
+    };
+    let Ok(dbus) = zbus::fdo::DBusProxy::new(bus).await else {
+        return;
+    };
+    let Ok(name) = zbus::names::WellKnownName::try_from(SHOAL_DISTRIBUTOR) else {
+        return;
+    };
+    if let Err(error) = dbus.start_service_by_name(name, 0).await {
+        tracing::warn!(
+            "starting Shoal Push: {}",
+            crate::text::scrub_ids(&error.to_string())
+        );
+    }
+}
+
+async fn wake_chosen_shoal_push(bus: Option<&zbus::Connection>, saved: Option<&str>) {
+    if must_wake_shoal_push(saved) {
+        start_shoal_push(bus).await;
+    }
+}
+
+/// The distributor saved in the connector's file, read without the crate.
+fn saved_distributor(path: &std::path::Path) -> Option<String> {
+    FileStorage::open(path.to_path_buf()).state.distributor
 }
 
 /// One event from the distributor, as JSON for the bridge.
@@ -428,6 +523,48 @@ mod tests {
 
     fn names(list: &[&str]) -> Vec<String> {
         list.iter().map(|name| (*name).to_owned()).collect()
+    }
+
+    #[test]
+    fn an_idle_shoal_push_is_offered_when_it_can_be_started() {
+        let running = names(&["org.unifiedpush.Distributor.foghorn"]);
+        let offered = with_activatable_shoal_push(running.clone(), true);
+        assert_eq!(
+            choose_distributor(&offered, None, None).as_deref(),
+            Some(SHOAL_DISTRIBUTOR)
+        );
+        assert_eq!(with_activatable_shoal_push(running.clone(), false), running);
+        assert_eq!(
+            with_activatable_shoal_push(names(&[SHOAL_DISTRIBUTOR]), true),
+            names(&[SHOAL_DISTRIBUTOR]),
+            "listed once when it is already running"
+        );
+        assert!(with_activatable_shoal_push(Vec::new(), false).is_empty());
+    }
+
+    #[test]
+    fn only_a_saved_shoal_push_is_woken() {
+        assert!(must_wake_shoal_push(Some(SHOAL_DISTRIBUTOR)));
+        assert!(!must_wake_shoal_push(Some(
+            "org.unifiedpush.Distributor.foghorn"
+        )));
+        assert!(!must_wake_shoal_push(None));
+    }
+
+    #[test]
+    fn the_saved_distributor_is_read_from_the_connector_file() {
+        let dir = std::env::temp_dir().join(format!("shoal-push-saved-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("push.json");
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(saved_distributor(&path), None);
+        std::fs::write(
+            &path,
+            format!(r#"{{"distributor":"{SHOAL_DISTRIBUTOR}","distributor_ack":true}}"#),
+        )
+        .unwrap();
+        assert_eq!(saved_distributor(&path).as_deref(), Some(SHOAL_DISTRIBUTOR));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

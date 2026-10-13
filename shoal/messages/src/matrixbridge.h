@@ -85,6 +85,10 @@ class MatrixBridge : public QObject
     /// True while the room's stored messages are being folded into the index.
     Q_PROPERTY(bool indexing READ indexing NOTIFY indexingChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
+    /// What `lastError` is, for a page that acts on it (`login.sso`,
+    /// `login.unsupported`, `server.unreachable`); empty when the core gave
+    /// no code. Pages match this, never the English message.
+    Q_PROPERTY(QString lastErrorCode READ lastErrorCode NOTIFY lastErrorChanged)
     /// What a profile picture may weigh, for the callers that fetch one
     /// under their own key. From the core, not a second copy.
     Q_PROPERTY(qint64 maximumAvatarBytes READ maximumAvatarBytes CONSTANT)
@@ -217,6 +221,7 @@ public:
     bool searchHasMore() const { return m_searchHasMore; }
     bool indexing() const { return m_indexRequest != 0; }
     QString lastError() const { return m_lastError; }
+    QString lastErrorCode() const { return m_lastErrorCode; }
     QVariantList errorLog() const { return m_errorLog; }
     QVariantMap pushStatus() const { return m_pushStatus; }
     /// Whether a push has arrived in this process at all. The woken process
@@ -972,7 +977,7 @@ private:
     QString saveInto(QStandardPaths::StandardLocation location,
                      const QString &path,
                      const QString &suggestedName);
-    void setLastError(const QString &message);
+    void setLastError(const QString &message, const QString &code = QString());
 
     /// Appends to `errorLog`, oldest dropped past `ErrorLogSize`. Separate from
     /// `setLastError`: what to show now against what happened at all.
@@ -1038,6 +1043,7 @@ private:
     QString m_userId;
     QString m_deviceId;
     QString m_lastError;
+    QString m_lastErrorCode;
     QVariantList m_errorLog;
     QVariantMap m_pushStatus;
     /// Held only to hand to the homeserver and to delete the pusher by. Never

@@ -77,10 +77,16 @@ BuildArch: noarch
 %description
 $3.
 %install
-mkdir -p %{buildroot}/usr/share/$1
+mkdir -p %{buildroot}/usr/share/$1 %{buildroot}/usr/share/applications
 printf 'smoke test payload for $1\n' > %{buildroot}/usr/share/$1/README
+# A desktop file with no [X-Sailjail] section: a sandboxed app with no
+# permissions of its own (gen-catalogue.py counts a package without one as
+# unsandboxed).
+printf '[Desktop Entry]\nType=Application\nName=$1\nExec=/usr/bin/$1\n' \
+    > %{buildroot}/usr/share/applications/$1.desktop
 %files
 /usr/share/$1
+/usr/share/applications/$1.desktop
 EOF
     rpmbuild -bb --quiet --define "_topdir $work/rpmbuild" "$work/$1.spec" >/dev/null
 }

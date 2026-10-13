@@ -28,6 +28,12 @@
 #   - StartLimit* makes systemd give up after 5 failed starts in 2 minutes,
 #     leaving the unit visibly "failed" instead of looping forever.
 # Recover with: systemctl --user reset-failed shoal-bridge-airpods && systemctl --user start shoal-bridge-airpods
+#
+# Only with the app: the daemon serves nothing but the Shoal Bridge app, so it
+# does not start when the app is not installed. The condition file belongs to
+# shipwright-shoal-bridge-airpods-ui; removing the app (Reef, pkcon or rpm)
+# stops the daemon at once (the app's %preun) and keeps it stopped at every
+# login after.
 
 [Unit]
 Description=Shoal Bridge wireless earbuds daemon (MagicPodsCore)
@@ -36,6 +42,7 @@ Conflicts=magicpodscore.service
 After=pulseaudio.service
 StartLimitIntervalSec=120
 StartLimitBurst=5
+ConditionPathExists=/usr/share/shoal-bridge-airpods-ui/installed
 
 [Service]
 Type=simple

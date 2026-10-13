@@ -108,7 +108,7 @@ run "$work/postun.sh" 0
 check "postun removal: repository gone" "no" "$([ -f "$STATE/url" ] && echo yes || echo no)"
 check "postun removal: ssu rr, ur" "ssu rr shipwright-reef|ssu ur" "$(grep '^ssu' "$STATE/calls" | tr '\n' '|' | sed 's/|$//')"
 case "$(grep '^setsid' "$STATE/calls")" in
-    *"--fork sh -c"*"sh_reef_rmkey"*"Shipwright Reef"*) echo "ok   postun removal: key removal detached" ;;
+    *"--fork sh -c"*'rm -f "$3"'*"sh_reef_rmkey"*"Shipwright Reef $work/log"*) echo "ok   postun removal: key removal detached, then the log removed" ;;
     *) echo "FAIL postun removal: key removal not detached: $(cat "$STATE/calls")"; fails=$((fails + 1)) ;;
 esac
 

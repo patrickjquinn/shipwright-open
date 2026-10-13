@@ -27,8 +27,8 @@ Page {
         delegate: CopyItem {
             required property var modelData
             width: list.width
-            label: modelData.modified ? Qt.formatDateTime(new Date(modelData.modified * 1000),
-                                                                       "d MMM yyyy, " + Qt.locale().timeFormat(Locale.ShortFormat))
+            label: modelData.modified ? Qt.locale().toString(new Date(modelData.modified * 1000),
+                                                                          "d MMM yyyy, " + Qt.locale().timeFormat(Locale.ShortFormat))
                                       : qsTr("Earlier version")
             property bool shown: false
             value: modelData.password

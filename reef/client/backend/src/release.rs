@@ -86,7 +86,9 @@ pub fn detect(root: &Path) -> Option<SailfishRelease> {
         .filter_map(|f| std::fs::read_to_string(root.join(f)).ok())
         .find_map(|text| parse_release_file(&text))
         .or_else(|| {
-            let out = std::process::Command::new("version").output().ok()?;
+            let out = crate::c_locale(&mut std::process::Command::new("version"))
+                .output()
+                .ok()?;
             parse_version_output(&String::from_utf8_lossy(&out.stdout))
         })
 }

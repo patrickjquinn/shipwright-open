@@ -15,7 +15,7 @@
 //! untested package or lie about permissions; signing the catalogue is a
 //! follow-up (see the README).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -39,7 +39,82 @@ pub struct Catalogue {
     /// `parse` drops names not in `packages` and repeats.
     #[serde(default)]
     pub featured: Vec<String>,
+    /// What each RPM in the repository directory is and does, listed or
+    /// not (a dependency such as the earbuds service has no catalogue entry
+    /// of its own), from the RPM itself (gen-catalogue): Reef labels every
+    /// package an install, update or removal touches from this. Absent in
+    /// catalogues generated before it existed.
+    #[serde(default)]
+    pub components: BTreeMap<String, Component>,
 }
+
+/// One RPM of the repository, as gen-catalogue found it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Component {
+    #[serde(default)]
+    pub summary: String,
+    /// Ships a launcher entry (a desktop file).
+    #[serde(default)]
+    pub desktop: bool,
+    /// Has a catalogue entry of its own.
+    #[serde(default)]
+    pub listed: bool,
+    /// False when it runs outside Sailjail: a `Sandboxing=Disabled` desktop
+    /// file, or a service.
+    #[serde(default = "default_true")]
+    pub sandboxed: bool,
+    #[serde(default)]
+    pub permissions: Vec<String>,
+    #[serde(default)]
+    pub services: Vec<Service>,
+    /// What it changes on the phone beyond its own files, in words.
+    #[serde(default)]
+    pub system_changes: Vec<String>,
+}
+
+impl Component {
+    /// A background service: it ships systemd units, or runs outside the
+    /// sandbox.
+    pub fn background(&self) -> bool {
+        !self.services.is_empty() || !self.sandboxed
+    }
+}
+
+/// A systemd unit a package ships, and when it runs.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Service {
+    /// The unit file name (`airpods.service`).
+    pub name: String,
+    /// The RPM that ships it (in a package entry, which covers what the
+    /// app pulls in); empty in a [`Component`].
+    #[serde(default)]
+    pub package: String,
+    /// `user` or `system`.
+    #[serde(default)]
+    pub scope: String,
+    /// `login`, `boot`, `schedule` or `on_demand`.
+    #[serde(default)]
+    pub starts: String,
+    /// What it does, as its publisher declared it.
+    #[serde(default)]
+    pub description: String,
+}
+
+/// A change to the phone beyond the package's own files (a patched home
+/// screen, files in /etc, scripts run as root), in words.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SystemChange {
+    /// The RPM that makes it.
+    #[serde(default)]
+    pub package: String,
+    pub description: String,
+}
+
+/// Services, system changes, permissions and required packages kept per
+/// package or component; the rest are dropped.
+pub const MAX_DISCLOSURES: usize = 32;
+/// Characters kept of a service or system change description.
+pub const MAX_DISCLOSURE_CHARS: usize = 400;
 
 /// Screenshots kept per package; the rest are dropped.
 pub const MAX_SCREENSHOTS: usize = 8;
@@ -133,6 +208,18 @@ pub struct Package {
     /// dropped by `parse`, and the lists are cut to the `MAX_` limits.
     #[serde(default)]
     pub changelog: Vec<Change>,
+    /// The background services the app brings, its own and those of the
+    /// Reef packages it pulls in.
+    #[serde(default)]
+    pub services: Vec<Service>,
+    /// What installing it changes on the phone beyond its own files, over
+    /// everything it pulls in from the repository.
+    #[serde(default)]
+    pub system_changes: Vec<SystemChange>,
+    /// The repository's packages it pulls in (its dependencies there,
+    /// transitively).
+    #[serde(default)]
+    pub requires: Vec<String>,
 }
 
 /// How a package is paid for (docs/plan.md, "Pricing model").
@@ -270,6 +357,15 @@ impl Catalogue {
             if p.added.as_deref().is_some_and(|d| parse_date(d).is_none()) {
                 p.added = None;
             }
+            cap_services(&mut p.services);
+            p.system_changes
+                .retain(|c| !c.description.trim().is_empty());
+            p.system_changes.truncate(MAX_DISCLOSURES);
+            for c in &mut p.system_changes {
+                cap_chars(&mut c.description);
+            }
+            p.requires.truncate(MAX_DISCLOSURES * 4);
+            p.permissions.truncate(MAX_DISCLOSURES);
             p.changelog.retain(|c| parse_date(&c.date).is_some());
             p.changelog.truncate(MAX_CHANGES);
             for c in &mut p.changelog {
@@ -284,6 +380,14 @@ impl Catalogue {
                     }
                 }
             }
+        }
+        for c in cat.components.values_mut() {
+            cap_services(&mut c.services);
+            c.system_changes.retain(|d| !d.trim().is_empty());
+            c.system_changes.truncate(MAX_DISCLOSURES);
+            c.system_changes.iter_mut().for_each(cap_chars);
+            c.permissions.truncate(MAX_DISCLOSURES);
+            cap_chars(&mut c.summary);
         }
         let packages = &cat.packages;
         let mut seen = std::collections::HashSet::new();
@@ -334,6 +438,23 @@ impl Catalogue {
     /// Looks up a visible package by RPM name.
     pub fn visible_package(&self, name: &str, release: &SailfishRelease) -> Option<&Package> {
         self.visible(release).into_iter().find(|p| p.name == name)
+    }
+}
+
+/// Keeps at most [`MAX_DISCLOSURES`] services with a name, their texts cut
+/// to [`MAX_DISCLOSURE_CHARS`].
+fn cap_services(services: &mut Vec<Service>) {
+    services.retain(|s| !s.name.trim().is_empty());
+    services.truncate(MAX_DISCLOSURES);
+    for s in services {
+        cap_chars(&mut s.description);
+        cap_chars(&mut s.name);
+    }
+}
+
+fn cap_chars(s: &mut String) {
+    if s.chars().count() > MAX_DISCLOSURE_CHARS {
+        *s = s.chars().take(MAX_DISCLOSURE_CHARS).collect();
     }
 }
 
@@ -811,5 +932,71 @@ pub(crate) mod tests {
             Catalogue::parse(bad_model.as_bytes(), "aarch64"),
             Err(CatalogueError::Json(_))
         ));
+    }
+
+    #[test]
+    fn disclosures_parse_and_old_catalogues_have_none() {
+        let old = Catalogue::parse(SAMPLE.as_bytes(), "aarch64").unwrap();
+        assert!(old.components.is_empty());
+        assert!(old.packages[0].services.is_empty() && old.packages[0].requires.is_empty());
+
+        let long = "x".repeat(MAX_DISCLOSURE_CHARS + 50);
+        let json = SAMPLE
+            .replace(
+                "\"keel_tier\": \"B\",",
+                &format!(
+                    r#""keel_tier": "B", "sandboxed": false,
+                   "requires": ["shipwright-shoal-bridge-airpods"],
+                   "services": [{{"name": "airpods.service", "package": "shipwright-shoal-bridge-airpods",
+                                  "scope": "user", "starts": "login", "description": "{long}"}},
+                                {{"name": "", "description": "nameless: dropped"}}],
+                   "system_changes": [{{"package": "x", "description": "Puts files in /etc"}},
+                                      {{"package": "y", "description": "  "}}],"#
+                ),
+            )
+            .replace(
+                "\"packages\": [",
+                r#""components": {
+                     "shipwright-shoal-bridge-airpods": {"summary": "AirPods service",
+                       "services": [{"name": "airpods.service", "scope": "user", "starts": "login",
+                                     "description": "Talks to the earbuds"}]},
+                     "shipwright-keel-silica": {"summary": "Silica", "listed": true},
+                     "shoal-pilot-gesture-patch": {"summary": "Gesture", "system_changes": ["Changes the home screen (Lipstick)"]},
+                     "shipwright-reef": {"summary": "Store", "desktop": true, "sandboxed": false}},
+                   "packages": ["#,
+            );
+        let cat = Catalogue::parse(json.as_bytes(), "aarch64").unwrap();
+        let bridge = &cat.packages[0];
+        assert!(!bridge.sandboxed);
+        assert_eq!(bridge.requires, ["shipwright-shoal-bridge-airpods"]);
+        assert_eq!(
+            bridge.services.len(),
+            1,
+            "a service without a name is dropped"
+        );
+        assert_eq!(bridge.services[0].starts, "login");
+        assert_eq!(
+            bridge.services[0].description.chars().count(),
+            MAX_DISCLOSURE_CHARS
+        );
+        assert_eq!(
+            bridge.system_changes,
+            [SystemChange {
+                package: "x".into(),
+                description: "Puts files in /etc".into()
+            }]
+        );
+        let service = &cat.components["shipwright-shoal-bridge-airpods"];
+        assert!(service.background() && service.sandboxed && !service.desktop);
+        let keel = &cat.components["shipwright-keel-silica"];
+        assert!(!keel.background() && keel.listed);
+        assert!(
+            cat.components["shipwright-reef"].background(),
+            "unsandboxed"
+        );
+        assert!(!cat.components["shoal-pilot-gesture-patch"].background());
+        // Round trip keeps it all.
+        let again = Catalogue::parse(&serde_json::to_vec(&cat).unwrap(), "aarch64").unwrap();
+        assert_eq!(again, cat);
     }
 }

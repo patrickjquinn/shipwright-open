@@ -5,8 +5,8 @@
 //!
 //! Each operation is one `PackageKit` transaction: `CreateTransaction` on the
 //! daemon, subscribe to the transaction object's signals, call the method,
-//! then read `Package`, `ItemProgress`, `ErrorCode` and property changes
-//! until `Finished`. Subscribing before the call matters: `PackageKit` may
+//! then read `Package`, `ItemProgress`, `ErrorCode`, `Details` and property
+//! changes until `Finished`. Subscribing before the call matters: `PackageKit` may
 //! emit results before the method call returns.
 //!
 //! Any client on the system bus can emit a signal with the transaction's
@@ -28,7 +28,7 @@ use zbus::{Connection, MatchRule, Message, MessageStream};
 use super::types::percentage;
 use super::{
     filter_bits, Error, Exit, Filter, Overall, PackageId, PackageInfo, PackageManager, Progress,
-    Result, Status, TRANSACTION_FLAG_ONLY_TRUSTED,
+    Result, Status, TRANSACTION_FLAG_ONLY_TRUSTED, TRANSACTION_FLAG_SIMULATE,
 };
 
 pub const SERVICE: &str = "org.freedesktop.PackageKit";
@@ -47,6 +47,7 @@ const TRANSACTION_IFACE: &str = "org.freedesktop.PackageKit.Transaction";
 )]
 trait PackageKit {
     fn create_transaction(&self) -> zbus::Result<OwnedObjectPath>;
+    fn suggest_daemon_quit(&self) -> zbus::Result<()>;
 }
 
 #[zbus::proxy(
@@ -70,6 +71,7 @@ trait Transaction {
     fn depends_on(&self, filter: u64, package_ids: &[&str], recursive: bool) -> zbus::Result<()>;
     fn required_by(&self, filter: u64, package_ids: &[&str], recursive: bool) -> zbus::Result<()>;
     fn repo_set_data(&self, repo_id: &str, parameter: &str, value: &str) -> zbus::Result<()>;
+    fn get_details(&self, package_ids: &[&str]) -> zbus::Result<()>;
 }
 
 /// The operations Reef runs, one per transaction.
@@ -83,6 +85,19 @@ enum Op<'a> {
     DependsOn(&'a [&'a str]),
     RequiredBy(&'a [&'a str]),
     RefreshRepo(&'a str),
+    /// Install, update or remove with `SIMULATE`: what would happen.
+    SimulateInstall(&'a [&'a str]),
+    SimulateUpdate(&'a [&'a str]),
+    SimulateRemove(&'a [&'a str]),
+    Details(&'a [&'a str]),
+}
+
+/// What one transaction reported.
+#[derive(Default)]
+struct Outcome {
+    packages: Vec<PackageInfo>,
+    /// `Details`: package id and size in bytes.
+    sizes: Vec<(String, u64)>,
 }
 
 /// A `PackageKit` client on a D-Bus connection (the system bus on a phone).
@@ -117,11 +132,7 @@ impl PackageKitClient {
         self
     }
 
-    async fn run(
-        &self,
-        op: Op<'_>,
-        progress: &mut dyn FnMut(Progress),
-    ) -> Result<Vec<PackageInfo>> {
+    async fn run(&self, op: Op<'_>, progress: &mut dyn FnMut(Progress)) -> Result<Outcome> {
         let daemon = PackageKitProxy::builder(&self.conn)
             .cache_properties(CacheProperties::No)
             .build()
@@ -164,6 +175,20 @@ impl PackageKitClient {
                     .await?;
             }
             Op::RefreshRepo(alias) => tx.repo_set_data(alias, "refresh-now", "true").await?,
+            // The same flags as the real thing, plus SIMULATE.
+            Op::SimulateInstall(ids) => {
+                tx.install_packages(trusted | TRANSACTION_FLAG_SIMULATE, ids)
+                    .await?;
+            }
+            Op::SimulateUpdate(ids) => {
+                tx.update_packages(trusted | TRANSACTION_FLAG_SIMULATE, ids)
+                    .await?;
+            }
+            Op::SimulateRemove(ids) => {
+                tx.remove_packages(TRANSACTION_FLAG_SIMULATE, ids, false, false)
+                    .await?;
+            }
+            Op::Details(ids) => tx.get_details(ids).await?,
         }
 
         let mut state = TransactionState {
@@ -209,6 +234,7 @@ struct TransactionState {
     /// The daemon's unique name; messages from anyone else are ignored.
     sender: Option<String>,
     packages: Vec<PackageInfo>,
+    sizes: Vec<(String, u64)>,
     error: Option<(u32, String)>,
     status: Option<Status>,
     overall: Overall,
@@ -220,7 +246,7 @@ impl TransactionState {
         &mut self,
         msg: &Message,
         progress: &mut dyn FnMut(Progress),
-    ) -> Option<Result<Vec<PackageInfo>>> {
+    ) -> Option<Result<Outcome>> {
         let header = msg.header();
         if let Some(expected) = &self.sender {
             if header.sender().map(zbus::names::UniqueName::as_str) != Some(expected.as_str()) {
@@ -256,6 +282,11 @@ impl TransactionState {
                     });
                 }
             }
+            (Some(TRANSACTION_IFACE), "Details") => {
+                if let Some(size) = details_size(&body) {
+                    self.sizes.push(size);
+                }
+            }
             (Some(TRANSACTION_IFACE), "ErrorCode") => {
                 if let Ok(err) = body.deserialize::<(u32, String)>() {
                     self.error = Some(err);
@@ -265,7 +296,10 @@ impl TransactionState {
                 let (exit, _runtime) = body.deserialize::<(u32, u32)>().ok()?;
                 let exit = Exit::from(exit);
                 return Some(if exit == Exit::Success {
-                    Ok(std::mem::take(&mut self.packages))
+                    Ok(Outcome {
+                        packages: std::mem::take(&mut self.packages),
+                        sizes: std::mem::take(&mut self.sizes),
+                    })
                 } else {
                     Err(Error::Transaction {
                         exit,
@@ -308,7 +342,7 @@ impl TransactionState {
 
 impl PackageManager for PackageKitClient {
     async fn resolve(&self, names: &[&str], filters: &[Filter]) -> Result<Vec<PackageInfo>> {
-        self.run(Op::Resolve(filter_bits(filters), names), &mut |_| {})
+        self.packages(Op::Resolve(filter_bits(filters), names))
             .await
     }
 
@@ -325,20 +359,20 @@ impl PackageManager for PackageKitClient {
     }
 
     async fn get_updates(&self) -> Result<Vec<PackageInfo>> {
-        self.run(Op::GetUpdates, &mut |_| {}).await
+        self.packages(Op::GetUpdates).await
     }
 
     async fn search_names(&self, values: &[&str], filters: &[Filter]) -> Result<Vec<PackageInfo>> {
-        self.run(Op::SearchNames(filter_bits(filters), values), &mut |_| {})
+        self.packages(Op::SearchNames(filter_bits(filters), values))
             .await
     }
 
     async fn depends_on(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
-        self.run(Op::DependsOn(ids), &mut |_| {}).await
+        self.packages(Op::DependsOn(ids)).await
     }
 
     async fn required_by(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
-        self.run(Op::RequiredBy(ids), &mut |_| {}).await
+        self.packages(Op::RequiredBy(ids)).await
     }
 
     async fn refresh_repo(&self, alias: &str) -> Result<()> {
@@ -346,4 +380,67 @@ impl PackageManager for PackageKitClient {
             .await
             .map(drop)
     }
+
+    async fn reload_installed(&self) -> Result<()> {
+        let daemon = PackageKitProxy::new(&self.conn).await?;
+        daemon.suggest_daemon_quit().await?;
+        // Wait for it to go, at most 15 s: if another transaction keeps it
+        // busy longer, carry on (the retry then fails as before).
+        let bus = zbus::fdo::DBusProxy::new(&self.conn).await?;
+        let name = zbus::names::BusName::try_from("org.freedesktop.PackageKit")
+            .map_err(|e| Error::DBus(zbus::Error::from(e)))?;
+        for _ in 0..75 {
+            if !bus.name_has_owner(name.clone()).await? {
+                break;
+            }
+            async_io::Timer::after(Duration::from_millis(200)).await;
+        }
+        Ok(())
+    }
+
+    async fn simulate_install(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
+        self.packages(Op::SimulateInstall(ids)).await
+    }
+
+    async fn simulate_update(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
+        self.packages(Op::SimulateUpdate(ids)).await
+    }
+
+    async fn simulate_remove(&self, ids: &[&str]) -> Result<Vec<PackageInfo>> {
+        self.packages(Op::SimulateRemove(ids)).await
+    }
+
+    async fn download_sizes(&self, ids: &[&str]) -> Result<Vec<(String, u64)>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        Ok(self.run(Op::Details(ids), &mut |_| {}).await?.sizes)
+    }
+}
+
+impl PackageKitClient {
+    /// A transaction with no progress to show, for its packages.
+    async fn packages(&self, op: Op<'_>) -> Result<Vec<PackageInfo>> {
+        Ok(self.run(op, &mut |_| {}).await?.packages)
+    }
+}
+
+/// The package id and size of a `Details` signal: `a{sv}` since
+/// `PackageKit` 1.1 (`package-id`, and `download-size` or `size`), or the
+/// older `(s s u s s t)` with the size last.
+fn details_size(body: &zbus::message::Body) -> Option<(String, u64)> {
+    if let Ok((map,)) = body.deserialize::<(HashMap<String, OwnedValue>,)>() {
+        let id = map
+            .get("package-id")
+            .and_then(|v| <&str>::try_from(&**v).ok())?
+            .to_owned();
+        let size = ["download-size", "size"]
+            .iter()
+            .find_map(|k| map.get(*k).and_then(|v| u64::try_from(&**v).ok()))?;
+        return Some((id, size));
+    }
+    let (id, _, _, _, _, size) = body
+        .deserialize::<(String, String, u32, String, String, u64)>()
+        .ok()?;
+    Some((id, size))
 }

@@ -1,0 +1,154 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shipwright <shipwright@invalid>
+Date: Mon, 12 Oct 2026 18:40:00 +0100
+Subject: [PATCH] Refuse calls on a removed device; own the adapter match
+ rule
+
+When BlueZ removes a device, DBusService calls StopListening(), which
+empties the DBusDeviceInfo's proxy. A Device holding that object could
+still call Connect or Disconnect (a request from the app racing the
+removal) and dereferenced the empty pointer. The calls now check it
+under a mutex, log and, for the asynchronous ones, answer the callback
+with org.bluez.Error.DoesNotExist.
+
+The adapter PropertiesChanged match was added as a floating slot, which
+lives as long as its connection. Since patch 0011 that connection is the
+process-wide system bus connection, so the match rule stayed registered
+with the bus, and its callback kept a pointer to the DBusService, after
+the service was destroyed. DBusService now owns the slot and removes it
+in its destructor, before the root proxy.
+---
+ src/dbus/DBusDeviceInfo.cpp |  38 +++++++++++++++++++++++++++++++++++---
+ src/dbus/DBusDeviceInfo.h   |   5 +++++
+ src/dbus/DBusService.cpp    |   6 +++---
+ src/dbus/DBusService.h      |   6 ++++++
+ 4 files changed, 49 insertions(+), 6 deletions(-)
+
+diff --git a/src/dbus/DBusDeviceInfo.cpp b/src/dbus/DBusDeviceInfo.cpp
+--- a/src/dbus/DBusDeviceInfo.cpp
++++ b/src/dbus/DBusDeviceInfo.cpp
+@@ -129,24 +129,56 @@
+     }
+ 
+     void DBusDeviceInfo::StopListening() {
+-        // Resetting the proxy stops its signal callback thread.
++        // Resetting the proxy removes its signal handlers.
++        std::lock_guard lock{_proxyMutex};
+         _deviceProxy.reset();
+     }
+ 
++    // Shoal (patch 0013): a device BlueZ removed has no proxy any more
++    // (StopListening). Calls on it used to dereference the empty pointer;
++    // now they are refused, and an asynchronous caller gets an error.
++    static const sdbus::Error DeviceGone{"org.bluez.Error.DoesNotExist", "The device was removed"};
++
+     void DBusDeviceInfo::Connect() {
++        std::lock_guard lock{_proxyMutex};
++        if (!_deviceProxy) {
++            Logger::Warn("Connect: %s was removed", _address.c_str());
++            return;
++        }
+         _deviceProxy->callMethod("Connect").onInterface("org.bluez.Device1").dontExpectReply();
+     }
+ 
+     void DBusDeviceInfo::ConnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
+-        _deviceProxy->callMethodAsync("Connect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(callback);
++        {
++            std::lock_guard lock{_proxyMutex};
++            if (_deviceProxy) {
++                _deviceProxy->callMethodAsync("Connect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(callback);
++                return;
++            }
++        }
++        Logger::Warn("ConnectAsync: %s was removed", _address.c_str());
++        callback(&DeviceGone);
+     }
+ 
+     void DBusDeviceInfo::Disconnect() {
++        std::lock_guard lock{_proxyMutex};
++        if (!_deviceProxy) {
++            Logger::Warn("Disconnect: %s was removed", _address.c_str());
++            return;
++        }
+         _deviceProxy->callMethod("Disconnect").onInterface("org.bluez.Device1").dontExpectReply();
+     }
+ 
+     void DBusDeviceInfo::DisconnectAsync(std::function<void(const sdbus::Error*)>&& callback) {
+-        _deviceProxy->callMethodAsync("Disconnect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(callback);
++        {
++            std::lock_guard lock{_proxyMutex};
++            if (_deviceProxy) {
++                _deviceProxy->callMethodAsync("Disconnect").withTimeout(std::chrono::seconds(10)).onInterface("org.bluez.Device1").uponReplyInvoke(callback);
++                return;
++            }
++        }
++        Logger::Warn("DisconnectAsync: %s was removed", _address.c_str());
++        callback(&DeviceGone);
+     }
+ 
+     std::array<unsigned short, 2> DBusDeviceInfo::ParseVidPid(const std::string& modalias) {
+diff --git a/src/dbus/DBusDeviceInfo.h b/src/dbus/DBusDeviceInfo.h
+--- a/src/dbus/DBusDeviceInfo.h
++++ b/src/dbus/DBusDeviceInfo.h
+@@ -6,6 +6,7 @@
+ 
+ #include "ObservableVariable.h"
+ 
++#include <mutex>
+ #include <regex>
+ #include <string>
+ #include <optional>
+@@ -17,6 +18,10 @@
+     class DBusDeviceInfo {
+     private:
+         std::unique_ptr<sdbus::IProxy> _deviceProxy{};
++        // Shoal (patch 0013): StopListening() empties _deviceProxy on the bus
++        // thread when BlueZ removes the device, while a Device still holding
++        // this object may call Connect() from the WebSocket thread.
++        std::mutex _proxyMutex{};
+ 
+         std::string _address{};
+         unsigned short _productId{};
+diff --git a/src/dbus/DBusService.cpp b/src/dbus/DBusService.cpp
+--- a/src/dbus/DBusService.cpp
++++ b/src/dbus/DBusService.cpp
+@@ -39,13 +39,12 @@
+         });
+         // Powered changes of every adapter, not only the selected one, so that
+         // an unpowered selection is replaced when another adapter is powered on.
+-        _rootProxy->getConnection().addMatch(
++        _adapterMatch = _rootProxy->getConnection().addMatch(
+             "type='signal',sender='org.bluez',interface='org.freedesktop.DBus.Properties',"
+             "member='PropertiesChanged',arg0='org.bluez.Adapter1',path_namespace='/org/bluez'",
+             [this](sdbus::Message& message) {
+                 HandleAdapterPropertiesChanged(message);
+-            },
+-            sdbus::floating_slot);
++            });
+         _rootProxy->finishRegistration();
+ 
+         FetchDevices();
+@@ -53,6 +52,7 @@
+ 
+     DBusService::~DBusService() {
+         // Stop ObjectManager callbacks before the objects used by them are destroyed.
++        _adapterMatch.reset();
+         _rootProxy.reset();
+     }
+ 
+diff --git a/src/dbus/DBusService.h b/src/dbus/DBusService.h
+--- a/src/dbus/DBusService.h
++++ b/src/dbus/DBusService.h
+@@ -30,6 +30,12 @@
+ 
+         DBusBtAdapter _bluetoothAdapter{};
+         std::unique_ptr<sdbus::IProxy> _rootProxy{};
++        // Shoal (patch 0013): the adapter PropertiesChanged match. It was a
++        // floating slot, which lived as long as the connection; since patch
++        // 0011 that is the process-wide system bus connection, so the match
++        // (and its callback holding `this`) outlived this object. Owned here,
++        // it is removed with it.
++        sdbus::Slot _adapterMatch{};
+ 
+     public:
+         explicit DBusService();

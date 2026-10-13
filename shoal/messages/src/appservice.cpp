@@ -7,9 +7,10 @@
 namespace {
 
 // What may pass as a link, before anything looks at what it means. Narrow on
-// purpose: the app is registered for https as a whole, because that is the only
-// way a matrix.to link reaches it, so most of what arrives here is somebody
-// else's web address and has to be dropped rather than carried further.
+// purpose: the app is registered for matrix: links only, but anything on the
+// session bus can call this, so somebody else's web address has to be dropped
+// rather than carried further. A matrix.to permalink still passes, for callers
+// that hand one over directly.
 bool looksLikeMatrixLink(const QString &link)
 {
     if (link.startsWith(QLatin1String("matrix:"), Qt::CaseInsensitive)) {

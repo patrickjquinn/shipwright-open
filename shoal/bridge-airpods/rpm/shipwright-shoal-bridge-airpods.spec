@@ -29,6 +29,7 @@
 %global daemon_dir shoal/bridge-airpods/daemon
 %global unit shoal-bridge-airpods.service
 %{!?_userunitdir:%global _userunitdir %{_prefix}/lib/systemd/user}
+%{!?_unitdir:%global _unitdir %{_prefix}/lib/systemd/system}
 
 %bcond_without intree
 %bcond_without openssl
@@ -40,6 +41,7 @@
 %global vendordir %{_builddir}/%{daemon_dir}/vendor
 %global patchdir %{_builddir}/%{daemon_dir}/patches
 %global unitfile %{_builddir}/%{daemon_dir}/%{unit}
+%global vendoriddir %{_builddir}/shoal/bridge-airpods/vendorid
 # %%license paths are relative to the build directory (no %%setup here).
 %global licrel target/rpm/shoal-bridge-airpods/build/licenses
 %else
@@ -47,12 +49,13 @@
 %global blddir %{srcdir}/_build
 %global vendordir %{_sourcedir}
 %global unitfile %{SOURCE10}
+%global vendoriddir %{_sourcedir}
 %global licrel _build/licenses
 %endif
 
 Name:           shipwright-shoal-bridge-airpods
 Version:        2.0.11
-Release:        5
+Release:        6
 Summary:        Wireless earbuds daemon for Shoal Bridge (MagicPodsCore)
 License:        GPL-3.0-only AND LGPL-2.1-or-later AND Apache-2.0 AND MIT
 URL:            https://github.com/steam3d/MagicPodsCore
@@ -65,6 +68,10 @@ Source3:        uSockets-0.8.7.tar.gz
 Source4:        nlohmann-json-3.11.3.tar.xz
 Source5:        tomlplusplus-3.4.0.tar.gz
 Source10:       shoal-bridge-airpods.service
+# Takes the vendorid add-on's Device ID out of main.conf if the add-on was
+# removed without its scriptlets: from its %%postun, and at boot.
+Source11:       clean-stale-device-id
+Source12:       shoal-bridge-airpods-device-id-check.service
 Patch1:         0001-adapter-discovery.patch
 Patch2:         0002-offline-vendored-deps.patch
 Patch3:         0003-optional-openssl.patch
@@ -76,6 +83,8 @@ Patch8:         0008-multi-device.patch
 Patch9:         0009-ear-detection-pause.patch
 Patch10:        0010-build-warnings.patch
 Patch11:        0011-shared-bus-and-scan-on-demand.patch
+Patch12:        0012-scan-window.patch
+Patch13:        0013-removed-device-and-match-rule.patch
 
 BuildRequires:  cmake >= 3.22
 BuildRequires:  gcc-c++ >= 10
@@ -89,6 +98,15 @@ BuildRequires:  pkgconfig(zlib)
 BuildRequires:  pkgconfig(libcrypto)
 %endif
 Requires:       bluez5
+# Only with the app: Sailfish's app-grid Uninstall, pkcon and rpm remove the
+# app package alone and would leave this service behind. With this Requires
+# (the app requires this package too; mutual Requires are fine in RPM),
+# removing the app by any route removes this package as well, and %%preun
+# stops the user service. The unit's ConditionPathExists covers a forced
+# removal (rpm --nodeps). The vendorid add-on requires the daemon, so it goes
+# with them; it does nothing without the daemon anyway.
+# At least the version that ships the file the unit waits for (ConditionPathExists).
+Requires:       shipwright-shoal-bridge-airpods-ui >= 0.1.0-8
 # The SailfishOS-MagicPods port installs the same daemon as a user service;
 # the unit declares Conflicts=magicpodscore.service so only one holds port 2020.
 
@@ -104,7 +122,8 @@ Apple Device ID on the host (hearing aid, transparency customisation, loud
 sound reduction, multi-device), which stay unavailable unless
 shipwright-shoal-bridge-airpods-vendorid is installed.
 
-Runs as a systemd user service, started with the user session.
+Runs as a systemd user service, started with the user session while the
+Shoal Bridge app (shipwright-shoal-bridge-airpods-ui) is installed.
 
 The corresponding source is this package's source RPM.
 
@@ -159,6 +178,13 @@ install -D -m 0644 %{unitfile} %{buildroot}%{_userunitdir}/%{unit}
 # ship the enablement symlink instead of running `systemctl --user enable`.
 mkdir -p %{buildroot}%{_userunitdir}/post-user-session.target.wants
 ln -s ../%{unit} %{buildroot}%{_userunitdir}/post-user-session.target.wants/%{unit}
+install -D -m 0755 %{vendoriddir}/clean-stale-device-id \
+    %{buildroot}%{_libexecdir}/shoal-bridge-airpods/clean-stale-device-id
+install -D -m 0644 %{vendoriddir}/shoal-bridge-airpods-device-id-check.service \
+    %{buildroot}%{_unitdir}/shoal-bridge-airpods-device-id-check.service
+mkdir -p %{buildroot}%{_unitdir}/bluetooth.service.wants
+ln -s ../shoal-bridge-airpods-device-id-check.service \
+    %{buildroot}%{_unitdir}/bluetooth.service.wants/shoal-bridge-airpods-device-id-check.service
 
 licdir=%{blddir}/licenses
 rm -rf $licdir
@@ -178,9 +204,12 @@ source for this package (GPL-3.0).
 EOF
 
 %post
+systemctl daemon-reload >/dev/null 2>&1 || :
 # systemctl-user runs systemctl --user for the device owner (Sailfish).
 systemctl-user daemon-reload || :
 if [ "$1" -eq 1 ]; then
+    # Skipped by the unit's condition until the app is installed; the app's
+    # %%post starts it then.
     systemctl-user start %{unit} || :
 else
     systemctl-user try-restart %{unit} || :
@@ -192,6 +221,7 @@ if [ "$1" -eq 0 ]; then
 fi
 
 %postun
+systemctl daemon-reload >/dev/null 2>&1 || :
 systemctl-user daemon-reload || :
 
 %files
@@ -200,14 +230,32 @@ systemctl-user daemon-reload || :
 %{_libexecdir}/shoal-bridge-airpods/magicpodscore
 %{_userunitdir}/%{unit}
 %{_userunitdir}/post-user-session.target.wants/%{unit}
+%{_libexecdir}/shoal-bridge-airpods/clean-stale-device-id
+%{_unitdir}/shoal-bridge-airpods-device-id-check.service
+%{_unitdir}/bluetooth.service.wants/shoal-bridge-airpods-device-id-check.service
 
 %changelog
+* Mon Oct 12 2026 Shipwright - 2.0.11-6
+- Bluetooth search stops a minute after the app was last in front, also
+  while the app sits on the home screen as a cover.
+- Starts only while the Shoal Bridge app is installed, and is removed
+  with the app (it now requires the app).
+- Fixes a crash when earbuds were connected or disconnected just as
+  Bluetooth forgot them, and a system bus match rule left behind.
+
 * Mon Oct 12 2026 Shipwright - 2.0.11-5
 - The daemon keeps one system bus connection. It had one per Bluetooth
   device it knew of: in a busy place it could use up the connections
   your other apps need, so People, Email and others stopped working.
 - Bluetooth searches only while the AirPods app is open. It searched all
   the time before, so Bluetooth settings always showed it searching.
+- Cleans up after the Device ID add-on if it was removed without its own
+  clean-up step (rpm -e --noscripts): at the next start of the phone,
+  before Bluetooth starts, Apple's Device ID is taken out of
+  /etc/bluetooth/main.conf. Nothing happens while the add-on is installed.
+- Requires the Shoal Bridge app, which requires it: removing the app from
+  the app grid or with pkcon removes the daemon too, instead of leaving it
+  running in every session.
 
 * Sat Oct 03 2026 Shipwright - 2.0.11-4
 - Patch 0010 fixes every compiler warning in the daemon build (inline enum

@@ -28,6 +28,10 @@ Page {
         return revision >= 0 ? Reef.packageDetails(packageName) : ({})
     }
     readonly property var changes: Texts.changelog(pkg.changelogJson)
+    // What it brings that runs by itself, and what it changes on the phone
+    // (the catalogue's disclosures, over everything it pulls in).
+    readonly property var services: pkg.servicesJson ? JSON.parse(pkg.servicesJson) : []
+    readonly property var systemChanges: pkg.systemChangesJson ? JSON.parse(pkg.systemChangesJson) : []
     readonly property bool working: Reef.busy && Reef.busyPackage === packageName
     readonly property bool paid: pkg.licenceModel === "one_off" || pkg.licenceModel === "subscription"
     // Why the last install, update or remove of this package failed.
@@ -41,7 +45,6 @@ Page {
         }
     }
 
-    RemorsePopup { id: remorse }
 
     readonly property bool installed: pkg.installState !== undefined && pkg.installState !== "not_installed"
     readonly property bool updatable: pkg.installState === "update_available"
@@ -233,8 +236,10 @@ Page {
         anchors.fill: parent
         contentHeight: column.height + Theme.paddingLarge * 2
 
-        // Removing is a pull-down action with a remorse timer, as in the
-        // Jolla Store; the links to the developer's pages sit with it.
+        // Removing is a pull-down action, as in the Jolla Store, offered
+        // only for what Reef installed; the confirmation sheet then lists
+        // everything that goes. The links to the developer's pages sit
+        // with it.
         PullDownMenu {
             busy: page.working
             visible: page.installed || Texts.isHttps(page.pkg.source) || Texts.isHttps(page.pkg.homepage)
@@ -253,10 +258,12 @@ Page {
             MenuItem {
                 objectName: "removeItem"
                 text: qsTr("Remove")
-                visible: page.installed
+                visible: page.installed && page.pkg.removable === true
                 enabled: !Reef.busy
-                onClicked: remorse.execute(qsTr("Removing %1").arg(page.pkg.title),
-                                           function() { page.error = ""; Reef.remove(page.packageName) })
+                onClicked: {
+                    page.error = ""
+                    Reef.remove(page.packageName)
+                }
             }
         }
 
@@ -396,6 +403,21 @@ Page {
                 bottomPadding: Theme.paddingMedium
             }
 
+            // Installed, but not by Reef (another store, or before Reef kept
+            // a record): Reef leaves its removal to where it came from.
+            Label {
+                objectName: "notReefsNote"
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: !page.working && page.installed && page.pkg.removable === false
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+                text: qsTr("Reef did not install this copy, so it does not remove it.")
+                bottomPadding: Theme.paddingMedium
+            }
+
             // After Buy: the licence arrives by itself once paid.
             Label {
                 objectName: "buyHint"
@@ -444,7 +466,7 @@ Page {
                 bottomPadding: Theme.paddingLarge
 
                 Fact { value: Texts.price(page.pkg.licenceModel, page.pkg.licensed); name: qsTr("Price") }
-                Fact { value: page.pkg.sizeText || "–"; name: qsTr("Download") }
+                Fact { value: page.pkg.sizeText || "–"; name: qsTr("Installed size") }
                 Fact {
                     value: Texts.date(page.pkg.updated) || "–"
                     name: page.changes.length > 0 ? qsTr("Updated") : qsTr("Published")
@@ -562,6 +584,37 @@ Page {
                             change: modelData
                         }
                     }
+                }
+            }
+
+            // What it brings that runs by itself, and what it changes on
+            // the phone beyond its own files, from the RPMs (gen-catalogue):
+            // in the warning style, before install.
+            SectionHeader {
+                text: qsTr("Runs in the background")
+                visible: page.services.length > 0
+            }
+            Repeater {
+                model: page.services
+                IconLine {
+                    required property var modelData
+                    objectName: "serviceLine"
+                    source: "image://theme/icon-s-warning"
+                    text: qsTr("%1 (%2)").arg(modelData.description || modelData.name)
+                                         .arg(Texts.startsText(modelData.starts))
+                }
+            }
+            SectionHeader {
+                text: qsTr("Changes to your phone")
+                visible: page.systemChanges.length > 0
+            }
+            Repeater {
+                model: page.systemChanges
+                IconLine {
+                    required property var modelData
+                    objectName: "systemChangeLine"
+                    source: "image://theme/icon-s-warning"
+                    text: modelData.description
                 }
             }
 

@@ -87,7 +87,7 @@ Page {
 
     function use() {
         if (page.keepInGallery) {
-            var stamp = Qt.formatDateTime(new Date(), "yyyyMMdd-hhmmss")
+            var stamp = Qt.locale("C").toString(new Date(), "yyyyMMdd-hhmmss")
             matrix.saveToPictures(page.shot, "shoal-messages-" + stamp + ".jpg")
         }
         page.handedOver = true
@@ -236,7 +236,7 @@ Page {
             opacity: 0
             color: Theme.lightPrimaryColor
             font.pixelSize: Theme.fontSizeExtraLarge
-            text: camera.digitalZoom.toFixed(1) + "×"
+            text: camera.digitalZoom.toLocaleString(Qt.locale(), "f", 1) + "×"
 
             Behavior on opacity { FadeAnimation {} }
         }

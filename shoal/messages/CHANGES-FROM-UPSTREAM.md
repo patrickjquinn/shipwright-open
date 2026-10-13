@@ -98,6 +98,15 @@ collection. There is no migration from xmatic, by design (different product).
   `try_use_default_distributor()`-then-first logic. `Command::Enable` carries
   the user's pick. `push.state` additionally reports `automatic` (what
   Automatic would choose now) and `shoalDistributor`. Six new unit tests.
+- `core/src/push.rs`: Shoal Push runs only while an app is registered with it
+  and is started by D-Bus activation, which the crate's `ListNames`-only
+  discovery cannot see. The connector lists it when `ListActivatableNames` has
+  it, starts it with `StartServiceByName` before registering with it, and
+  before the crate reads a saved Shoal Push choice (a saved distributor
+  missing from the bus makes the crate drop the registration).
+- `qml/shipwright-shoal-messages.qml`: the five-minute `BackgroundJob` is
+  bound to "in the background, signed in, and push not working"; while push
+  is on and acknowledged by the distributor it does not run.
 - `core/src/protocol.rs`: `push.enable` takes an optional `distributor`.
 - `core/src/runtime.rs`: passes it through to the connector.
 - `src/matrixbridge.{h,cpp}`: `enablePush(gateway, distributor = "")`.

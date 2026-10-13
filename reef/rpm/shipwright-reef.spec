@@ -23,22 +23,26 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        27
+Release:        28
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
 
 # Runtime: Keel (Silica for Qt6) and Chum's Qt6 (chum:testing, 6.8.4 on 5.2).
-Requires:       shipwright-keel-silica
+# At least the Keel Reef was built and tested against: updating Reef alone
+# (its own Update) must bring Keel along, not leave a new Reef on an older
+# Keel whose components it does not know (a forum report of Reef not
+# starting after an update, 12 October 2026).
+Requires:       shipwright-keel-silica >= 0.1.0-29
 # Keel Actions runtime (Keel.Actions 1.0, ADR-0018).
-Requires:       shipwright-keel-actions
+Requires:       shipwright-keel-actions >= 0.1.0-29
 # Lipstick starts the app as `invoker --type=keel`: through booster-keel
 # when it is installed, otherwise directly, in Keel's direct mode either way;
 # keel-shell is the opt-in fallback window path (ADR-0016).
 Recommends:     shipwright-keel-booster
 Recommends:     shipwright-keel-shell
 # The window comes from Keel's SailfishApp library (app/cpp/launcher.cpp).
-Requires:       shipwright-keel-sailfishapp
+Requires:       shipwright-keel-sailfishapp >= 0.1.0-14
 # Qt6 libraries are picked up as automatic library dependencies; the QML
 # modules are not, hence qt6-qtdeclarative.
 Requires:       qt6-qtdeclarative
@@ -74,6 +78,7 @@ BuildRequires:  systemd
 %define reef_share %{_datadir}/%{name}
 %define reef_conf %{reef_share}/repo.conf
 %define reef_log /var/log/%{name}.log
+%define reef_state /var/lib/%{name}
 %define reef_key_file_default reef/installer/RPM-GPG-KEY-shipwright-reef
 
 %description
@@ -141,16 +146,15 @@ for s in 86 108 128 172; do
     %{buildroot}%{_datadir}/icons/hicolor/${s}x${s}/apps/shipwright-reef.png
 done
 desktop-file-validate %{buildroot}%{_datadir}/applications/shipwright-reef.desktop
-# Background update check (src/check.rs): a 4-hourly user timer, enabled
-# for every user by the wants symlink (and started by %%post), with its
-# notification category and the D-Bus name its tap opens Reef with.
+# Background update check (src/check.rs): a 4-hourly user timer, with its
+# notification category and the D-Bus name its tap opens Reef with. Not
+# enabled here: Reef asks the person at first start and enables or disables
+# the timer for them (systemctl --user), so nothing runs in the background
+# that they did not agree to.
 install -D -m 0644 reef/client/app/packaging/systemd/shipwright-reef-check.service \
   %{buildroot}%{_userunitdir}/shipwright-reef-check.service
 install -D -m 0644 reef/client/app/packaging/systemd/shipwright-reef-check.timer \
   %{buildroot}%{_userunitdir}/shipwright-reef-check.timer
-install -d %{buildroot}%{_userunitdir}/timers.target.wants
-ln -s ../shipwright-reef-check.timer \
-  %{buildroot}%{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
 install -D -m 0644 reef/client/app/packaging/notifications/x-shipwright.reef.updates.conf \
   %{buildroot}%{_datadir}/lipstick/notificationcategories/x-shipwright.reef.updates.conf
 install -D -m 0644 reef/client/app/packaging/dbus/org.shipwright.reef.ui.service \
@@ -178,12 +182,29 @@ cat > %{buildroot}%{reef_share}/owns-repository <<'EOF'
 The shipwright-reef package owns the Reef repository registration.
 EOF
 
+# Where the scriptlets note that the repository was turned off because
+# Reef publishes nothing for the installed release (see %%triggerin).
+install -d %{buildroot}%{reef_state}
+touch %{buildroot}%{reef_state}/no-repository
+
 %post
-# The wants symlink starts the update check timer at the next login only:
-# start it in the session that is running now (found 11 October 2026: a
-# phone that had not restarted since Reef arrived never checked).
+# The timer is the person's choice (Reef asks): only tell the session
+# about the changed units. An upgrade from Reef 27, which enabled it for
+# everyone, leaves it running until the next login at most; the check
+# itself then turns it off until the person says yes.
 systemctl-user daemon-reload >/dev/null 2>&1 || :
-systemctl-user start shipwright-reef-check.timer >/dev/null 2>&1 || :
+exit 0
+
+%preun
+# Final removal: stop the background check and remove the person's own
+# enablement of it (systemctl --user enable made a link in their
+# ~/.config), while the unit files are still there; stopped in the running
+# session too (the timer would otherwise stay loaded, and fire at a
+# service that is gone).
+if [ "$1" = 0 ]; then
+  systemctl-user disable --now shipwright-reef-check.timer >/dev/null 2>&1 || :
+  systemctl-user stop shipwright-reef-check.timer shipwright-reef-check.service >/dev/null 2>&1 || :
+fi
 exit 0
 
 %triggerin -- sailfish-version
@@ -194,22 +215,50 @@ exit 0
 # running from this very repository) leaves ssu alone. The client's start-up
 # check (repoState "drifted", then Repair) is the second line of defence.
 # ssu may list %%(arch) literally or expanded; both count as pinned.
+#
+# A release Reef publishes nothing for yet (the repository's metadata is a
+# 404, `shipwright-reef-repo check` exits 4) would leave every refresh and
+# OS update failing on Reef's repository: it is pinned to the release all
+# the same, then turned off (ssu dr), and the marker records that this
+# package turned it off. When a later check finds it published (exit 0),
+# it is turned on again; Reef's own refresh does the same once the
+# catalogue for the release appears (reef/client/app/src/jobs.rs). Offline
+# (exit 5) changes nothing.
 umask 022
 export REEF_CONF=%{reef_conf}
 expected=$(%{_bindir}/shipwright-reef-repo url 2>> %{reef_log})
 if [ -n "$expected" ]; then
   expanded=$(printf '%%s' "$expected" | sed 's|%%(arch)|%{_arch}|')
-  listed=$(ssu lr 2>/dev/null | grep -E '^[[:space:]]*- %{reef_alias}[[:space:]]')
+  listed=$(LC_ALL=C LANGUAGE=C ssu lr 2>/dev/null | grep -E '^[[:space:]]*- %{reef_alias}[[:space:]]')
   if ! printf '%%s\n' "$listed" | grep -qF -e "... $expected" -e "... $expanded"; then
     echo "$(date '+%%F %%T') re-pinning %{reef_alias} to $expected" >> %{reef_log}
     %{_bindir}/shipwright-reef-repo add >> %{reef_log} 2>&1
   fi
+  %{_bindir}/shipwright-reef-repo check >> %{reef_log} 2>&1
+  case $? in
+    4)
+      echo "$(date '+%%F %%T') no Reef repository for this release yet: turning %{reef_alias} off" >> %{reef_log}
+      ssu dr %{reef_alias} >> %{reef_log} 2>&1
+      ssu ur >> %{reef_log} 2>&1
+      %{_bindir}/shipwright-reef-repo release > %{reef_state}/no-repository 2>> %{reef_log}
+      ;;
+    0)
+      if [ -s %{reef_state}/no-repository ]; then
+        echo "$(date '+%%F %%T') the Reef repository for this release is published: turning %{reef_alias} on" >> %{reef_log}
+        ssu er %{reef_alias} >> %{reef_log} 2>&1
+        ssu ur >> %{reef_log} 2>&1
+        : > %{reef_state}/no-repository
+      fi
+      ;;
+  esac
 fi
 # Scriptlet failures would leave a half-installed package; the log and the
 # client's repair banner report problems instead.
 exit 0
 
 %postun
+# The check's units are gone: tell the session.
+systemctl-user daemon-reload >/dev/null 2>&1 || :
 # Installer README: on final removal ($1 = 0), unregister the repository and
 # detach the key removal, as the installer's %%preun does. repo.conf and
 # shipwright-reef-repo are already gone in %%postun, so the steps are inline.
@@ -230,13 +279,15 @@ if [ "$1" = 0 ]; then
     while [ $i -lt 30 ]; do
       sleep 2
       i=$((i + 1))
-      all=$(rpm -qa gpg-pubkey --qf "%%{NAME}-%%{VERSION}-%%{RELEASE}\t%%{SUMMARY}\n" 2>&1)
+      all=$(LC_ALL=C LANGUAGE=C rpm -qa gpg-pubkey --qf "%%{NAME}-%%{VERSION}-%%{RELEASE}\t%%{SUMMARY}\n" 2>&1)
       case "$all" in *error:*) echo "$all"; continue ;; esac
       keys=$(echo "$all" | grep -F "$2" | cut -f 1)
       [ -z "$keys" ] && break
       for k in $keys; do rpm -e "$k" && echo "removed key $k"; done
     done
-  ' sh_reef_rmkey "$PPID" 'Shipwright Reef' >> %{reef_log} 2>&1 </dev/null
+    # The log went with the package (%%ghost); this removal wrote it again.
+    rm -f "$3"
+  ' sh_reef_rmkey "$PPID" 'Shipwright Reef' %{reef_log} >> %{reef_log} 2>&1 </dev/null
 fi
 exit 0
 
@@ -261,10 +312,32 @@ exit 0
 %{_datadir}/mapplauncherd/privileges.d/shipwright-reef
 %{_userunitdir}/shipwright-reef-check.service
 %{_userunitdir}/shipwright-reef-check.timer
-%{_userunitdir}/timers.target.wants/shipwright-reef-check.timer
+%dir %{reef_state}
+%ghost %{reef_state}/no-repository
+# The logs of Reef's scriptlets and of the installer it replaces (whose
+# removal must not take the installer's log while the installer is still
+# writing it): owned, so that removing Reef removes them.
+%ghost %attr(0644,root,root) %{reef_log}
+%ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Mon Oct 12 2026 Shipwright - 0.1.0-28
+- Updating Reef brings the Keel it needs along with it.
+- Reef asks before every install, update and removal, and shows everything that comes with it: each add-on, library and background service, what the services do and when they start, what changes on the phone, the download size, and for a removal what else goes (apps that would stop working highlighted). Nothing is installed or removed without a tap on that screen, and if what it would do changes before the tap, Reef asks again.
+- Update all lists every package it will update, apps and the libraries and services they use, instead of a bare count.
+- App pages show the background services an app brings and the changes it makes to the phone, worked out from the packages themselves.
+- Assistants asking Reef to install, update or remove an app (Keel Actions) bring up the same screen; nothing happens until you tap it.
+- Reef never removes a Jolla Store app or a package installed from another source, even with the same name; with an app it removes only what Reef installed or what only Reef offers (Qt from Chum stays).
+- Removing an app never takes a package something staying needs, and when the phone still refuses, the app goes with its parts and the rest stays. Removing, reinstalling and removing again work without a refresh in between.
+- Reef's record of what it installed is now private to your account; it was readable and writable by every user of the phone.
+- Background update checks start only once you say yes, asked the first time Reef opens; "Never" turns the check off rather than waking the phone to do nothing, and it can be limited to Wi-Fi.
+- On a Sailfish OS release Reef has no apps for yet, its source is turned off instead of failing every refresh, and turned back on once there are apps for it. Removing Reef stops its background check.
+- Install and update refresh Reef's source and try once more when the phone's copy of its package list is out of date, instead of failing with "not found on medium". The installer no longer stops other installs or system updates when its own refresh fails.
+- Checking and repairing the store's repository works on phones not in English.
+
 * Mon Oct 12 2026 Shipwright - 0.1.0-27
+- Removing Reef stops its update check at once, not at the next restart.
+- Removing Reef removes its logs, /var/log/shipwright-reef.log and the installer's /var/log/shipwright-reef-installer.log. Removing an app that leaves data on the phone (Pilot's voice models) or takes data with it (iCloud accounts, with their contacts and events) first says so.
 - Phones not set to English can install and update again: Reef read the store's signature check in English only, so it failed on every other language ("Firma correcta" on a Spanish phone).
 - Removing an app removes what came with it: background services and add-ons it installed, when nothing else needs them. Removing AirPods left its service running.
 

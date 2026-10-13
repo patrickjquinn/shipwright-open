@@ -87,8 +87,8 @@ void SendQueueActions::reportUnanswered()
     emit stuckChanged();
 }
 
-void SendQueueActions::reportFailure(const QString &error)
+void SendQueueActions::reportFailure(const QString &error, const QString &code)
 {
-    emit failed(error);
+    emit failed(error, code);
     refresh();
 }

@@ -2553,6 +2553,9 @@ void MatrixBridge::handleReply(const QJsonObject &message)
 
     if (!message.value(QStringLiteral("ok")).toBool()) {
         const QString error = message.value(QStringLiteral("error")).toString();
+        // What the failure is, for pages that act on it (protocol.rs
+        // reply_error_code); empty for most.
+        const QString code = message.value(QStringLiteral("code")).toString();
         qWarning("shoal-messages: %s failed: %s", qPrintable(command), qPrintable(error));
         if (command == QLatin1String("rooms.markAllRead")) {
             emit markedAllRead(0, -1);
@@ -2571,7 +2574,7 @@ void MatrixBridge::handleReply(const QJsonObject &message)
             m_polls->reportFailure(command);
         }
         if (command == QLatin1String("queue.retry") || command == QLatin1String("queue.discard")) {
-            m_sendQueue->reportFailure(error);
+            m_sendQueue->reportFailure(error, code);
         }
         if (command == QLatin1String("queue.stuck")) {
             m_sendQueue->reportUnanswered();
@@ -2669,7 +2672,7 @@ void MatrixBridge::handleReply(const QJsonObject &message)
                      qPrintable(error.left(160)));
             return;
         }
-        setLastError(error);
+        setLastError(error, code);
         return;
     }
 
@@ -4139,12 +4142,13 @@ void MatrixBridge::noteError(const QString &command, const QString &message)
     emit errorLogChanged();
 }
 
-void MatrixBridge::setLastError(const QString &message)
+void MatrixBridge::setLastError(const QString &message, const QString &code)
 {
-    if (m_lastError == message) {
+    if (m_lastError == message && m_lastErrorCode == code) {
         return;
     }
     m_lastError = message;
+    m_lastErrorCode = code;
     emit lastErrorChanged();
 }
 

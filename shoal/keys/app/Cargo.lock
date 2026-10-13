@@ -1644,11 +1644,13 @@ name = "shipwright-shoal-keys"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "async-io",
  "cc",
  "cxx",
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
+ "futures-lite",
  "keel",
  "keel-actions-codegen",
  "psl",

@@ -61,6 +61,14 @@ pub extern "C" fn main(_argc: c_int, _argv: *const *const c_char) -> c_int {
 }
 
 fn run() {
+    // The phone's launcher starts Reef with umask 0, so every file it wrote
+    // (the install record, settings, licences) was world-writable. Files
+    // Reef writes are readable by others at most; the install record is the
+    // owner's only (reef-backend's InstallLedger).
+    // SAFETY: umask only sets the process's file mode mask; it cannot fail.
+    unsafe {
+        libc::umask(0o022);
+    }
     let level = std::env::var("REEF_LOG")
         .ok()
         .and_then(|l| logging::parse_level(&l))

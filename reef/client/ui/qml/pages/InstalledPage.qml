@@ -23,7 +23,8 @@ Page {
             busy: Reef.busy
             MenuItem {
                 objectName: "updateAllItem"
-                text: qsTr("Update all (%1)").arg(Reef.updateCount)
+                // Lists every package it touches before anything happens.
+                text: qsTr("Update all…")
                 visible: Reef.updateCount > 0
                 enabled: !Reef.busy
                 onClicked: Reef.updateAll()
@@ -40,7 +41,7 @@ Page {
         header: PageHeader {
             title: qsTr("Installed")
             description: Reef.updateCount > 0
-                         ? qsTr("%n update(s) available", "", Reef.updateCount)
+                         ? Texts.updatesText(Reef.appUpdateCount, Reef.updateCount)
                          : qsTr("Up to date")
         }
 

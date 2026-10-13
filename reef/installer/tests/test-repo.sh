@@ -167,6 +167,15 @@ else
   check "add fails without a release" "" "$(cat "$work/calls")"
 fi
 
+# ssu, rpm and version run in the C locale whatever the phone's language:
+# their output is read, and translated on a phone set to German.
+printf '#!/bin/sh\necho "$LC_ALL $LANGUAGE" >> "%s/locale"\n' "$work" >"$work/bin/ssu-locale"
+chmod +x "$work/bin/ssu-locale"
+LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 LANGUAGE=de REEF_CONF="$here/repo.conf" REEF_ROOT="$work/root" \
+  SSU="$work/bin/ssu-locale" RPM="$work/bin/rpm" VERSION_CMD="$work/bin/version" \
+  sh "$tool" remove >/dev/null 2>&1 || true
+check "ssu runs in the C locale" "C C" "$(head -n 1 "$work/locale" 2>/dev/null)"
+
 if [ $fails -ne 0 ]; then
   echo "$fails failure(s)"
   exit 1

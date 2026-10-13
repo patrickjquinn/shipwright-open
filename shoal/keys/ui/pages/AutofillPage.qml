@@ -32,6 +32,15 @@ Page {
         }
     }
 
+    // A request whose caller stopped waiting (the D-Bus timeout), or that a
+    // lock declined, is gone: its page closes.
+    onInfoChanged: {
+        if (!answered && info.request === undefined && status === PageStatus.Active) {
+            answered = true
+            pageStack.pop()
+        }
+    }
+
     // Leaving without an answer declines.
     onStatusChanged: {
         if (status === PageStatus.Deactivating && !answered) {

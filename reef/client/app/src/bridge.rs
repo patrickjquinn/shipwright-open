@@ -134,6 +134,16 @@ pub mod qobject {
         #[qproperty(i32, progress, READ, NOTIFY)]
         #[qproperty(QString, last_error, cxx_name = "lastError", READ, NOTIFY)]
         #[qproperty(i32, update_count, cxx_name = "updateCount", READ, NOTIFY)]
+        #[qproperty(i32, app_update_count, cxx_name = "appUpdateCount", READ, NOTIFY)]
+        #[qproperty(QString, pending_plan, cxx_name = "pendingPlan", READ, NOTIFY)]
+        #[qproperty(
+            bool,
+            background_check_asked,
+            cxx_name = "backgroundCheckAsked",
+            READ,
+            NOTIFY
+        )]
+        #[qproperty(bool, background_wifi_only, cxx_name = "backgroundWifiOnly")]
         #[qproperty(i32, revision, READ, NOTIFY)]
         #[qproperty(*mut ReefListModel, catalogue_model, cxx_name = "catalogueModel", READ, CONSTANT)]
         #[qproperty(*mut ReefListModel, installed_model, cxx_name = "installedModel", READ, CONSTANT)]
@@ -164,6 +174,11 @@ pub mod qobject {
         #[qinvokable]
         fn open(self: &Reef, name: &QString) -> bool;
 
+        /// Install, update, Update all and remove do nothing to the phone:
+        /// each works out what it would do (`PackageKit`'s simulation) and
+        /// offers it as `pendingPlan` with `planReady`. Only
+        /// `confirmPlan()`, from the confirmation sheet's button, starts
+        /// the transaction.
         #[qinvokable]
         fn install(self: Pin<&mut Reef>, name: &QString);
 
@@ -176,6 +191,23 @@ pub mod qobject {
 
         #[qinvokable]
         fn remove(self: Pin<&mut Reef>, name: &QString);
+
+        /// The person tapped the confirmation sheet's button: runs the
+        /// pending plan, and nothing it does not show.
+        #[qinvokable]
+        #[cxx_name = "confirmPlan"]
+        fn confirm_plan(self: Pin<&mut Reef>);
+
+        /// The person left the confirmation sheet: nothing happens.
+        #[qinvokable]
+        #[cxx_name = "declinePlan"]
+        fn decline_plan(self: Pin<&mut Reef>);
+
+        /// The answer to "Check for updates in the background?": turns the
+        /// check's timer on (every few hours) or off.
+        #[qinvokable]
+        #[cxx_name = "answerBackgroundChecks"]
+        fn answer_background_checks(self: Pin<&mut Reef>, check: bool);
 
         #[qinvokable]
         #[cxx_name = "repairRepository"]
@@ -223,6 +255,18 @@ pub mod qobject {
         #[qsignal]
         #[cxx_name = "operationFinished"]
         fn operation_finished(self: Pin<&mut Reef>, name: QString, ok: bool, message: QString);
+
+        /// A plan is waiting for the person (`pendingPlan`, the same JSON):
+        /// the window shows the confirmation sheet. `name` as for
+        /// `operationFinished`.
+        #[qsignal]
+        #[cxx_name = "planReady"]
+        fn plan_ready(self: Pin<&mut Reef>, name: QString, plan: QString);
+
+        /// The person declined the pending plan for `name`.
+        #[qsignal]
+        #[cxx_name = "planDeclined"]
+        fn plan_declined(self: Pin<&mut Reef>, name: QString);
     }
 
     impl cxx_qt::Threading for Reef {}
@@ -246,7 +290,9 @@ use reef_backend::release::{self, SailfishRelease};
 use reef_backend::repo::{PinState, RepoConfig, SsuRepo};
 use reef_licence::{Licence, Policy};
 
-use crate::jobs::{self, Op, PkState, RefreshInput, RefreshOutput};
+use reef_backend::plan::Plan;
+
+use crate::jobs::{self, Ask, Op, PkState, RefreshInput, RefreshOutput};
 use crate::rows::{self, Value, LICENCE_ROLES, PACKAGE_ROLES};
 use crate::settings::{normalise_days, Settings};
 
@@ -382,8 +428,15 @@ pub struct Core {
     pending_purchase_check: bool,
     /// When `checkPurchases()` last asked the licence service.
     last_purchase_check: Option<std::time::Instant>,
+    /// What the person asked for and the plan the confirmation sheet shows,
+    /// until they confirm or decline it. Nothing else starts meanwhile.
+    pending: Option<(Ask, Plan)>,
 }
 
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the Qt properties behind the QML object, one field each"
+)]
 pub struct ReefRust {
     installed_release: QString,
     arch: QString,
@@ -395,7 +448,15 @@ pub struct ReefRust {
     busy_text: QString,
     progress: i32,
     last_error: QString,
+    /// Every Reef update Update all applies: apps, and the libraries and
+    /// services they use.
     update_count: i32,
+    /// The apps among them, as the store lists them.
+    app_update_count: i32,
+    /// The plan waiting for the person's tap, as JSON; empty when none.
+    pending_plan: QString,
+    background_check_asked: bool,
+    background_wifi_only: bool,
     /// Bumped on every model rebuild, so QML bindings that call
     /// `packageDetails()` re-evaluate (`PackagePage` reads it in its `pkg` binding).
     revision: i32,
@@ -431,6 +492,10 @@ impl Default for ReefRust {
             progress: -1,
             last_error: QString::default(),
             update_count: 0,
+            app_update_count: 0,
+            pending_plan: QString::default(),
+            background_check_asked: settings.background_check_asked,
+            background_wifi_only: settings.background_wifi_only,
             revision: 0,
             catalogue_model: std::ptr::null_mut(),
             installed_model: std::ptr::null_mut(),
@@ -523,6 +588,8 @@ impl cxx_qt::Initialize for qobject::Reef {
             r.recent_model = recent_model;
             r.refresh_on_start = settings.refresh_on_start;
             r.background_check_days = settings.background_check_days;
+            r.background_check_asked = settings.background_check_asked;
+            r.background_wifi_only = settings.background_wifi_only;
             r.licence_server = QString::from(settings.licence_server.as_str());
             r.core.cache_path = jobs::cache_path();
             // The last catalogue downloaded, so the store opens with content
@@ -543,9 +610,35 @@ impl cxx_qt::Initialize for qobject::Reef {
         self.as_mut()
             .on_refresh_on_start_changed(qobject::Reef::save_settings)
             .release();
+        // Picking a background check setting is an answer too: the timer
+        // follows it.
         self.as_mut()
-            .on_background_check_days_changed(qobject::Reef::save_settings)
+            .on_background_check_days_changed(|q| {
+                let days = q.background_check_days;
+                q.answer_background_checks_days(days);
+            })
             .release();
+        self.as_mut()
+            .on_background_wifi_only_changed(qobject::Reef::save_settings)
+            .release();
+        // Reef 27 and earlier left the install record world-writable.
+        jobs::secure_ledger();
+        // The timer follows the person's answer at every start too: a
+        // switch that failed (Reef 28 test builds ran systemctl in secure
+        // mode) is put right without asking again.
+        if self.settings().background_check_asked {
+            let on = self.settings().background_checks_on();
+            let started = std::thread::Builder::new()
+                .name("reef-timer".into())
+                .spawn(move || {
+                    if let Err(e) = crate::check::set_timer(on) {
+                        log::warn!("{e}");
+                    }
+                });
+            if let Err(e) = started {
+                log::warn!("switching the background check: {e}");
+            }
+        }
         self.as_mut()
             .on_licence_server_changed(qobject::Reef::save_settings)
             .release();
@@ -568,15 +661,55 @@ impl qobject::Reef {
             self.as_mut().set_background_check_days(days);
             return;
         }
-        let settings = Settings {
-            refresh_on_start: self.refresh_on_start,
-            background_check_days: days,
-            licence_server: self.licence_server.to_string(),
-        };
+        let settings = self.settings();
         if let Some(path) = &self.core.settings_path {
             if let Err(e) = settings.save(path) {
                 log::warn!("saving settings to {}: {e}", path.display());
             }
+        }
+    }
+
+    fn settings(&self) -> Settings {
+        Settings {
+            refresh_on_start: self.refresh_on_start,
+            background_check_days: normalise_days(self.background_check_days),
+            background_check_asked: self.background_check_asked,
+            background_wifi_only: self.background_wifi_only,
+            licence_server: self.licence_server.to_string(),
+        }
+    }
+
+    pub fn answer_background_checks(self: Pin<&mut Self>, check: bool) {
+        self.answer_background_checks_days(i32::from(check));
+    }
+
+    /// The person chose background checks every `days` (0: never): saved,
+    /// and the check's user timer enabled or disabled to match, off the GUI
+    /// thread (`systemctl --user`).
+    fn answer_background_checks_days(mut self: Pin<&mut Self>, days: i32) {
+        let days = normalise_days(days);
+        if days != self.background_check_days {
+            // Re-enters through the changed signal.
+            self.as_mut().set_background_check_days(days);
+            return;
+        }
+        set_notify!(
+            self,
+            background_check_asked,
+            background_check_asked_changed,
+            true
+        );
+        self.as_mut().save_settings();
+        let on = self.settings().background_checks_on();
+        let started = std::thread::Builder::new()
+            .name("reef-timer".into())
+            .spawn(move || {
+                if let Err(e) = crate::check::set_timer(on) {
+                    log::warn!("{e}");
+                }
+            });
+        if let Err(e) = started {
+            log::warn!("switching the background check: {e}");
         }
     }
 
@@ -631,6 +764,12 @@ impl qobject::Reef {
             .map(|s| rows::licence_row(s, &|app| rows::title_for_app(catalogue, app)).values())
             .collect();
         let update_count = qt_count(self.core.pk.updates.len());
+        let app_update_count = qt_count(
+            package_rows
+                .iter()
+                .filter(|r| r.install_state == "update_available")
+                .count(),
+        );
 
         // SAFETY: the models were created in `initialize` as QObject
         // children of `self` and live as long as it does; they are used only
@@ -651,6 +790,12 @@ impl qobject::Reef {
                 .set_rows(recent_rows.iter().map(rows::PackageRow::values).collect());
         }
         set_notify!(self, update_count, update_count_changed, update_count);
+        set_notify!(
+            self,
+            app_update_count,
+            app_update_count_changed,
+            app_update_count
+        );
         let revision = self.revision.wrapping_add(1);
         self.as_mut().rust_mut().revision = revision;
         self.as_mut().revision_changed();
@@ -710,6 +855,11 @@ impl qobject::Reef {
         set_notify!(self, busy_package, busy_package_changed, QString::default());
         set_notify!(self, busy_text, busy_text_changed, QString::default());
         set_notify!(self, progress, progress_changed, -1);
+        if self.core.pending.is_some() {
+            // A refresh waits until the person has answered the sheet, so
+            // that their tap never meets a busy store.
+            return;
+        }
         let purchases = std::mem::take(&mut self.as_mut().rust_mut().core.pending_purchase_check);
         if std::mem::take(&mut self.as_mut().rust_mut().core.pending_refresh) {
             // A refresh redeems pending claim codes too.
@@ -813,6 +963,70 @@ impl qobject::Reef {
         );
     }
 
+    /// Works out what `ask` would do and offers it to the person
+    /// (`pendingPlan`, `planReady`); nothing is installed or removed.
+    fn start_preview(mut self: Pin<&mut Self>, ask: Ask) {
+        let name = ask.package().to_string();
+        if self.core.pending.is_some() || !self.as_mut().begin_job(&name, "checking_plan") {
+            self.operation_finished(
+                QString::from(name.as_str()),
+                false,
+                QString::from(rows::message("busy", &[]).as_str()),
+            );
+            return;
+        }
+        let alias = self.core.config.alias.clone();
+        let catalogue = self.core.catalogue.clone();
+        self.as_mut().spawn(move |thread| {
+            let result = jobs::preview(&ask, &alias, catalogue.as_ref());
+            queue_or_log(&thread, move |mut q| match result {
+                Ok(plan) => {
+                    let json = QString::from(plan.to_json().as_str());
+                    q.as_mut().rust_mut().core.pending = Some((ask, plan));
+                    set_notify!(q, pending_plan, pending_plan_changed, json.clone());
+                    q.as_mut().end_job();
+                    q.plan_ready(QString::from(name.as_str()), json);
+                }
+                Err(e) => {
+                    log::warn!("{name}: {e}");
+                    q.as_mut().set_error(&e);
+                    q.as_mut().end_job();
+                    q.operation_finished(
+                        QString::from(name.as_str()),
+                        false,
+                        QString::from(e.as_str()),
+                    );
+                }
+            });
+        });
+    }
+
+    /// Takes the pending plan away from the sheet, and starts the refresh
+    /// that waited for it.
+    fn take_pending(mut self: Pin<&mut Self>) -> Option<(Ask, Plan)> {
+        let pending = self.as_mut().rust_mut().core.pending.take();
+        set_notify!(self, pending_plan, pending_plan_changed, QString::default());
+        pending
+    }
+
+    pub fn confirm_plan(mut self: Pin<&mut Self>) {
+        let Some((ask, plan)) = self.as_mut().take_pending() else {
+            return;
+        };
+        self.start_op(Op { ask, plan });
+    }
+
+    pub fn decline_plan(mut self: Pin<&mut Self>) {
+        let Some((ask, _)) = self.as_mut().take_pending() else {
+            return;
+        };
+        self.as_mut().plan_declined(QString::from(ask.package()));
+        // What waited for the answer.
+        if !self.busy {
+            self.as_mut().end_job();
+        }
+    }
+
     fn start_op(mut self: Pin<&mut Self>, op: Op) {
         let name = op.package().to_string();
         if !self.as_mut().begin_job(&name, "starting") {
@@ -861,7 +1075,7 @@ impl qobject::Reef {
     }
 
     pub fn refresh(mut self: Pin<&mut Self>) {
-        if self.busy {
+        if self.busy || self.core.pending.is_some() {
             self.as_mut().rust_mut().core.pending_refresh = true;
             return;
         }
@@ -897,9 +1111,10 @@ impl qobject::Reef {
                 .and_then(|s| s.check(app, now))
                 .is_some_and(|s| rows::licence_usable(&s))
         });
-        to_map(&rows::package_details(package, &state, licensed, &|rel| {
-            self.asset(rel)
-        }))
+        let mut details = rows::package_details(package, &state, licensed, &|rel| self.asset(rel));
+        // Reef offers Remove only for what it installed (fix 8).
+        details.push(("removable", self.core.pk.removable.contains(&name).into()));
+        to_map(&details)
     }
 
     pub fn can_open(&self, name: &QString) -> bool {
@@ -920,19 +1135,19 @@ impl qobject::Reef {
     }
 
     pub fn install(self: Pin<&mut Self>, name: &QString) {
-        self.start_op(Op::Install(name.to_string()));
+        self.start_preview(Ask::Install(name.to_string()));
     }
 
     pub fn update(self: Pin<&mut Self>, name: &QString) {
-        self.start_op(Op::Update(name.to_string()));
+        self.start_preview(Ask::Update(name.to_string()));
     }
 
     pub fn update_all(self: Pin<&mut Self>) {
-        self.start_op(Op::UpdateAll);
+        self.start_preview(Ask::UpdateAll);
     }
 
     pub fn remove(self: Pin<&mut Self>, name: &QString) {
-        self.start_op(Op::Remove(name.to_string()));
+        self.start_preview(Ask::Remove(name.to_string()));
     }
 
     pub fn repair_repository(mut self: Pin<&mut Self>) {
@@ -1040,7 +1255,9 @@ impl qobject::Reef {
         let Some(dir) = self.core.licence_dir.clone() else {
             return;
         };
-        if !self.as_mut().begin_job("", "refreshing_licences") {
+        // Not while the confirmation sheet waits: its tap must find the
+        // store free.
+        if self.core.pending.is_some() || !self.as_mut().begin_job("", "refreshing_licences") {
             return;
         }
         let server = self.licence_server.to_string();
@@ -1105,7 +1322,7 @@ impl qobject::Reef {
         if !PendingClaims::beside(&dir).any(jobs::unix_now()) {
             return;
         }
-        if self.busy {
+        if self.busy || self.core.pending.is_some() {
             self.as_mut().rust_mut().core.pending_purchase_check = true;
             return;
         }

@@ -9,7 +9,7 @@ Summary:    Private messaging on Matrix
 # Shoal Messages' own version (semver). Upstream base: see UPSTREAM.md.
 # Must match core/Cargo.toml (scripts/build-core.sh and the .pro check it).
 Version:    0.1.0
-Release:    8
+Release:    9
 License:    ASL 2.0 and MIT and MPLv2.0 and BSD and ISC and zlib and Unicode and Boost and CC0 and CDLA-Permissive and Unlicense
 URL:        https://reefstore.app/#app-shipwright-shoal-messages
 Source0:    %{name}-%{version}.tar.bz2
@@ -34,7 +34,9 @@ Requires:   qt5-qtdeclarative-import-folderlistmodel
 Requires:   qt5-qtdeclarative-import-sensors
 Requires:   sailfish-content-graphics
 Requires:   nemo-qml-plugin-notifications-qt5
-# Shipwright: hosted push; the app reports clearly when it is absent.
+# Shipwright: hosted push; the app reports clearly when it is absent. Push
+# is opt-in (Settings > Push notifications), and Shoal Push runs only while
+# an app is registered with it, so installing it costs nothing until then.
 Recommends: shipwright-shoal-push
 # Calls load these at run time rather than linking them, so they have to be
 # named explicitly: webrtcbin and DTLS live in plugins-bad, the RTP session
@@ -95,6 +97,10 @@ they do in modern clients. Voice calls run over WebRTC via GStreamer. The
 Rust core is linked in statically and is built ahead of packaging by
 scripts/build-core.sh.
 
+Notifications while the app is closed use the Shoal Push service
+(shipwright-shoal-push), which is installed with it. Push is off until you
+switch it on in the app; the service runs only while it is on.
+
 %prep
 %setup -q
 
@@ -142,6 +148,19 @@ strip %{buildroot}%{_bindir}/%{name}
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Mon Oct 12 2026 Shipwright - 0.1.0-9
+- No five-minute wake-ups in the background while push notifications work:
+  push wakes the app when something arrives. If push stops working, the
+  wake-ups come back.
+- Shoal Push is offered and started when you switch push on, now that it no
+  longer runs until an app needs it.
+- Opens matrix: links only. It no longer registers for every web address
+  (to catch matrix.to links), so it no longer appears in "open with" for
+  links it has nothing to do with. matrix.to links in conversations open in
+  the app as before, and Join room accepts a pasted matrix.to link.
+- The camera's zoom value uses the language's decimal comma or point.
+- Sign-in advice (web sign-in, an unreachable server) still shows when the app's messages change wording.
+
 * Thu Oct 08 2026 Shipwright - 0.1.0-8
 - Opens on Sailfish OS 5.2 instead of "Encryption not possible". The database
   key now lives in the app's own private storage, which no other app can read.

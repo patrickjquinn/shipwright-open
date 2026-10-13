@@ -1,4 +1,4 @@
-// Modified by Shipwright, 2026: rebranded as Shoal Messages; first-run bridges entry, opening a chat started through a bridge; see CHANGES-FROM-UPSTREAM.md.
+// Modified by Shipwright, 2026: rebranded as Shoal Messages; first-run bridges entry, opening a chat started through a bridge; no background wake-ups while push works; see CHANGES-FROM-UPSTREAM.md.
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtMultimedia 5.6
@@ -24,6 +24,15 @@ ApplicationWindow {
 
     // The room the standing notification is about, or "" if none stands.
     property string notifiedRoomId: ""
+
+    // Shipwright: push is switched on and the distributor has answered with an
+    // endpoint for it. Then the distributor wakes the app when something
+    // arrives, and the five-minute wake-up below would only cost battery.
+    readonly property bool pushWorking: settings.pushEnabled
+                                        && !!matrix.pushStatus.distributor
+                                        && matrix.pushStatus.acknowledged === true
+                                        && ["unavailable", "no-distributor", "off"]
+                                           .indexOf(matrix.pushStatus.state || "") < 0
 
     // Decided here rather than corrected a moment later: the login page must not
     // flash up on a device that has to be told what to install.
@@ -455,12 +464,19 @@ ApplicationWindow {
     }
 
     // Sailfish suspends idle devices: without a scheduled wake-up the sync
-    // connection drops while the screen is off.
+    // connection drops while the screen is off. Shipwright: only in the
+    // background, only when signed in, and never while push works - push
+    // wakes the app itself, and a five-minute wake-up on top of it is the
+    // battery drain push exists to avoid. If push breaks, this comes back.
     BackgroundJob {
         id: backgroundSync
 
+        enabled: Qt.application.state !== Qt.ApplicationActive
+                 && matrix.sessionState === "signed-in"
+                 && !app.pushWorking
         frequency: BackgroundJob.FiveMinutes
         onTriggered: catchUp.restart()
+        onEnabledChanged: console.log("shoal-messages: background wake-ups", enabled ? "on" : "off")
     }
 
     // Being awake is all the core needs; the sync service catches up on its
@@ -476,11 +492,8 @@ ApplicationWindow {
         target: Qt.application
         onStateChanged: {
             if (Qt.application.state === Qt.ApplicationActive) {
-                backgroundSync.enabled = false
                 notification.close()
                 app.notifiedRoomId = ""
-            } else {
-                backgroundSync.enabled = matrix.sessionState === "signed-in"
             }
         }
     }

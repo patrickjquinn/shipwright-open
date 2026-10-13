@@ -31,7 +31,9 @@ use crate::mention;
 use crate::poll;
 use crate::private;
 use crate::profile;
-use crate::protocol::{event, reply_error, reply_ok, Command, MediaStill, Secret};
+use crate::protocol::{
+    event, reply_error, reply_error_code, reply_ok, Command, MediaStill, Secret,
+};
 use crate::readall;
 use crate::recovery;
 use crate::roomlist::{self, RoomListHandle};
@@ -3136,8 +3138,10 @@ async fn start_login(state: &Arc<State>, id: u64, homeserver: String) {
     let client =
         match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await {
             Ok(client) => client,
-            Err(error) => {
-                state.sink.emit(reply_error(id, error));
+            Err(failure) => {
+                state
+                    .sink
+                    .emit(reply_error_code(id, failure.code(), failure.to_string()));
                 return;
             }
         };
@@ -3172,14 +3176,19 @@ async fn start_login(state: &Arc<State>, id: u64, homeserver: String) {
                         .as_ref()
                         .map(|list| list.iter().any(|flow| flow == "sso"))
                         .unwrap_or(false);
-                    state.sink.emit(reply_error(
-                        id,
-                        if sso {
-                            "this server signs in through its own web page (SSO), which this app cannot do yet"
-                        } else {
-                            "this server offers no sign-in method this app supports"
-                        },
-                    ));
+                    state.sink.emit(if sso {
+                        reply_error_code(
+                            id,
+                            "login.sso",
+                            "this server signs in through its own web page (SSO), which this app cannot do yet",
+                        )
+                    } else {
+                        reply_error_code(
+                            id,
+                            "login.unsupported",
+                            "this server offers no sign-in method this app supports",
+                        )
+                    });
                 }
                 Err(_) => state.sink.emit(reply_error(
                     id,
@@ -3280,8 +3289,10 @@ async fn password_login(
             match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await
             {
                 Ok(client) => client,
-                Err(error) => {
-                    state.sink.emit(reply_error(id, error));
+                Err(failure) => {
+                    state
+                        .sink
+                        .emit(reply_error_code(id, failure.code(), failure.to_string()));
                     return;
                 }
             }
@@ -3348,8 +3359,10 @@ async fn start_device_login(state: &Arc<State>, id: u64, homeserver: String) {
     let client =
         match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await {
             Ok(client) => client,
-            Err(error) => {
-                state.sink.emit(reply_error(id, error));
+            Err(failure) => {
+                state
+                    .sink
+                    .emit(reply_error_code(id, failure.code(), failure.to_string()));
                 return;
             }
         };
@@ -3522,8 +3535,10 @@ async fn registration_url(state: &Arc<State>, id: u64, homeserver: String) {
     let client =
         match session::build_client(&homeserver, &state.paths, state.store_key().as_ref()).await {
             Ok(client) => client,
-            Err(error) => {
-                state.sink.emit(reply_error(id, error));
+            Err(failure) => {
+                state
+                    .sink
+                    .emit(reply_error_code(id, failure.code(), failure.to_string()));
                 return;
             }
         };

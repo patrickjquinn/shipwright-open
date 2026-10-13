@@ -370,6 +370,21 @@ pub fn package_details(
                 .unwrap_or_else(|_| "[]".into())
                 .into(),
         ),
+        // What it brings that runs by itself, and what it changes on the
+        // phone, over everything it pulls in: [{name, package, scope,
+        // starts, description}] and [{package, description}], as JSON.
+        (
+            "servicesJson",
+            serde_json::to_string(&package.services)
+                .unwrap_or_else(|_| "[]".into())
+                .into(),
+        ),
+        (
+            "systemChangesJson",
+            serde_json::to_string(&package.system_changes)
+                .unwrap_or_else(|_| "[]".into())
+                .into(),
+        ),
     ]
 }
 
@@ -878,7 +893,9 @@ mod tests {
                 "screenshotPaths",
                 "added",
                 "updated",
-                "changelogJson"
+                "changelogJson",
+                "servicesJson",
+                "systemChangesJson"
             ]
         );
         let get = |k: &str| d.iter().find(|(key, _)| *key == k).unwrap().1.clone();

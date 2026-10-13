@@ -68,8 +68,15 @@ ApplicationWindow {
             return
         if (pageStack.currentPage && pageStack.currentPage.objectName === "autofillPage")
             return
-        var next = pendingAutofill[0]
-        pendingAutofill = pendingAutofill.slice(1)
+        // Requests that timed out or were declined meanwhile are skipped.
+        var waiting = JSON.parse(ShoalKeys.autofillPending())
+        var left = pendingAutofill.filter(function (r) { return waiting.indexOf(r) >= 0 })
+        if (left.length === 0) {
+            pendingAutofill = []
+            return
+        }
+        var next = left[0]
+        pendingAutofill = left.slice(1)
         pageStack.push(Qt.resolvedUrl("pages/AutofillPage.qml"), { request: next })
     }
     Timer {

@@ -20,6 +20,8 @@
 //! * [`licenced`]: the session-bus service that hands tokens to sandboxed
 //!   apps (`shipwright-reef-licenced`, src/bin).
 //! * [`store`]: the catalogue joined with install state, for the UI.
+//! * [`plan`]: what an install, update or removal will do, which the
+//!   person sees and agrees to before anything happens.
 //!
 //! No networking lives here: the UI layer downloads the catalogue, tokens
 //! and revocation list and passes the bytes in.
@@ -30,6 +32,28 @@ pub mod licenced;
 pub mod licences;
 pub mod metadata;
 pub mod packagekit;
+pub mod plan;
 pub mod release;
 pub mod repo;
 pub mod store;
+
+/// `cmd` set to run in the C locale (`LC_ALL=C`, `LANGUAGE=C`): for every
+/// tool whose output Reef reads (ssu, rpm, gpgv, version). On a phone not
+/// set to English their messages are translated, and Reef refused every
+/// install on such phones while it read gpgv's English one.
+pub fn c_locale(cmd: &mut std::process::Command) -> &mut std::process::Command {
+    cmd.env("LC_ALL", "C").env("LANGUAGE", "C")
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn c_locale_overrides_the_phones_language() {
+        let mut cmd = std::process::Command::new("ssu");
+        cmd.env("LC_ALL", "de_DE.UTF-8");
+        super::c_locale(&mut cmd);
+        let envs: Vec<_> = cmd.get_envs().collect();
+        assert!(envs.contains(&("LC_ALL".as_ref(), Some("C".as_ref()))));
+        assert!(envs.contains(&("LANGUAGE".as_ref(), Some("C".as_ref()))));
+    }
+}

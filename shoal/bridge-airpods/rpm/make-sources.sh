@@ -34,4 +34,6 @@ for f in "$daemon"/vendor/*.tar.*; do
     esac
 done
 cp "$daemon"/patches/*.patch "$daemon/shoal-bridge-airpods.service" "$out/"
+cp "$here/../vendorid/clean-stale-device-id" \
+    "$here/../vendorid/shoal-bridge-airpods-device-id-check.service" "$out/"
 echo "sources in $out"

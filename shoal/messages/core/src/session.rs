@@ -245,6 +245,17 @@ pub enum BuildFailure {
     Unreachable(String),
 }
 
+impl BuildFailure {
+    /// What the UI tells apart (`reply_error_code`).
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::Refused(_) => "store.refused",
+            Self::Store(_) => "store.unreadable",
+            Self::Unreachable(_) => "server.unreachable",
+        }
+    }
+}
+
 impl std::fmt::Display for BuildFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -261,10 +272,8 @@ pub async fn build_client(
     server: &str,
     paths: &Paths,
     key: Option<&StoreKey>,
-) -> Result<Client, String> {
-    build_client_at(Target::Discover(server), paths, key)
-        .await
-        .map_err(|failure| failure.to_string())
+) -> Result<Client, BuildFailure> {
+    build_client_at(Target::Discover(server), paths, key).await
 }
 
 pub async fn build_client_at(

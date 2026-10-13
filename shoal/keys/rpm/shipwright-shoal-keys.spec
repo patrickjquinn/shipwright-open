@@ -24,14 +24,14 @@
 
 Name:           shipwright-shoal-keys
 Version:        0.1.0
-Release:        11
+Release:        12
 Summary:        Passwords and one-time codes
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/#app-shipwright-shoal-keys
 
 # Runtime: Keel (Sailfish.Silica for Qt 6) and its launcher, Chum Qt 6, and
 # the Sailfish Secrets daemon that holds the device key's wrapping key.
-Requires:       shipwright-keel-silica
+Requires:       shipwright-keel-silica >= 0.1.0-29
 # Keel Actions runtime (Keel.Actions 1.0, ADR-0018).
 Requires:       shipwright-keel-actions
 # The app starts in its own booster, booster-keel@<app> (shipwright-keel-booster),
@@ -125,6 +125,13 @@ systemctl-user daemon-reload >/dev/null 2>&1 || :
 %config %{_sysconfdir}/sailjail/permissions/ShoalKeysAutofill.permission
 
 %changelog
+* Mon Oct 12 2026 Shipwright - 0.1.0-12
+- A request from another app (Pacific asking for a login, or to save one) waits at most 25 seconds, as long as the app waits for an answer; then it is declined and its page in Keys closes. No more pages for requests nobody is waiting for.
+- At most eight requests wait at once; more are declined straight away.
+- Locking the vault declines every waiting request.
+- A password waiting to be saved, and a login on its way to the app that asked, are wiped from memory as soon as they are no longer needed.
+- Modified dates are in the phone's language.
+
 * Fri Oct 09 2026 Shipwright - 0.1.0-11
 - Opens right after it is installed. Its launch booster starts with the install, not at the next restart: before, an app installed from Reef did nothing when tapped until the phone was restarted.
 

@@ -91,11 +91,12 @@ Page {
             // timer starts every 4 hours (reef/client/app/packaging/systemd/;
             // backgroundCheckDays 1 is "every few hours", src/check.rs). The
             // setting is written only when the user picks an item, never
-            // while the page is created.
+            // while the page is created; picking one turns the timer on, or
+            // off for Never.
             ComboBox {
                 label: qsTr("Check in the background")
                 description: qsTr("Notifies you when your apps have updates")
-                currentIndex: Reef.backgroundCheckDays === 0 ? 0
+                currentIndex: !Reef.backgroundCheckAsked || Reef.backgroundCheckDays === 0 ? 0
                             : Reef.backgroundCheckDays === 1 ? 1 : 2
                 menu: ContextMenu {
                     MenuItem {
@@ -111,6 +112,15 @@ Page {
                         onClicked: Reef.backgroundCheckDays = 7
                     }
                 }
+            }
+            // ConnMan's connection in use, asked by the check itself.
+            TextSwitch {
+                objectName: "wifiOnly"
+                text: qsTr("Only on Wi-Fi")
+                description: qsTr("Background checks never use mobile data")
+                visible: Reef.backgroundCheckAsked && Reef.backgroundCheckDays > 0
+                checked: Reef.backgroundWifiOnly
+                onClicked: Reef.backgroundWifiOnly = checked
             }
 
             SectionHeader { text: qsTr("Licences") }
