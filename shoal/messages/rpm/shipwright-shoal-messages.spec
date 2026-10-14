@@ -152,6 +152,7 @@ strip %{buildroot}%{_bindir}/%{name}
 - Names too long for the call and profile pages start at the left and fade out instead of being cut off at both ends.
 - At large text sizes, list rows take the room their lines need instead of running into the next row.
 - The cover's text wraps between words at the larger text sizes (a word too wide for the cover shrinks instead of breaking in the middle).
+- Pilot gets an answer at once when Messages is not signed in, instead of after ten seconds.
 
 * Mon Oct 12 2026 Shipwright - 0.1.0-9
 - No five-minute wake-ups in the background while push notifications work:

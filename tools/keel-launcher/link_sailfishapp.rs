@@ -233,13 +233,25 @@ fn link_keel_sailfishapp(repo: &Path) -> PathBuf {
 /// is: the C runtime's `Scrt1.o` start code (its `_start` calls `main`) and a
 /// `.interp` section naming the dynamic linker, which makes the linker emit
 /// `PT_INTERP`. Linux targets only; elsewhere the library is left as it is.
+/// The dynamic linker is the target C library's: glibc's, or musl's
+/// (Alpine, Marathon OS), where glibc's path does not exist and the app
+/// fails to start ("cannot execute: required file not found").
 fn executable_cdylib() {
-    let interp = match std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
-        _ if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("linux") => return,
-        Ok("x86_64") => "/lib64/ld-linux-x86-64.so.2",
-        Ok("aarch64") => "/lib/ld-linux-aarch64.so.1",
-        Ok("arm") => "/lib/ld-linux-armhf.so.3",
-        Ok("x86") => "/lib/ld-linux.so.2",
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("linux") {
+        return;
+    }
+    let musl = std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("musl");
+    let hard_float = std::env::var("CARGO_CFG_TARGET_ABI").is_ok_and(|abi| abi.ends_with("hf"));
+    let interp = match (std::env::var("CARGO_CFG_TARGET_ARCH").as_deref(), musl) {
+        (Ok("x86_64"), false) => "/lib64/ld-linux-x86-64.so.2",
+        (Ok("aarch64"), false) => "/lib/ld-linux-aarch64.so.1",
+        (Ok("arm"), false) => "/lib/ld-linux-armhf.so.3",
+        (Ok("x86"), false) => "/lib/ld-linux.so.2",
+        (Ok("x86_64"), true) => "/lib/ld-musl-x86_64.so.1",
+        (Ok("aarch64"), true) => "/lib/ld-musl-aarch64.so.1",
+        (Ok("arm"), true) if hard_float => "/lib/ld-musl-armhf.so.1",
+        (Ok("arm"), true) => "/lib/ld-musl-arm.so.1",
+        (Ok("x86"), true) => "/lib/ld-musl-i386.so.1",
         _ => return,
     };
     let compiler = cc::Build::new().cargo_metadata(false).get_compiler();

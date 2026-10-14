@@ -31,6 +31,8 @@
 # (shoal/pilot/README.md; staging phone builds only);
 # SHIPWRIGHT_LICENCE_KEYS (kid:base64url[,...]) is the licence public keys
 # compiled into Reef, Shoal Keys and Shoal Mail (README.md, "Licence keys");
+# PACIFIC_ENGINE_RPMS (a local mirror of Atlantic's engine RPMs, default
+# ~/.cache/shipwright/atlantic-mirror/aarch64, copied into the container);
 # SKIP_SPECS, WITH_VENDORID, WITH_PHASE0, MIN_FREE_GB, BUILD_WORKSPACE, CARGO_PACKAGES and
 # SOURCE_DATE_EPOCH (default: the last commit's time) go to build-rpms.sh,
 # as with sdk.sh. NATIVE_REBUILD_IMAGE=1 rebuilds the image (a new release's
@@ -96,6 +98,20 @@ if [ -n "${REEF_KEY_FILE:-}" ]; then
 fi
 source_date_epoch=${SOURCE_DATE_EPOCH:-$(git -C "$root" log -1 --format=%ct)}
 
+# Pacific's engine repackages Atlantic's build 746.1, which its repository
+# no longer serves in full (libepoxy-1.5.11-746.1: 404 since 13 October
+# 2026): a new container cannot fetch it. A local mirror of those RPMs
+# (PACIFIC_ENGINE_RPMS, default ~/.cache/shipwright/atlantic-mirror/aarch64)
+# goes into the container for shoal/pacific/engine/fetch-rpms.sh, which
+# still checks every file against its SHA256SUMS.
+engine_env=()
+engine_mirror=${PACIFIC_ENGINE_RPMS:-$HOME/.cache/shipwright/atlantic-mirror/aarch64}
+if [ -d "$engine_mirror" ]; then
+    podman exec "$name" rm -rf /tmp/atlantic-mirror
+    podman cp "$engine_mirror" "$name:/tmp/atlantic-mirror"
+    engine_env=(-e PACIFIC_ENGINE_RPMS=/tmp/atlantic-mirror)
+fi
+
 status=0
 podman exec -e SAILFISH_NATIVE=1 -e SKIP_SPECS="${SKIP_SPECS:-}" \
     -e WITH_VENDORID="${WITH_VENDORID:-0}" -e WITH_PHASE0="${WITH_PHASE0:-0}" \
@@ -103,7 +119,7 @@ podman exec -e SAILFISH_NATIVE=1 -e SKIP_SPECS="${SKIP_SPECS:-}" \
     -e CARGO_PACKAGES="${CARGO_PACKAGES:-}" -e SOURCE_DATE_EPOCH="$source_date_epoch" \
     -e REEF_URL_TEMPLATE="${REEF_URL_TEMPLATE:-}" -e REEF_LICENCE_SERVER="${REEF_LICENCE_SERVER:-}" \
     -e SHIPWRIGHT_LICENCE_KEYS="${SHIPWRIGHT_LICENCE_KEYS:-}" -e PILOT_RELAY_URL="${PILOT_RELAY_URL:-}" \
-    "${reef_key_env[@]}" "$name" bash -lc \
+    "${reef_key_env[@]}" "${engine_env[@]}" "$name" bash -lc \
     'export PATH=/root/build/tools/build/native:$PATH; cd /root/build && tools/build/sdk/build-rpms.sh --target "$0" "$@"' \
     "$target" "$@" || status=$?
 

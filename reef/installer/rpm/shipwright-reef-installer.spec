@@ -20,7 +20,7 @@ Name:           shipwright-reef-installer
 # The client obsoletes installers below 1 (reef/rpm/shipwright-reef.spec):
 # raise that bound before this version reaches 1.
 Version:        0.1.0
-Release:        8
+Release:        9
 Summary:        Installs the Reef store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -159,6 +159,9 @@ exit 0
 %ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Wed Oct 14 2026 Shipwright - 0.1.0-9
+- Rebuilt with Reef 0.1.0-29.
+
 * Mon Oct 12 2026 Shipwright - 0.1.0-8
 - Removing the installer before Reef took over removes its log, /var/log/shipwright-reef-installer.log (once Reef is installed, the log stays until Reef is removed).
 - The installer waits for the installation that started it to finish before it installs Reef (it waited for nothing before), and no longer stops other installations or restarts PackageKit when the store cannot be reached: it tries again, and says on the screen when the install fails.

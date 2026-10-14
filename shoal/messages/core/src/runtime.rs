@@ -940,7 +940,9 @@ async fn handle(state: Arc<State>, command: Command) {
 /// Shipwright: the client a Keel request runs with. A request can start the
 /// app (D-Bus activation) and then arrives while the session is still being
 /// restored; it waits for that, ten seconds at most, as the Keel.Actions
-/// runtime waits for an action that has not registered yet.
+/// runtime waits for an action that has not registered yet. With no saved
+/// session there is nothing to wait for: never signed in (or signed out)
+/// answers at once (it waited the full ten seconds).
 async fn keel_client(state: &Arc<State>) -> Option<Client> {
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
     loop {
@@ -949,7 +951,7 @@ async fn keel_client(state: &Arc<State>) -> Option<Client> {
         if let Some(client) = state.client().await {
             return Some(client);
         }
-        if tokio::time::Instant::now() >= deadline {
+        if !state.paths.session_file.exists() || tokio::time::Instant::now() >= deadline {
             return None;
         }
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
