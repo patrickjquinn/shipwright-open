@@ -63,15 +63,18 @@ Page {
             }
         }
 
-        // The header grows once the catalogue arrives (banner, rows); a
-        // list that has not been scrolled yet stays at its top.
-        property bool scrolled
-        onMovementStarted: scrolled = true
+        // The header grows once the catalogue arrives (banner, rows) and
+        // when updates turn up (the updates card): a list at its top stays
+        // there. ListView keeps its first row in place instead, which slid
+        // the page title and the new card up under the camera cut-out, and
+        // a list scrolled once and back to the top was not kept there.
+        property bool atTop: true
+        onMovementEnded: atTop = atYBeginning
 
         header: Column {
             width: list.width
             Component.onCompleted: page.searchField = search
-            onHeightChanged: if (!list.scrolled) list.positionViewAtBeginning()
+            onHeightChanged: if (list.atTop) list.positionViewAtBeginning()
 
             PageHeader {
                 title: qsTr("Reef")
@@ -123,7 +126,9 @@ Page {
             BackgroundItem {
                 objectName: "updatesCard"
                 width: parent.width
-                height: visible ? Theme.itemSizeLarge : 0
+                // Room for a title on up to three lines ("3 updates for
+                // libraries and services" beside the button was cut off).
+                height: visible ? Math.max(Theme.itemSizeLarge, updatesText.height + 2 * Theme.paddingMedium) : 0
                 visible: page.browsing && Reef.updateCount > 0
                 onClicked: pageStack.push(Qt.resolvedUrl("InstalledPage.qml"))
 
@@ -139,6 +144,7 @@ Page {
                     color: Theme.highlightColor
                 }
                 Column {
+                    id: updatesText
                     anchors.left: updatesIcon.right
                     anchors.leftMargin: Theme.paddingLarge
                     anchors.right: updateAll.left
@@ -150,6 +156,8 @@ Page {
                         // Update all lists them all before applying them.
                         text: Texts.updatesText(Reef.appUpdateCount, Reef.updateCount)
                         color: Theme.highlightColor
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 3
                         truncationMode: TruncationMode.Fade
                     }
                     Label {
