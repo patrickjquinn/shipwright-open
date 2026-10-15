@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        30
+Release:        31
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -324,6 +324,10 @@ exit 0
 %ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Wed Oct 14 2026 Shipwright - 0.1.0-31
+- Opening Installed (or any page) from the store's first page no longer shows the next featured banner sliding across it during the page change; the same for the screenshot viewer.
+- The store's first page keeps where you were when you open an app and come back: its banners collapsed while the page was hidden under the app's page, which scrolled it back up. Banners that appear near the top (updates) now push what is below down instead of moving the page, so the title stays clear of the camera cut-out, and a change to one app updates only its row.
+
 * Wed Oct 14 2026 Shipwright - 0.1.0-30
 - When updates turn up while the store's first page is open, the page stays at its top: the page title and the new updates banner no longer slide up under the camera cut-out.
 - The updates banner's title takes the lines it needs ("3 updates for libraries and services" was cut off beside Update all).

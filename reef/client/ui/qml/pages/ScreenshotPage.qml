@@ -32,6 +32,10 @@ Page {
     SlideshowView {
         id: slides
         objectName: "screenshotSlides"
+        // The neighbouring screenshots wait a page width to either side:
+        // kept inside the page, so they do not slide over the page under it
+        // as this one is pushed or popped.
+        clip: true
         anchors.fill: parent
         itemWidth: width
         itemHeight: height

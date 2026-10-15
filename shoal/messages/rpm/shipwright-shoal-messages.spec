@@ -9,7 +9,7 @@ Summary:    Private messaging on Matrix
 # Shoal Messages' own version (semver). Upstream base: see UPSTREAM.md.
 # Must match core/Cargo.toml (scripts/build-core.sh and the .pro check it).
 Version:    0.1.0
-Release:    10
+Release:    11
 License:    ASL 2.0 and MIT and MPLv2.0 and BSD and ISC and zlib and Unicode and Boost and CC0 and CDLA-Permissive and Unlicense
 URL:        https://reefstore.app/#app-shipwright-shoal-messages
 Source0:    %{name}-%{version}.tar.bz2
@@ -148,6 +148,9 @@ strip %{buildroot}%{_bindir}/%{name}
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Wed Oct 14 2026 Shipwright - 0.1.0-11
+- Pages keep their scroll position when you open another page and come back: parts of a page that sized themselves by whether they were visible collapsed while the page was hidden underneath.
+
 * Tue Oct 13 2026 Shipwright - 0.1.0-10
 - Names too long for the call and profile pages start at the left and fade out instead of being cut off at both ends.
 - At large text sizes, list rows take the room their lines need instead of running into the next row.

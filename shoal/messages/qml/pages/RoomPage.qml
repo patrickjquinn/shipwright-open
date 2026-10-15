@@ -1253,7 +1253,8 @@ Page {
                 right: parent.right
                 top: roomHeader.bottom
             }
-            height: visible ? Theme.itemSizeSmall : 0
+            // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
+            height: (!page.invited && matrix.roomReplaced) ? Theme.itemSizeSmall : 0
             visible: !page.invited && matrix.roomReplaced
             clip: true
             onClicked: {
@@ -1318,7 +1319,7 @@ Page {
                 right: parent.right
                 top: tombstoneBanner.bottom
             }
-            height: visible ? Theme.itemSizeExtraSmall : 0
+            height: (!page.invited && matrix.pinnedEventIds.length > 0) ? Theme.itemSizeExtraSmall : 0
             visible: !page.invited && matrix.pinnedEventIds.length > 0
             // One line high and outside the list: a preview that grew taller would paint
             // over the conversation instead of being cut off.
@@ -2019,7 +2020,7 @@ Page {
                                 // The event's own measurements, never the loaded picture's:
                                 // `PreserveAspectFit` recomputes the implicit size from the given one.
                                 width: visible ? (aspect >= 1 ? box : Math.round(box * aspect)) : 0
-                                height: visible ? (aspect >= 1 ? Math.round(box / aspect) : box) : 0
+                                height: (!!quotedMedia) ? (aspect >= 1 ? Math.round(box / aspect) : box) : 0
                                 radius: Theme.paddingSmall / 2
                                 // The same edge as a picture in a message: the grey
                                 // opposite the background it stands on.
@@ -2191,7 +2192,7 @@ Page {
 
                             visible: row.hasPreview
                             width: visible ? attachment.width + 2 * (border.width + bubbleColumn.frameMat) : 0
-                            height: visible ? attachment.height + 2 * (border.width + bubbleColumn.frameMat) : 0
+                            height: (row.hasPreview) ? attachment.height + 2 * (border.width + bubbleColumn.frameMat) : 0
                             radius: Theme.paddingSmall / 2
                             // The body a picture that has not arrived stands in; the
                             // picture covers it once it lands.

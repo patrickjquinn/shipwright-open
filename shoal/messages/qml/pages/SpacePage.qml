@@ -129,7 +129,8 @@ Page {
         footer: Column {
             width: roomList.width
             visible: linkedModel.count > 0
-            height: visible ? implicitHeight : 0
+            // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
+            height: (linkedModel.count > 0) ? implicitHeight : 0
 
             SectionHeader {
                 text: qsTr("Linked, not joined")

@@ -1093,3 +1093,110 @@ mod tests {
         assert_eq!(title_for_app(None, "shoal-messages"), None);
     }
 }
+
+/// One step from a list model's rows to new ones (`ReefListModel::set_rows`),
+/// applied in order; indices are the rows' places at that step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RowEdit {
+    Remove(usize),
+    Insert(usize),
+    Change(usize),
+}
+
+/// The removals, insertions and in-place changes that turn `old` into
+/// `new`, a row being the same row when its first value (the package name)
+/// is; `None` when a reset is the honest answer (rows kept in a different
+/// order, or a name twice).
+pub fn edits(old: &[Vec<Value>], new: &[Vec<Value>]) -> Option<Vec<RowEdit>> {
+    let key = |r: &Vec<Value>| r.first().cloned();
+    let old_keys: Vec<_> = old.iter().map(key).collect();
+    let new_keys: Vec<_> = new.iter().map(key).collect();
+    let unique =
+        |keys: &[Option<Value>]| keys.iter().enumerate().all(|(i, k)| !keys[..i].contains(k));
+    if !unique(&old_keys) || !unique(&new_keys) {
+        return None;
+    }
+    let kept_old = old_keys.iter().filter(|k| new_keys.contains(k));
+    let kept_new = new_keys.iter().filter(|k| old_keys.contains(k));
+    if !kept_old.eq(kept_new) {
+        return None;
+    }
+    let mut out = Vec::new();
+    let mut current: Vec<Option<Value>> = old_keys.clone();
+    for i in (0..old_keys.len()).rev() {
+        if !new_keys.contains(&old_keys[i]) {
+            out.push(RowEdit::Remove(i));
+            current.remove(i);
+        }
+    }
+    for (i, k) in new_keys.iter().enumerate() {
+        if current.get(i) == Some(k) {
+            let was = old_keys.iter().position(|o| o == k).map(|j| &old[j]);
+            if was != Some(&new[i]) {
+                out.push(RowEdit::Change(i));
+            }
+        } else {
+            out.push(RowEdit::Insert(i));
+            current.insert(i, k.clone());
+        }
+    }
+    Some(out)
+}
+
+#[cfg(test)]
+mod edit_tests {
+    use super::{edits, RowEdit, Value};
+
+    fn rows(items: &[(&str, &str)]) -> Vec<Vec<Value>> {
+        items
+            .iter()
+            .map(|(n, s)| vec![Value::from(*n), Value::from(*s)])
+            .collect()
+    }
+    /// Applies `edits` as the model does and returns the result.
+    fn apply(old: &[Vec<Value>], new: &[Vec<Value>]) -> Vec<Vec<Value>> {
+        let mut out = old.to_vec();
+        for e in edits(old, new).expect("incremental") {
+            match e {
+                RowEdit::Remove(i) => {
+                    out.remove(i);
+                }
+                RowEdit::Insert(i) => out.insert(i, new[i].clone()),
+                RowEdit::Change(i) => out[i] = new[i].clone(),
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn a_changed_state_is_one_change_not_a_reset() {
+        let old = rows(&[("a", "installed"), ("b", "available"), ("c", "installed")]);
+        let new = rows(&[("a", "installed"), ("b", "installed"), ("c", "installed")]);
+        assert_eq!(edits(&old, &new), Some(vec![RowEdit::Change(1)]));
+        assert_eq!(apply(&old, &new), new);
+    }
+
+    #[test]
+    fn rows_come_and_go_in_place() {
+        let old = rows(&[("a", "1"), ("b", "1"), ("c", "1"), ("d", "1")]);
+        let new = rows(&[("a", "1"), ("x", "1"), ("c", "2"), ("y", "1")]);
+        assert_eq!(apply(&old, &new), new);
+        let e = edits(&old, &new).unwrap();
+        assert!(e.contains(&RowEdit::Remove(1)) && e.contains(&RowEdit::Remove(3)));
+        assert!(e.contains(&RowEdit::Change(2)));
+    }
+
+    #[test]
+    fn from_and_to_empty() {
+        let full = rows(&[("a", "1"), ("b", "1")]);
+        assert_eq!(apply(&[], &full), full);
+        assert_eq!(apply(&full, &[]), Vec::<Vec<Value>>::new());
+    }
+
+    #[test]
+    fn a_new_order_or_a_repeated_name_resets() {
+        let old = rows(&[("a", "1"), ("b", "1")]);
+        assert_eq!(edits(&old, &rows(&[("b", "1"), ("a", "1")])), None);
+        assert_eq!(edits(&old, &rows(&[("a", "1"), ("a", "2")])), None);
+    }
+}

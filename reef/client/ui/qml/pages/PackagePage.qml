@@ -205,7 +205,8 @@ Page {
         property string text
         property string url
         visible: Texts.isHttps(url)
-        height: visible ? Theme.itemSizeSmall : 0
+        // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
+        height: (Texts.isHttps(url)) ? Theme.itemSizeSmall : 0
         onClicked: Texts.openHttps(url)
         Icon {
             id: linkIcon
@@ -350,7 +351,7 @@ Page {
                 readonly property bool buyNow: page.canBuy && page.pkg.installState === "installed"
                 width: parent.width
                 visible: !page.working && (!page.installed || page.updatable || page.canBuy || page.openable)
-                height: visible ? actionRow.height + Theme.paddingMedium : 0
+                height: (!page.working && (!page.installed || page.updatable || page.canBuy || page.openable)) ? actionRow.height + Theme.paddingMedium : 0
 
                 Row {
                     id: actionRow
@@ -492,7 +493,7 @@ Page {
                     ? Math.round(page.width * 0.5)
                     : Math.round((page.width - Theme.horizontalPageMargin - 2 * Theme.paddingMedium) / 2.35)
                 width: parent.width
-                height: visible ? Math.round(shotWidth * 2.1) + Theme.paddingLarge : 0
+                height: (shots.count > 0) ? Math.round(shotWidth * 2.1) + Theme.paddingLarge : 0
                 visible: shots.count > 0
                 contentWidth: Math.max(width, shotRow.width)
                 flickableDirection: Flickable.HorizontalFlick
@@ -555,7 +556,7 @@ Page {
             BackgroundItem {
                 objectName: "moreButton"
                 width: parent.width
-                height: visible ? Theme.itemSizeExtraSmall : 0
+                height: (!!page.pkg.description && (description.truncated || description.expanded)) ? Theme.itemSizeExtraSmall : 0
                 visible: description.visible && (description.truncated || description.expanded)
                 onClicked: description.expanded = !description.expanded
                 Label {

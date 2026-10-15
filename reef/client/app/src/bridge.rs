@@ -34,6 +34,8 @@ pub mod qobject {
         type QModelIndex = cxx_qt_lib::QModelIndex;
         include!("cxx-qt-lib/qhash.h");
         type QHash_i32_QByteArray = cxx_qt_lib::QHash<cxx_qt_lib::QHashPair_i32_QByteArray>;
+        include!("cxx-qt-lib/qlist.h");
+        type QList_i32 = cxx_qt_lib::QList<i32>;
     }
 
     unsafe extern "C++" {
@@ -105,6 +107,44 @@ pub mod qobject {
         #[inherit]
         #[cxx_name = "endResetModel"]
         fn end_reset_model(self: Pin<&mut ReefListModel>);
+
+        #[inherit]
+        #[cxx_name = "beginInsertRows"]
+        fn begin_insert_rows(
+            self: Pin<&mut ReefListModel>,
+            parent: &QModelIndex,
+            first: i32,
+            last: i32,
+        );
+
+        #[inherit]
+        #[cxx_name = "endInsertRows"]
+        fn end_insert_rows(self: Pin<&mut ReefListModel>);
+
+        #[inherit]
+        #[cxx_name = "beginRemoveRows"]
+        fn begin_remove_rows(
+            self: Pin<&mut ReefListModel>,
+            parent: &QModelIndex,
+            first: i32,
+            last: i32,
+        );
+
+        #[inherit]
+        #[cxx_name = "endRemoveRows"]
+        fn end_remove_rows(self: Pin<&mut ReefListModel>);
+
+        #[inherit]
+        #[cxx_name = "dataChanged"]
+        fn data_changed(
+            self: Pin<&mut ReefListModel>,
+            top_left: &QModelIndex,
+            bottom_right: &QModelIndex,
+            roles: &QList_i32,
+        );
+
+        #[inherit]
+        fn index(self: &ReefListModel, row: i32, column: i32, parent: &QModelIndex) -> QModelIndex;
     }
 
     extern "RustQt" {
@@ -383,15 +423,49 @@ impl qobject::ReefListModel {
         to_map(&pairs)
     }
 
-    /// Replaces every row (a model reset: rows are few and change together).
+    /// Makes the rows `rows`, keeping the ones that stay (`rows::RowEdit`):
+    /// a row whose values change is updated in place (`dataChanged`), rows
+    /// that come or go are inserted or removed, never the whole model
+    /// reset. A reset makes every view rebuild its items and lose its
+    /// place: the store's first page jumped back to its top whenever an
+    /// install state changed (opening an app's page checks it).
     pub fn set_rows(mut self: Pin<&mut Self>, rows: Vec<Vec<Value>>) {
         if self.rows == rows {
             return;
         }
-        let count = qt_count(rows.len());
-        self.as_mut().begin_reset_model();
-        self.as_mut().rust_mut().rows = rows;
-        self.as_mut().end_reset_model();
+        let root = QModelIndex::default();
+        match rows::edits(&self.rows, &rows) {
+            None => {
+                self.as_mut().begin_reset_model();
+                self.as_mut().rust_mut().rows = rows;
+                self.as_mut().end_reset_model();
+            }
+            Some(edits) => {
+                for edit in edits {
+                    match edit {
+                        rows::RowEdit::Remove(i) => {
+                            let row = qt_count(i);
+                            self.as_mut().begin_remove_rows(&root, row, row);
+                            self.as_mut().rust_mut().rows.remove(i);
+                            self.as_mut().end_remove_rows();
+                        }
+                        rows::RowEdit::Insert(i) => {
+                            let row = qt_count(i);
+                            self.as_mut().begin_insert_rows(&root, row, row);
+                            self.as_mut().rust_mut().rows.insert(i, rows[i].clone());
+                            self.as_mut().end_insert_rows();
+                        }
+                        rows::RowEdit::Change(i) => {
+                            self.as_mut().rust_mut().rows[i].clone_from(&rows[i]);
+                            let at = self.index(qt_count(i), 0, &root);
+                            self.as_mut()
+                                .data_changed(&at, &at, &QList::<i32>::default());
+                        }
+                    }
+                }
+            }
+        }
+        let count = qt_count(self.rows.len());
         if self.count != count {
             self.as_mut().rust_mut().count = count;
             self.as_mut().count_changed();

@@ -219,7 +219,8 @@ Page {
             // looking for what is wrong with the room.
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
+                height: (page.info.successor !== undefined && page.info.successor !== null) ? Theme.itemSizeSmall : 0
                 visible: page.info.successor !== undefined && page.info.successor !== null
                 onClicked: matrix.followSuccessor(page.roomId)
 
@@ -240,7 +241,7 @@ Page {
             // room is still joined.
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                height: (page.info.predecessor !== undefined) ? Theme.itemSizeSmall : 0
                 visible: page.info.predecessor !== undefined
                          && page.info.predecessor !== null
                          && page.info.predecessor.joined === true
@@ -266,7 +267,7 @@ Page {
 
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                height: (!page.invited) ? Theme.itemSizeSmall : 0
                 visible: !page.invited
                 onClicked: pageStack.push(Qt.resolvedUrl("MemberListPage.qml"), {
                                               roomId: page.roomId,
@@ -291,7 +292,7 @@ Page {
 
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                height: (!page.invited) ? Theme.itemSizeSmall : 0
                 visible: !page.invited
                 onClicked: pageStack.push(Qt.resolvedUrl("PinnedMessagesPage.qml"), {
                                               roomId: page.roomId,
@@ -310,7 +311,7 @@ Page {
 
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                height: (!page.invited) ? Theme.itemSizeSmall : 0
                 visible: !page.invited
                 onClicked: pageStack.push(Qt.resolvedUrl("SearchPage.qml"), {
                                               roomId: page.roomId,
@@ -333,7 +334,7 @@ Page {
             // opened from.
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                height: (!page.invited && matrix.roomDirectPeer.length > 0) ? Theme.itemSizeSmall : 0
                 visible: !page.invited && matrix.roomDirectPeer.length > 0
                 onClicked: {
                     matrix.requestVerification(matrix.roomDirectPeer)
@@ -352,7 +353,7 @@ Page {
 
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                height: (!page.invited && matrix.roomPermissions.invite !== false) ? Theme.itemSizeSmall : 0
                 // Inviting is a power level like any other. Offering it regardless led to a
                 // dialog whose only outcome was the server's refusal.
                 visible: !page.invited && matrix.roomPermissions.invite !== false
@@ -472,7 +473,7 @@ Page {
             // pull-down used to carry.
             BackgroundItem {
                 width: parent.width
-                height: visible ? Theme.itemSizeSmall : 0
+                height: (page.infoLoaded && !page.encrypted) ? Theme.itemSizeSmall : 0
                 visible: page.infoLoaded && !page.encrypted
                 onClicked: page.activeRemorse = Remorse.popupAction(page, qsTr("Turning on encryption"), function() {
                     // Leaving the page aborts. Silica executes on `Deactivating`, which for a

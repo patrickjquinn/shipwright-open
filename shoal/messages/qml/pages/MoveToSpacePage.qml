@@ -29,7 +29,8 @@ Page {
             // row keeps the model indices aligned with the SDK's diffs.
             visible: model.id !== page.currentSpaceId
             contentHeight: visible ? Theme.itemSizeMedium : 0
-            height: visible ? Theme.itemSizeMedium : 0
+            // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
+            height: (model.id !== page.currentSpaceId) ? Theme.itemSizeMedium : 0
 
             onClicked: {
                 matrix.moveRoomToSpace(page.currentSpaceId, model.id, page.roomId)

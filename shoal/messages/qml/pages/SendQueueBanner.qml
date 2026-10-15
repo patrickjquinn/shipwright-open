@@ -11,7 +11,8 @@ Column {
     property bool acting: false
 
     visible: head !== null
-    height: visible ? implicitHeight : 0
+    // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
+    height: (head !== null) ? implicitHeight : 0
     spacing: Theme.paddingSmall
 
     function what(kind) {

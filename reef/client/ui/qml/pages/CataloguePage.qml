@@ -29,10 +29,17 @@ Page {
         pageStack.push(Qt.resolvedUrl("PackagePage.qml"), { packageName: name })
     }
 
-    SilicaListView {
+    // A flickable with one column (as Silica's own mixed pages): the page
+    // header, then the banners and rows, then every app. When something near
+    // the top appears or grows (the updates banner arrives after the page),
+    // what is below moves down and the view stays where the person left it.
+    // A ListView header grows upwards instead (Qt keeps the first row in
+    // place), which slid the title and the banner under the camera cut-out.
+    SilicaFlickable {
         id: list
         anchors.fill: parent
-        model: Reef.catalogueModel
+        contentHeight: content.height
+        readonly property int count: rows.count
 
         PullDownMenu {
             busy: Reef.busy
@@ -56,25 +63,17 @@ Page {
                 text: qsTr("Search")
                 onDelayedClick: {
                     page.searching = true
-                    list.positionViewAtBeginning()
+                    list.scrollToTop()
                     if (page.searchField)
                         page.searchField.forceActiveFocus()
                 }
             }
         }
 
-        // The header grows once the catalogue arrives (banner, rows) and
-        // when updates turn up (the updates card): a list at its top stays
-        // there. ListView keeps its first row in place instead, which slid
-        // the page title and the new card up under the camera cut-out, and
-        // a list scrolled once and back to the top was not kept there.
-        property bool atTop: true
-        onMovementEnded: atTop = atYBeginning
-
-        header: Column {
+        Column {
+            id: content
             width: list.width
             Component.onCompleted: page.searchField = search
-            onHeightChanged: if (list.atTop) list.positionViewAtBeginning()
 
             PageHeader {
                 title: qsTr("Reef")
@@ -85,7 +84,8 @@ Page {
                 objectName: "search"
                 width: parent.width
                 visible: page.searching
-                height: visible ? implicitHeight : 0
+                // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
+                height: (page.searching) ? implicitHeight : 0
                 placeholderText: qsTr("Search apps")
                 text: Reef.searchText
                 onTextChanged: Reef.searchText = text
@@ -128,7 +128,7 @@ Page {
                 width: parent.width
                 // Room for a title on up to three lines ("3 updates for
                 // libraries and services" beside the button was cut off).
-                height: visible ? Math.max(Theme.itemSizeLarge, updatesText.height + 2 * Theme.paddingMedium) : 0
+                height: (page.browsing && Reef.updateCount > 0) ? Math.max(Theme.itemSizeLarge, updatesText.height + 2 * Theme.paddingMedium) : 0
                 visible: page.browsing && Reef.updateCount > 0
                 onClicked: pageStack.push(Qt.resolvedUrl("InstalledPage.qml"))
 
@@ -184,12 +184,17 @@ Page {
             // seconds while the page is in front.
             Item {
                 width: parent.width
-                height: visible ? hero.height + dots.height + Theme.paddingMedium : 0
+                height: (page.browsing && Reef.featuredModel.count > 0) ? hero.height + dots.height + Theme.paddingMedium : 0
                 visible: page.browsing && Reef.featuredModel.count > 0
 
                 SlideshowView {
                     id: hero
                     objectName: "featured"
+                    // Its neighbouring banners wait a page width to either
+                    // side; unclipped, they slid across the next page while
+                    // the page stack moved this one away (a ghost of the
+                    // carousel over Installed).
+                    clip: true
                     width: parent.width
                     height: Math.round(Math.min(page.width, page.height) * 0.72)
                     itemWidth: width
@@ -215,7 +220,7 @@ Page {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Theme.paddingSmall
                     visible: hero.count > 1
-                    height: visible ? Theme.paddingSmall : 0
+                    height: (hero.count > 1) ? Theme.paddingSmall : 0
                     Repeater {
                         model: hero.count
                         Rectangle {
@@ -238,7 +243,7 @@ Page {
             SilicaListView {
                 objectName: "recent"
                 width: parent.width
-                height: visible ? Theme.iconSizeLauncher + 2 * Theme.fontSizeExtraSmall * 1.4 + 2 * Theme.paddingMedium : 0
+                height: (page.browsing && Reef.recentModel.count > 0) ? Theme.iconSizeLauncher + 2 * Theme.fontSizeExtraSmall * 1.4 + 2 * Theme.paddingMedium : 0
                 visible: page.browsing && Reef.recentModel.count > 0
                 orientation: ListView.Horizontal
                 clip: true
@@ -253,10 +258,14 @@ Page {
                 text: page.searching ? qsTr("Results") : qsTr("All apps")
                 visible: list.count > 0
             }
-        }
 
-        delegate: PackageDelegate {
-            onClicked: page.openApp(name)
+            Repeater {
+                id: rows
+                model: Reef.catalogueModel
+                delegate: PackageDelegate {
+                    onClicked: page.openApp(name)
+                }
+            }
         }
 
         ViewPlaceholder {

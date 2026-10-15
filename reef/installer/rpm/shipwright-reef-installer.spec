@@ -20,7 +20,7 @@ Name:           shipwright-reef-installer
 # The client obsoletes installers below 1 (reef/rpm/shipwright-reef.spec):
 # raise that bound before this version reaches 1.
 Version:        0.1.0
-Release:        10
+Release:        11
 Summary:        Installs the Reef store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -159,6 +159,9 @@ exit 0
 %ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Wed Oct 14 2026 Shipwright - 0.1.0-11
+- Rebuilt with Reef 0.1.0-31.
+
 * Wed Oct 14 2026 Shipwright - 0.1.0-10
 - Rebuilt with Reef 0.1.0-30.
 
