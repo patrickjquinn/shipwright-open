@@ -5,7 +5,9 @@
 # Installs built device RPMs into a fresh Sailfish OS root, as a phone would
 # get them, and checks what a phone would first trip over:
 #
-#   tools/build/native/install-test.sh [--release 5.2.0.15] [rpm...]
+#   tools/build/native/install-test.sh [--release RELEASE] [rpm...]
+#
+# RELEASE defaults to the newest in tools/build/releases/supported.txt.
 #
 # With no RPMs, takes RPMS/<release>/*.rpm (not debuginfo/debugsource; not
 # the Reef installer when the Reef client is there, since the client
@@ -25,14 +27,21 @@
 # UI packages a phone has come from the same repositories when required.
 # Packages from the phone's hardware adaptation repository (not public) are
 # stood in for by a generated package providing PHONE_PROVIDES (default:
-# droidmedia, which the camera's gstreamer1.0-droid needs).
+# droidmedia, which the camera's gstreamer1.0-droid needs). Libraries only
+# that repository ships (PHONE_LIBS, default: libhybris's and the Android
+# HAL's, which Pacific's engine links against and leaves out of its
+# Requires) are listed as notes when they do not resolve, not failures.
 set -euo pipefail
-release=5.2.0.15
+here=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=SCRIPTDIR/../releases/lib.sh
+. "$here/../releases/lib.sh"
 if [ "${1:-}" = "--release" ]; then
     release=$2
     shift 2
+else
+    release=$(releases_newest)
 fi
-here=$(cd "$(dirname "$0")" && pwd)
+release_valid "$release" || { echo "install-test.sh: --release must be a four-part release" >&2; exit 2; }
 root=$(cd "$here/../../.." && pwd)
 # shellcheck source=SCRIPTDIR/lib.sh
 . "$here/lib.sh"
@@ -56,6 +65,7 @@ fi
 # The stand-in for the hardware adaptation's packages, built with the build
 # image's rpmbuild.
 provides=${PHONE_PROVIDES:-droidmedia}
+phone_libs=${PHONE_LIBS:-libhybris-common.so.1 libhybris-platformcommon.so.1 libhybris-eglplatformcommon.so.1 libgralloc.so.1 libhardware.so.2 libui.so.1 libsync.so.2}
 native_image "$release" build "localhost/shipwright-sailfish:$release" || true
 {
     printf 'Name: shipwright-installtest-phone-adaptation\nVersion: 1\nRelease: 1\n'
@@ -73,7 +83,7 @@ count=$(find "$work" -name '*.rpm' ! -name 'shipwright-installtest-*' | wc -l)
 echo "== installing $count RPM(s) into a fresh Sailfish OS $release root"
 
 # The RPMs are unsigned until Reef publishes them.
-podman run --rm -v "$work:/rpms:ro,Z" "$image" bash -c '
+podman run --rm -e PHONE_LIBS="$phone_libs" -v "$work:/rpms:ro,Z" "$image" bash -c '
     set -u
     status=0
     zypper --non-interactive in --no-recommends --allow-unsigned-rpm /rpms/*.rpm >/tmp/install.log 2>&1 || status=$?
@@ -93,10 +103,12 @@ podman run --rm -v "$work:/rpms:ro,Z" "$image" bash -c '
             [ -f "$f" ] && [ ! -L "$f" ] || continue
             head -c4 "$f" 2>/dev/null | grep -q "ELF" || continue
             out=$(ldd "$f" 2>&1) || true
-            if echo "$out" | grep -q "not found"; then
-                echo "$out" | grep "not found" | sed "s|^|FAIL $pkg: $f:|"
-                missing=1
-            fi
+            for lib in $(echo "$out" | awk "/not found/ { print \$1 }"); do
+                case " $PHONE_LIBS " in
+                    *" $lib "*) echo "note $pkg: $f: $lib is the phone hardware adaptation'"'"'s" ;;
+                    *) echo "FAIL $pkg: $f: $lib => not found"; missing=1 ;;
+                esac
+            done
         done
     done
     [ "$missing" -eq 0 ] && echo "ok   every ELF file resolves its libraries"

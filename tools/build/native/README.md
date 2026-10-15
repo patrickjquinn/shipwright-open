@@ -8,12 +8,13 @@ SPDX-License-Identifier: MIT
 Builds the device RPMs on an aarch64 Linux machine, such as an Apple silicon Mac running Asahi Fedora, with no emulation:
 
 ```
-tools/build/native/native.sh                     # every spec, Sailfish OS 5.2.0.15
+tools/build/native/native.sh                     # every spec, the newest supported release
 tools/build/native/native.sh shoal/push/rpm/shipwright-shoal-push.spec
-tools/build/native/native.sh --release 5.1.0.11  # Xperia line
+tools/build/native/native.sh --release 5.2.0.15  # another release
+tools/build/native/install-test.sh               # install them into a fresh root of that release
 ```
 
-RPMs land in `RPMS/<release>/`, as with [`tools/build/sdk/sdk.sh`](../sdk/README.md).
+RPMs land in `RPMS/<release>/`, as with [`tools/build/sdk/sdk.sh`](../sdk/README.md). Without `--release`, `native.sh` and `install-test.sh` use the newest release in [`tools/build/releases/supported.txt`](../releases/README.md), the list `services/cloudflare-production.sh reef-packages` publishes. A new Sailfish OS release goes through [`tools/build/releases/support-release.sh`](../releases/README.md), which runs both scripts for it and then adds it to that list.
 
 ## Why this works
 
@@ -37,7 +38,7 @@ On an aarch64 host the target runs as it is, so the build engine is not needed. 
   - [`mb2`](mb2) stands in for the SDK's `mb2`: it installs a spec's `BuildRequires` with zypper, then runs `rpmbuild --build-in-place` from the tree, so specs, hooks and `specs.conf` are the same as for the SDK.
 - **Output.** The RPMs are copied back to `RPMS/<release>/`.
 
-Updating: `NATIVE_REBUILD_IMAGE=1` rebuilds the image (new release updates, Chum updates) and replaces the container. Other variables are as for `sdk.sh` (`REEF_KEY_FILE`, `REEF_URL_TEMPLATE`, `REEF_LICENCE_SERVER`, `SHIPWRIGHT_LICENCE_KEYS`, `PILOT_RELAY_URL`, `SKIP_SPECS`, `WITH_VENDORID`, `WITH_PHASE0`, `CARGO_PACKAGES`, `SOURCE_DATE_EPOCH`).
+Updating: `NATIVE_REBUILD_IMAGE=1` rebuilds the image (new release updates, Chum updates) and replaces the container. A new release needs nothing of the kind: its image is built the first time `--release` names it, from the same base target, and its container is new. `NATIVE_MEMORY` (default `9g`) and `NATIVE_MEMORY_SWAP` (default `11g`) cap the container's memory; `0` lifts the cap. Other variables are as for `sdk.sh` (`REEF_KEY_FILE`, `REEF_URL_TEMPLATE`, `REEF_LICENCE_SERVER`, `SHIPWRIGHT_LICENCE_KEYS`, `PILOT_RELAY_URL`, `SKIP_SPECS`, `WITH_VENDORID`, `WITH_PHASE0`, `CARGO_PACKAGES`, `SOURCE_DATE_EPOCH`).
 
 ## Licence keys
 

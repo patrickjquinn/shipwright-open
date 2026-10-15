@@ -5,7 +5,9 @@
 # Builds device RPMs natively on an aarch64 Linux host: the counterpart of
 # tools/build/sdk/sdk.sh without the Sailfish SDK's x86 build engine.
 #
-#   tools/build/native/native.sh [--release 5.2.0.15] [spec...]
+#   tools/build/native/native.sh [--release RELEASE] [spec...]
+#
+# RELEASE defaults to the newest in tools/build/releases/supported.txt.
 #
 # Jolla's SDK packaging (the build engine and sb2) is x86-only and emulates
 # the phone; its aarch64 *target* image is an ordinary Sailfish OS root that
@@ -39,14 +41,18 @@
 # updates); the container is replaced with it. NATIVE_MEMORY (default 9g)
 # and NATIVE_MEMORY_SWAP (default 11g) cap the container's memory.
 set -euo pipefail
-release=5.2.0.15
+here=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=SCRIPTDIR/../releases/lib.sh
+. "$here/../releases/lib.sh"
 if [ "${1:-}" = "--release" ]; then
     release=$2
     shift 2
+else
+    release=$(releases_newest)
 fi
+release_valid "$release" || { echo "native.sh: --release must be a four-part release" >&2; exit 2; }
 [ "$(uname -m)" = aarch64 ] || { echo "native.sh: needs an aarch64 host (use tools/build/sdk/sdk.sh on x86_64)" >&2; exit 2; }
 
-here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
 target=SailfishOS-$release-aarch64
 
