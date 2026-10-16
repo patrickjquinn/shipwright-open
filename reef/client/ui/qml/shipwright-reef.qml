@@ -25,7 +25,7 @@ ApplicationWindow {
     allowedOrientations: defaultAllowedOrientations
 
     // Keel Actions for Pilot and other MCP clients (actions/ReefActions.qml).
-    ReefActions {}
+    ReefActions { window: app }
 
     // The update notification's tap (src/check.rs): Reef on its updates.
     // The session bus starts Reef for it when it is not running

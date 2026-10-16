@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        31
+Release:        32
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -35,7 +35,7 @@ URL:            https://reefstore.app/
 # starting after an update, 12 October 2026).
 Requires:       shipwright-keel-silica >= 0.1.0-29
 # Keel Actions runtime (Keel.Actions 1.0, ADR-0018).
-Requires:       shipwright-keel-actions >= 0.1.0-29
+Requires:       shipwright-keel-actions >= 0.1.0-33
 # Lipstick starts the app as `invoker --type=keel`: through booster-keel
 # when it is installed, otherwise directly, in Keel's direct mode either way;
 # keel-shell is the opt-in fallback window path (ADR-0016).
@@ -324,6 +324,8 @@ exit 0
 %ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Fri Oct 16 2026 Shipwright - 0.1.0-32
+- Pilot (and other Keel Actions clients) can bring Reef to the front, starting it if it is not running, and open its installed apps (with the updates waiting), licences or settings.
 * Wed Oct 14 2026 Shipwright - 0.1.0-31
 - Opening Installed (or any page) from the store's first page no longer shows the next featured banner sliding across it during the page change; the same for the screenshot viewer.
 - The store's first page keeps where you were when you open an app and come back: its banners collapsed while the page was hidden under the app's page, which scrolled it back up. Banners that appear near the top (updates) now push what is below down instead of moving the page, so the title stays clear of the camera cut-out, and a change to one app updates only its row.

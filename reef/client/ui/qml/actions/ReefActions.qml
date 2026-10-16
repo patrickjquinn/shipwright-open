@@ -11,11 +11,15 @@
 // for the person.
 
 import QtQuick
+import Sailfish.Silica 1.0
 import Keel.Actions 1.0
 import Shipwright.Reef 1.0
 
 Item {
     id: actions
+
+    // The ApplicationWindow, for app.show's pages.
+    property var window
 
     // The one call waiting for the person and the transaction, the RPM name
     // it is for, and how to answer it once the transaction succeeded.
@@ -221,5 +225,37 @@ Item {
             actions.begin(call, details.name, n => Reef.remove(n),
                           d => ({ removed: d.installState === "not_installed" || d.installState === undefined }))
         }
+    }
+
+    // app.show's pages, each from the store's first page (asking twice does
+    // not stack it twice), as its pull-down menu opens them.
+    function showPage(file, objectName) {
+        const stack = actions.window.pageStack
+        if (stack.currentPage && stack.currentPage.objectName === objectName && objectName !== "")
+            return
+        if (stack.depth > 1)
+            stack.pop(null, PageStackAction.Immediate)
+        stack.push(Qt.resolvedUrl("../pages/" + file))
+    }
+
+    KeelPage {
+        name: "installed"
+        title: qsTr("Installed")
+        description: "Apps installed from Reef, with the updates waiting for them."
+        onShow: actions.showPage("InstalledPage.qml", "installedPage")
+    }
+
+    KeelPage {
+        name: "licences"
+        title: qsTr("Licences")
+        description: "The paid apps' licences on this phone."
+        onShow: actions.showPage("LicencesPage.qml", "")
+    }
+
+    KeelPage {
+        name: "settings"
+        title: qsTr("Settings")
+        description: "Reef's settings: background checks, the repository and licences."
+        onShow: actions.showPage("SettingsPage.qml", "")
     }
 }

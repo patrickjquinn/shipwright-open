@@ -24,7 +24,7 @@
 
 Name:           shipwright-shoal-keys
 Version:        0.1.0
-Release:        13
+Release:        14
 Summary:        Passwords and one-time codes
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/#app-shipwright-shoal-keys
@@ -33,7 +33,7 @@ URL:            https://reefstore.app/#app-shipwright-shoal-keys
 # the Sailfish Secrets daemon that holds the device key's wrapping key.
 Requires:       shipwright-keel-silica >= 0.1.0-29
 # Keel Actions runtime (Keel.Actions 1.0, ADR-0018).
-Requires:       shipwright-keel-actions
+Requires:       shipwright-keel-actions >= 0.1.0-33
 # The app starts in its own booster, booster-keel@<app> (shipwright-keel-booster),
 # through `invoker --type=keel -A` in its desktop file, in Keel's direct mode;
 # keel-shell is the opt-in fallback window path (ADR-0016).
@@ -125,6 +125,8 @@ systemctl-user daemon-reload >/dev/null 2>&1 || :
 %config %{_sysconfdir}/sailjail/permissions/ShoalKeysAutofill.permission
 
 %changelog
+* Fri Oct 16 2026 Shipwright - 0.1.0-14
+- Pilot (and other Keel Actions clients) can bring Keys to the front, starting it if it is not running. It opens no page past the vault's lock.
 * Tue Oct 13 2026 Shipwright - 0.1.0-13
 - An open vault no longer wakes the phone every second to check whether it should lock: Keys now waits until a lock is due (at most 30 seconds at a time, so a lock that fell due while the phone slept still comes promptly).
 - At large text sizes, entries and import files take the room their two lines need instead of running into the next row.

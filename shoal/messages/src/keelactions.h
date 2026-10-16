@@ -102,6 +102,8 @@ public slots:
     QString GetContext();
 
 private:
+    // app.show: brings the window to the front.
+    static void raiseWindow();
     struct Pending {
         QDBusMessage message;
         QTimer *timer = nullptr;

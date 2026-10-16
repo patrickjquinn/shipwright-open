@@ -8,7 +8,10 @@
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QQuickItem>
+#include <QQuickWindow>
 #include <QTimer>
+#include <QWindow>
 
 namespace {
 
@@ -200,10 +203,47 @@ QString KeelActions::Invoke(const QString &action, const QString &arguments, con
         fail(message, QStringLiteral("InvalidArguments"), QStringLiteral("arguments must be a JSON object"));
         return QString();
     }
+    // The built-in every Keel app answers (keel/actions/plugin's
+    // KeelActionRegistry::show): Messages declares no pages, and a D-Bus
+    // start shows its window, so it only raises it.
+    if (action == QLatin1String("app.show")) {
+        if (!doc.object().isEmpty()) {
+            message.setDelayedReply(true);
+            fail(message, QStringLiteral("InvalidArguments"), QStringLiteral("Shoal Messages has no pages to open"));
+            return QString();
+        }
+        raiseWindow();
+        return QStringLiteral("{}");
+    }
     forward(QStringLiteral("keel.invoke"),
             QJsonObject{{QStringLiteral("action"), action}, {QStringLiteral("arguments"), doc.object()}},
             kInvokeTimeoutMs, message);
     return QString();
+}
+
+void KeelActions::raiseWindow()
+{
+    // Silica's ApplicationWindow.activate() raises the app through Lipstick.
+    const QList<QWindow *> windows = QGuiApplication::topLevelWindows();
+    for (QWindow *window : windows) {
+        auto *quick = qobject_cast<QQuickWindow *>(window);
+        if (!quick || quick->transientParent()) {
+            continue;
+        }
+        if (!quick->isVisible()) {
+            quick->showFullScreen();
+        }
+        const QList<QQuickItem *> items = quick->contentItem()->childItems();
+        for (QQuickItem *item : items) {
+            if (item->metaObject()->indexOfMethod("activate()") >= 0) {
+                QMetaObject::invokeMethod(item, "activate");
+                return;
+            }
+        }
+        quick->raise();
+        quick->requestActivate();
+        return;
+    }
 }
 
 QString KeelActions::GetEntity(const QString &type, const QString &id, const QDBusMessage &message)
