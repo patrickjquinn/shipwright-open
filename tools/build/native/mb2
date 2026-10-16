@@ -39,7 +39,16 @@ while IFS= read -r req; do
 done < <(rpmspec -q --buildrequires "$@" "$spec" 2>/dev/null)
 if [ ${#missing[@]} -gt 0 ]; then
     echo "== mb2 (native): ensuring ${missing[*]}"
-    zypper --non-interactive in --no-recommends "${missing[@]}"
+    # 106: installed, but a repository could not be refreshed (a DNS
+    # hiccup reaching chum:testing). A requirement nothing provides is 104
+    # and still fails.
+    rc=0
+    zypper --non-interactive in --no-recommends "${missing[@]}" || rc=$?
+    if [ "$rc" -eq 106 ]; then
+        echo "mb2 (native): a repository was skipped; the BuildRequires are installed" >&2
+    elif [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
 fi
 
 rpmbuild -bb --build-in-place \
