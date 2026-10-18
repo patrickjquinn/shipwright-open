@@ -140,6 +140,11 @@ pub struct Plan {
     pub items: Vec<Item>,
     /// The sum of the items' sizes, when `PackageKit` gave any.
     pub download_size: Option<u64>,
+    /// Installs only: packages asked for together with the target, the
+    /// build of each of its variants groups this phone runs
+    /// ([`Catalogue::variant_picks`]: Pacific's engine for this processor).
+    /// They appear among the items as what comes with the app.
+    pub alongside: Vec<String>,
 }
 
 impl Plan {
@@ -519,6 +524,7 @@ mod tests {
             target: "a".into(),
             items,
             download_size: None,
+            alongside: Vec::new(),
         };
         assert!(plan.covers(&[("a".into(), Change::Update)]));
         assert!(!plan.covers(&[("a".into(), Change::Update), ("b".into(), Change::Install)]));

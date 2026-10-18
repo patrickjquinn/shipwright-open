@@ -70,6 +70,11 @@ pub struct Component {
     /// What it changes on the phone beyond its own files, in words.
     #[serde(default)]
     pub system_changes: Vec<String>,
+    /// CPU features its code needs beyond ARMv8.0-A, as `/proc/cpuinfo`
+    /// names them (tools/build/reef/cpu-builds.json): one build of a
+    /// [`Package::variants`] group. Empty: any phone.
+    #[serde(default)]
+    pub requires_cpu: Vec<String>,
 }
 
 impl Component {
@@ -171,10 +176,20 @@ pub struct Package {
     pub size: Option<u64>,
     /// CPU features the build needs, as `/proc/cpuinfo` names them
     /// (`asimddp`, `lrcpc`, `fphp`, `atomics`): a phone without one does not
-    /// see the package (Pacific is built for ARMv8.2 and died with SIGILL on
-    /// an Xperia 10 II). Empty: any phone.
+    /// see the package (Pacific's ARMv8.2 engine died with SIGILL on an
+    /// Xperia 10 II). gen-catalogue includes what the parts it brings need,
+    /// whichever [`variants`](Self::variants) build is picked. Empty: any
+    /// phone.
     #[serde(default)]
     pub requires_cpu: Vec<String>,
+    /// Builds of one part for different processors, each group the most
+    /// capable first (Pacific's engine for ARMv8.2, then for ARMv8.0):
+    /// every build provides what the app requires, so `PackageKit` would
+    /// pick one without looking at the processor. Reef installs the first
+    /// of each group this phone runs ([`Catalogue::variant_picks`]) with
+    /// the app.
+    #[serde(default)]
+    pub variants: Vec<Vec<String>>,
     #[serde(default)]
     pub homepage: Option<String>,
     #[serde(default)]
@@ -365,6 +380,11 @@ impl Catalogue {
                 cap_chars(&mut c.description);
             }
             p.requires.truncate(MAX_DISCLOSURES * 4);
+            p.variants.retain(|g| !g.is_empty());
+            p.variants.truncate(MAX_DISCLOSURES);
+            for g in &mut p.variants {
+                g.truncate(MAX_DISCLOSURES);
+            }
             p.permissions.truncate(MAX_DISCLOSURES);
             p.changelog.retain(|c| parse_date(&c.date).is_some());
             p.changelog.truncate(MAX_CHANGES);
@@ -427,12 +447,44 @@ impl Catalogue {
             .packages
             .iter()
             .filter(|p| p.tested_on.contains(&full))
-            .filter(|p| features.is_none_or(|f| p.requires_cpu.iter().all(|r| f.contains(r))))
+            .filter(|p| runs_on(&p.requires_cpu, features))
+            .filter(|p| self.variant_picks(&p.name, features).is_ok())
             .collect();
         // `category` was normalised by `parse`, so the sort and the list's
         // sections (which compare the raw string) agree.
         out.sort_by_cached_key(|p| (p.category.clone(), p.title.to_lowercase(), p.name.clone()));
         out
+    }
+
+    /// The builds to install with `name`, one per [`Package::variants`]
+    /// group: the first the catalogue describes ([`Catalogue::components`])
+    /// whose `requires_cpu` this phone has (`features`; `None`, unknown:
+    /// the first described). `Err` names a group none of whose builds runs
+    /// here, or is described; the package is then hidden. A name the
+    /// catalogue does not list needs nothing.
+    pub fn variant_picks(
+        &self,
+        name: &str,
+        features: Option<&BTreeSet<String>>,
+    ) -> Result<Vec<String>, String> {
+        let Some(package) = self.packages.iter().find(|p| p.name == name) else {
+            return Ok(Vec::new());
+        };
+        package
+            .variants
+            .iter()
+            .map(|group| {
+                group
+                    .iter()
+                    .find(|n| {
+                        self.components
+                            .get(n.as_str())
+                            .is_some_and(|c| runs_on(&c.requires_cpu, features))
+                    })
+                    .cloned()
+                    .ok_or_else(|| group.join(", "))
+            })
+            .collect()
     }
 
     /// Looks up a visible package by RPM name.
@@ -456,6 +508,12 @@ fn cap_chars(s: &mut String) {
     if s.chars().count() > MAX_DISCLOSURE_CHARS {
         *s = s.chars().take(MAX_DISCLOSURE_CHARS).collect();
     }
+}
+
+/// Whether a phone with CPU `features` has everything in `requires`
+/// (`None`: unknown, assumed able).
+pub fn runs_on(requires: &[String], features: Option<&BTreeSet<String>>) -> bool {
+    features.is_none_or(|f| requires.iter().all(|r| f.contains(r)))
 }
 
 /// This phone's CPU features (the `Features` line of `/proc/cpuinfo` on
@@ -592,6 +650,74 @@ pub(crate) mod tests {
         // Unknown CPU (a host without a Features line): nothing hidden.
         assert_eq!(parse_cpu_features("flags\t: fpu vme\n"), None);
         assert_eq!(names(None), ["any", "fast"]);
+    }
+
+    /// Pacific with both builds of its engine published, and the same
+    /// app on a repository with only the ARMv8.2 build.
+    #[test]
+    fn variants_pick_the_build_the_cpu_runs() {
+        let both = r#"{"schema":1,"release":"5.2.0.18","arch":"aarch64",
+            "components":{
+              "engine":{"summary":"ARMv8.2","requires_cpu":["atomics","lrcpc","asimddp","aes"]},
+              "engine-armv80":{"summary":"ARMv8.0","requires_cpu":["aes","crc32"]}},
+            "packages":[
+              {"name":"pacific","version":"1-1","title":"Pacific","summary":"s","tested_on":["5.2.0.18"],
+               "requires":["engine","engine-armv80"],"requires_cpu":["aes"],
+               "variants":[["engine","engine-armv80"]],"licence":{"model":"free"}},
+              {"name":"other","version":"1-1","title":"Other","summary":"s","tested_on":["5.2.0.18"],
+               "licence":{"model":"free"}}]}"#;
+        let cat = Catalogue::parse(both.as_bytes(), "aarch64").unwrap();
+        let release = SailfishRelease::parse("5.2.0.18").unwrap();
+        let xperia =
+            parse_cpu_features("Features\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid\n")
+                .unwrap();
+        let jolla = parse_cpu_features(
+            "Features\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp\n",
+        )
+        .unwrap();
+        let ancient = parse_cpu_features("Features\t: fp asimd\n").unwrap();
+        assert_eq!(
+            cat.variant_picks("pacific", Some(&jolla)).unwrap(),
+            ["engine"]
+        );
+        assert_eq!(
+            cat.variant_picks("pacific", Some(&xperia)).unwrap(),
+            ["engine-armv80"]
+        );
+        // Unknown CPU: the most capable build.
+        assert_eq!(cat.variant_picks("pacific", None).unwrap(), ["engine"]);
+        assert_eq!(
+            cat.variant_picks("pacific", Some(&ancient)).unwrap_err(),
+            "engine, engine-armv80"
+        );
+        assert!(cat
+            .variant_picks("other", Some(&xperia))
+            .unwrap()
+            .is_empty());
+        assert!(cat
+            .variant_picks("unlisted", Some(&xperia))
+            .unwrap()
+            .is_empty());
+        let names = |c: &Catalogue, f| {
+            c.visible_on(&release, Some(f))
+                .iter()
+                .map(|p| p.name.clone())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(names(&cat, &xperia), ["other", "pacific"]);
+        assert_eq!(names(&cat, &jolla), ["other", "pacific"]);
+        // No build runs (or none is described): hidden.
+        assert_eq!(names(&cat, &ancient), ["other"]);
+        let undescribed = both.replace("\"engine-armv80\":{", "\"gone\":{");
+        let cat2 = Catalogue::parse(undescribed.as_bytes(), "aarch64").unwrap();
+        assert_eq!(names(&cat2, &xperia), ["other"]);
+        // Round trip keeps the groups and the components' needs.
+        let again = Catalogue::parse(&serde_json::to_vec(&cat).unwrap(), "aarch64").unwrap();
+        assert_eq!(again, cat);
+        assert_eq!(
+            cat.components["engine-armv80"].requires_cpu,
+            ["aes", "crc32"]
+        );
     }
 
     pub const SAMPLE: &str = r#"{

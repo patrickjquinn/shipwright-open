@@ -120,6 +120,7 @@ docker exec -e SKIP_SPECS="${SKIP_SPECS:-}" -e MB2_SNAPSHOT="${MB2_SNAPSHOT:-shi
     -e CARGO_PACKAGES="${CARGO_PACKAGES:-}" -e SOURCE_DATE_EPOCH="$source_date_epoch" \
     -e REEF_URL_TEMPLATE="${REEF_URL_TEMPLATE:-}" -e REEF_LICENCE_SERVER="${REEF_LICENCE_SERVER:-}" \
     -e SHIPWRIGHT_LICENCE_KEYS="${SHIPWRIGHT_LICENCE_KEYS:-}" -e PILOT_RELAY_URL="${PILOT_RELAY_URL:-}" \
+    -e PACIFIC_CPU="${PACIFIC_CPU:-armv8.2}" \
     "${reef_key_env[@]}" "$name" bash -lc \
     "cd ~/build && tools/build/sdk/build-rpms.sh --target $target $*" || status=$?
 

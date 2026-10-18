@@ -181,7 +181,10 @@ Page {
             }
 
             // The featured apps, one banner at a time, turning every few
-            // seconds while the page is in front.
+            // seconds while the page is in front: one lap each time the page
+            // comes to the front, then they stay put. Turning for ever kept
+            // the store working while it sat open, a few percent of a core
+            // on an Xperia 10 II.
             Item {
                 width: parent.width
                 height: (page.browsing && Reef.featuredModel.count > 0) ? hero.height + dots.height + Theme.paddingMedium : 0
@@ -200,6 +203,9 @@ Page {
                     itemWidth: width
                     itemHeight: height
                     model: Reef.featuredModel
+                    // Every banner stays built: turning one in otherwise
+                    // creates it again and decodes its screenshot again.
+                    cacheItemCount: count
                     delegate: HeroCard {
                         width: hero.itemWidth
                         height: hero.itemHeight
@@ -207,11 +213,18 @@ Page {
                     }
                 }
                 Timer {
+                    id: turn
+                    property int steps
+                    readonly property bool shown: page.status === PageStatus.Active
+                                                  && Qt.application.state === Qt.ApplicationActive
                     interval: 6000
                     repeat: true
-                    running: hero.count > 1 && page.status === PageStatus.Active
-                             && Qt.application.state === Qt.ApplicationActive && !hero.moving
-                    onTriggered: hero.incrementCurrentIndex()
+                    running: hero.count > 1 && shown && !hero.moving && steps < hero.count
+                    onShownChanged: if (shown) steps = 0
+                    onTriggered: {
+                        steps++
+                        hero.incrementCurrentIndex()
+                    }
                 }
                 Row {
                     id: dots

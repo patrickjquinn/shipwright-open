@@ -35,6 +35,8 @@
 # compiled into Reef, Shoal Keys and Shoal Mail (README.md, "Licence keys");
 # PACIFIC_ENGINE_RPMS (a local mirror of Atlantic's engine RPMs, default
 # ~/.cache/shipwright/atlantic-mirror/aarch64, copied into the container);
+# PACIFIC_CPU (armv8.2, the default, or armv8.0: which build of Pacific's
+# engine shipwright-pacific-engine.spec makes, see specs.conf);
 # SKIP_SPECS, WITH_VENDORID, WITH_PHASE0, MIN_FREE_GB, BUILD_WORKSPACE, CARGO_PACKAGES and
 # SOURCE_DATE_EPOCH (default: the last commit's time) go to build-rpms.sh,
 # as with sdk.sh. NATIVE_REBUILD_IMAGE=1 rebuilds the image (a new release's
@@ -125,6 +127,7 @@ podman exec -e SAILFISH_NATIVE=1 -e SKIP_SPECS="${SKIP_SPECS:-}" \
     -e CARGO_PACKAGES="${CARGO_PACKAGES:-}" -e SOURCE_DATE_EPOCH="$source_date_epoch" \
     -e REEF_URL_TEMPLATE="${REEF_URL_TEMPLATE:-}" -e REEF_LICENCE_SERVER="${REEF_LICENCE_SERVER:-}" \
     -e SHIPWRIGHT_LICENCE_KEYS="${SHIPWRIGHT_LICENCE_KEYS:-}" -e PILOT_RELAY_URL="${PILOT_RELAY_URL:-}" \
+    -e PACIFIC_CPU="${PACIFIC_CPU:-armv8.2}" \
     "${reef_key_env[@]}" "${engine_env[@]}" "$name" bash -lc \
     'export PATH=/root/build/tools/build/native:$PATH; cd /root/build && tools/build/sdk/build-rpms.sh --target "$0" "$@"' \
     "$target" "$@" || status=$?

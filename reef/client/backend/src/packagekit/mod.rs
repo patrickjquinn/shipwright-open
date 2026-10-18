@@ -45,6 +45,9 @@ pub enum Error {
     /// does not name Reef's repository as its origin), so Reef leaves it
     /// alone.
     NotReefs(String),
+    /// None of the builds of a part the app needs (the catalogue's
+    /// variants group, named) runs on this phone's processor.
+    NoBuild(String, String),
 }
 
 impl fmt::Display for Error {
@@ -74,6 +77,10 @@ impl fmt::Display for Error {
             Error::NotReefs(name) => write!(
                 f,
                 "Reef did not install {name}, so it does not remove it. Remove it where it came from."
+            ),
+            Error::NoBuild(name, group) => write!(
+                f,
+                "{name} needs one of {group}, and none of them is built for this phone's processor."
             ),
         }
     }

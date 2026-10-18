@@ -248,6 +248,10 @@ pub struct Store<P> {
     /// installed or updated ([`crate::metadata`]); `None` skips it (tests,
     /// and hosts without the phone's paths).
     pub metadata: Option<crate::metadata::MetadataCheck>,
+    /// This phone's CPU features, which pick the build of an app's parts
+    /// made for several processors ([`Catalogue::variant_picks`]); `None`
+    /// where unknown. [`crate::catalogue::cpu_features`] by default.
+    pub cpu: Option<BTreeSet<String>>,
 }
 
 /// A transaction (or its simulation) that failed because `PackageKit`'s view
@@ -301,7 +305,16 @@ impl<P: PackageManager> Store<P> {
             alias: alias.into(),
             ledger: None,
             metadata: None,
+            cpu: crate::catalogue::cpu_features().cloned(),
         }
+    }
+
+    /// Picks variant builds for a phone with these CPU features instead
+    /// of this one's (tests, tools).
+    #[must_use]
+    pub fn with_cpu_features(mut self, cpu: Option<BTreeSet<String>>) -> Self {
+        self.cpu = cpu;
+        self
     }
 
     /// Verifies the repository metadata (signature, no rollback) before
@@ -396,21 +409,74 @@ impl<P: PackageManager> Store<P> {
         }
     }
 
+    /// The variant builds to install with `name` ([`Plan::alongside`]):
+    /// the catalogue's pick for this processor from each group, unless a
+    /// build of that group is installed already (it stays, and updates
+    /// keep it). [`Error::NoBuild`] when no build of a group runs here.
+    async fn variant_builds(
+        &self,
+        name: &str,
+        catalogue: Option<&Catalogue>,
+    ) -> Result<Vec<String>> {
+        let Some(catalogue) = catalogue else {
+            return Ok(Vec::new());
+        };
+        let picks = catalogue
+            .variant_picks(name, self.cpu.as_ref())
+            .map_err(|group| Error::NoBuild(name.to_string(), group))?;
+        let Some(package) = catalogue.packages.iter().find(|p| p.name == name) else {
+            return Ok(picks);
+        };
+        let mut out = Vec::new();
+        for (pick, group) in picks.into_iter().zip(&package.variants) {
+            let members: Vec<&str> = group.iter().map(String::as_str).collect();
+            let installed = self.pm.resolve(&members, &[Filter::Installed]).await?;
+            if !installed
+                .iter()
+                .any(|p| p.id.is_installed() && members.contains(&p.id.name.as_str()))
+            {
+                out.push(pick);
+            }
+        }
+        Ok(out)
+    }
+
+    /// The ids of `name` and of the variant builds `alongside` it, from
+    /// Reef's repository.
+    async fn install_ids(&self, name: &str, alongside: &[String]) -> Result<Vec<PackageId>> {
+        let mut ids = vec![self.installable(name).await?];
+        for n in alongside {
+            ids.push(self.installable(n).await?);
+        }
+        Ok(ids)
+    }
+
     /// Everything installing catalogue package `name` would do, from
     /// `PackageKit`'s simulation of it: the app and what comes with it,
-    /// labelled from `catalogue`. A stale pool (the simulation fails as the
-    /// install would, [`stale_metadata`]) is refreshed once.
+    /// labelled from `catalogue`. With it go the builds of its parts for
+    /// this phone's processor ([`Plan::alongside`]). A stale pool (the
+    /// simulation fails as the install would, [`stale_metadata`]) is
+    /// refreshed once.
     pub async fn preview_install(&self, name: &str, catalogue: Option<&Catalogue>) -> Result<Plan> {
-        let id = self.installable(name).await?;
-        let (id, simulated) = match self.pm.simulate_install(&[&id.raw]).await {
+        let alongside = self.variant_builds(name, catalogue).await?;
+        let ids = self.install_ids(name, &alongside).await?;
+        let raw = |ids: &[PackageId]| ids.iter().map(|i| i.raw.clone()).collect::<Vec<_>>();
+        let (ids, simulated) = match self.pm.simulate_install(&refs(&raw(&ids))).await {
             Err(e) if stale_metadata(&e) => {
                 self.reload_view().await?;
-                let id = resolve_installable(&self.pm, name, &self.alias).await?;
-                let simulated = self.pm.simulate_install(&[&id.raw]).await?;
-                (id, simulated)
+                let mut ids = vec![resolve_installable(&self.pm, name, &self.alias).await?];
+                for n in &alongside {
+                    ids.push(resolve_installable(&self.pm, n, &self.alias).await?);
+                }
+                let simulated = self.pm.simulate_install(&refs(&raw(&ids))).await?;
+                (ids, simulated)
             }
-            r => (id, r?),
+            r => (ids, r?),
         };
+        let id = ids
+            .into_iter()
+            .next()
+            .ok_or_else(|| Error::NotFound(name.into()))?;
         let mut plan = Plan {
             action: Action::Install,
             target: name.into(),
@@ -423,6 +489,7 @@ impl<P: PackageManager> Store<P> {
                 catalogue,
             ),
             download_size: None,
+            alongside,
         };
         self.add_sizes(&mut plan).await;
         Ok(plan)
@@ -475,6 +542,7 @@ impl<P: PackageManager> Store<P> {
                 catalogue,
             ),
             download_size: None,
+            alongside: Vec::new(),
         };
         self.add_sizes(&mut plan).await;
         Ok(Some(plan))
@@ -489,6 +557,7 @@ impl<P: PackageManager> Store<P> {
             target: String::new(),
             items: Vec::new(),
             download_size: None,
+            alongside: Vec::new(),
         };
         if updates.is_empty() {
             return Ok(plan);
@@ -553,6 +622,9 @@ impl<P: PackageManager> Store<P> {
     /// more, simulation included, still only as approved: otherwise it
     /// failed with "not found on medium" or "package not found" until the
     /// next refresh (lifecycle test, 12 October 2026).
+    ///
+    /// The plan's [`alongside`](Plan::alongside) builds are installed in the
+    /// same transaction, and recorded as having come with the app.
     pub async fn install(
         &self,
         name: &str,
@@ -561,17 +633,18 @@ impl<P: PackageManager> Store<P> {
     ) -> Result<()> {
         let mut retried = false;
         let simulated = loop {
-            let id = self.installable(name).await?;
             let attempt = async {
+                let ids = self.install_ids(name, &approved.alongside).await?;
+                let raw: Vec<String> = ids.into_iter().map(|i| i.raw).collect();
                 let simulated = Self::approve(
                     approved,
                     Action::Install,
                     name,
-                    self.pm.simulate_install(&[&id.raw]).await?,
+                    self.pm.simulate_install(&refs(&raw)).await?,
                     Change::Install,
                 )?;
                 self.check_metadata()?;
-                self.pm.install(&[&id.raw], &mut *progress).await?;
+                self.pm.install(&refs(&raw), &mut *progress).await?;
                 Ok::<_, Error>(simulated)
             }
             .await;
@@ -760,6 +833,7 @@ impl<P: PackageManager> Store<P> {
             target: name.into(),
             items,
             download_size: None,
+            alongside: Vec::new(),
         })
     }
 
@@ -1069,6 +1143,11 @@ impl<P: PackageManager> Store<P> {
         let found = resolve_with_offers(&self.pm, &refs).await?;
         Ok(reef_removable(&found, &self.alias, &self.recorded()))
     }
+}
+
+/// `&str`s of `ids`, for the package manager.
+fn refs(ids: &[String]) -> Vec<&str> {
+    ids.iter().map(String::as_str).collect()
 }
 
 /// The package asked for, as a plan's requested item.
@@ -2559,5 +2638,108 @@ mod tests {
             ],
             "glibc is never updated"
         );
+    }
+
+    /// Pacific's engine comes in two builds: the install asks for the one
+    /// this processor runs, with the app, in one transaction, and records
+    /// it as having come with the app.
+    #[test]
+    fn installs_the_engine_build_the_cpu_runs() {
+        let json = r#"{"schema":1,"release":"5.2.0.18","arch":"aarch64",
+            "components":{
+              "engine":{"summary":"ARMv8.2","requires_cpu":["asimddp","lrcpc"]},
+              "engine-armv80":{"summary":"ARMv8.0"}},
+            "packages":[
+              {"name":"pacific","version":"1-1","title":"Pacific","summary":"s","tested_on":["5.2.0.18"],
+               "requires":["engine","engine-armv80"],"variants":[["engine","engine-armv80"]],
+               "licence":{"model":"free"}}]}"#;
+        let cat = Catalogue::parse(json.as_bytes(), "aarch64").unwrap();
+        let xperia = crate::catalogue::parse_cpu_features(
+            "Features\t: fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid\n",
+        );
+        let jolla = crate::catalogue::parse_cpu_features(
+            "Features\t: fp asimd aes crc32 atomics fphp asimdhp lrcpc dcpop asimddp\n",
+        );
+        let available = || {
+            vec![
+                pkg("pacific;1-1;aarch64;shipwright-reef"),
+                pkg("engine;2-1;aarch64;shipwright-reef"),
+                pkg("engine-armv80;2-1;aarch64;shipwright-reef"),
+            ]
+        };
+        for (cpu, build) in [(xperia, "engine-armv80"), (jolla, "engine")] {
+            let (ledger, dir) = ledger(&format!("variants-{build}"), &[], &[]);
+            let fake = Fake {
+                available: available(),
+                ..Fake::default()
+            };
+            let store = Store::new(fake, "shipwright-reef")
+                .with_ledger(Some(ledger.clone()))
+                .with_cpu_features(cpu);
+            futures_lite::future::block_on(async {
+                let plan = store.preview_install("pacific", Some(&cat)).await.unwrap();
+                assert_eq!(plan.alongside, [build]);
+                let requested: Vec<_> = plan
+                    .items
+                    .iter()
+                    .map(|i| (i.name.as_str(), i.requested))
+                    .collect();
+                assert!(requested.contains(&("pacific", true)), "{requested:?}");
+                assert!(requested.contains(&(build, false)), "{requested:?}");
+                store.install("pacific", &plan, &mut |_| {}).await.unwrap();
+            });
+            let calls = transactions(&store.pm.calls.borrow());
+            assert_eq!(
+                calls,
+                [format!(
+                    "install [\"pacific;1-1;aarch64;shipwright-reef\", \"{build};2-1;aarch64;shipwright-reef\"]"
+                )]
+            );
+            assert_eq!(ledger.names(), BTreeSet::from(["pacific".to_string()]));
+            assert_eq!(ledger.pulled_in(), BTreeSet::from([build.to_string()]));
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
+
+    /// A build of the group is installed already: it stays, and nothing
+    /// else is asked for. No build runs here: nothing is installed.
+    #[test]
+    fn an_installed_engine_build_stays_and_none_runnable_fails() {
+        let json = r#"{"schema":1,"release":"5.2.0.18","arch":"aarch64",
+            "components":{"engine":{"summary":"ARMv8.2","requires_cpu":["asimddp"]},
+                          "engine-armv80":{"summary":"ARMv8.0","requires_cpu":["crc32"]}},
+            "packages":[
+              {"name":"pacific","version":"1-1","title":"Pacific","summary":"s","tested_on":["5.2.0.18"],
+               "variants":[["engine","engine-armv80"]],"licence":{"model":"free"}}]}"#;
+        let cat = Catalogue::parse(json.as_bytes(), "aarch64").unwrap();
+        let fake = Fake {
+            available: vec![
+                pkg("pacific;1-1;aarch64;shipwright-reef"),
+                pkg("engine-armv80;2-1;aarch64;installed"),
+                pkg("engine;2-1;aarch64;shipwright-reef"),
+            ],
+            ..Fake::default()
+        };
+        let store = Store::new(fake, "shipwright-reef").with_cpu_features(
+            crate::catalogue::parse_cpu_features("Features\t: fp asimd crc32 asimddp\n"),
+        );
+        futures_lite::future::block_on(async {
+            let plan = store.preview_install("pacific", Some(&cat)).await.unwrap();
+            assert!(plan.alongside.is_empty());
+            // Without a catalogue (tools), nothing is added either.
+            let no_catalogue = store.preview_install("pacific", None).await.unwrap();
+            assert!(no_catalogue.alongside.is_empty());
+        });
+        let store = store.with_cpu_features(crate::catalogue::parse_cpu_features(
+            "Features\t: fp asimd\n",
+        ));
+        futures_lite::future::block_on(async {
+            let err = store
+                .preview_install("pacific", Some(&cat))
+                .await
+                .unwrap_err();
+            assert!(matches!(err, Error::NoBuild(..)), "{err}");
+        });
+        assert!(transactions(&store.pm.calls.borrow()).is_empty());
     }
 }

@@ -57,6 +57,7 @@ BackgroundItem {
             anchors.margins: parent.border.width
             source: card.heroPath.length > 0 ? "file://" + card.heroPath : ""
             sourceSize.width: width
+            sourceSize.height: height
             fillMode: Image.PreserveAspectCrop
             verticalAlignment: Image.AlignTop
             asynchronous: true

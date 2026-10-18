@@ -1215,6 +1215,7 @@ mod tests {
             target: "b".into(),
             items: Vec::new(),
             download_size: None,
+            alongside: Vec::new(),
         };
         let op = Op {
             ask: Ask::Remove("b".into()),
