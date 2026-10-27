@@ -14,7 +14,7 @@ tools/build/native/native.sh --release 5.2.0.15  # another release
 tools/build/native/install-test.sh               # install them into a fresh root of that release
 ```
 
-RPMs land in `RPMS/<release>/`, as with [`tools/build/sdk/sdk.sh`](../sdk/README.md). Without `--release`, `native.sh` and `install-test.sh` use the newest release in [`tools/build/releases/supported.txt`](../releases/README.md), the list `services/cloudflare-production.sh reef-packages` publishes. A new Sailfish OS release goes through [`tools/build/releases/support-release.sh`](../releases/README.md), which runs both scripts for it and then adds it to that list.
+RPMs land in `RPMS/<build root>/`: the point releases of a `MAJOR.MINOR` line share one build, made in the line's oldest supported release (`--release 5.2.0.22` builds in 5.2.0.15; [releases README](../releases/README.md), "One build per line"; `NATIVE_EXACT_RELEASE=1` builds in the release named). Otherwise as with [`tools/build/sdk/sdk.sh`](../sdk/README.md). Without `--release`, `native.sh` and `install-test.sh` use the newest release in [`tools/build/releases/supported.txt`](../releases/README.md), the list `services/cloudflare-production.sh reef-packages` publishes. A new Sailfish OS release goes through [`tools/build/releases/support-release.sh`](../releases/README.md), which runs both scripts for it and then adds it to that list.
 
 ## Why this works
 
@@ -31,12 +31,12 @@ On an aarch64 host the target runs as it is, so the build engine is not needed. 
   - it upgrades the root to the release with `ssu release` and `zypper dup`, through Jolla's repositories, which carry every release, including 5.2.0.15 that has no public SDK target;
   - it adds Chum's `chum:testing` (Qt 6.8);
   - it installs gcc, rpm-build, CMake, Ninja and Qt 6's development packages.
-- **Container.** One per release (`shipwright-native-<release>`), kept between runs. Each run copies in a clean snapshot of the working tree (tracked and new files, as `sdk.sh`) and keeps only `target/`, so cargo builds are incremental.
+- **Container.** One per build root (`shipwright-native-<release>`), kept between runs. Each run copies in a clean snapshot of the working tree (tracked and new files, as `sdk.sh`) and keeps only `target/`, so cargo builds are incremental. Rust's toolchains and cargo's registry are one host copy, `~/.cache/shipwright/native-rust` (`NATIVE_RUST_CACHE`), mounted into every container.
 - **Build.** It runs [`tools/build/sdk/build-rpms.sh`](../sdk/build-rpms.sh) with `SAILFISH_NATIVE=1`:
   - `cargo-sailfish.sh` builds natively with the root's gcc and an aarch64 rustup toolchain (pinned by `install-rustup.sh`);
   - `cxxqt-sailfish.sh` uses the root's own `qmake6`, moc and qmlcachegen;
   - [`mb2`](mb2) stands in for the SDK's `mb2`: it installs a spec's `BuildRequires` with zypper, then runs `rpmbuild --build-in-place` from the tree, so specs, hooks and `specs.conf` are the same as for the SDK.
-- **Output.** The RPMs are copied back to `RPMS/<release>/`.
+- **Output.** The RPMs are copied back to `RPMS/<build root>/`.
 
 Updating: `NATIVE_REBUILD_IMAGE=1` rebuilds the image (new release updates, Chum updates) and replaces the container. A new release needs nothing of the kind: its image is built the first time `--release` names it, from the same base target, and its container is new. `NATIVE_MEMORY` (default `9g`) and `NATIVE_MEMORY_SWAP` (default `11g`) cap the container's memory; `0` lifts the cap. Other variables are as for `sdk.sh` (`REEF_KEY_FILE`, `REEF_URL_TEMPLATE`, `REEF_LICENCE_SERVER`, `SHIPWRIGHT_LICENCE_KEYS`, `PILOT_RELAY_URL`, `SKIP_SPECS`, `WITH_VENDORID`, `WITH_PHASE0`, `CARGO_PACKAGES`, `SOURCE_DATE_EPOCH`).
 

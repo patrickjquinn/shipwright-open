@@ -29,6 +29,22 @@
 /// build generated); with Keel's modules among them it compiles more to C++.
 #[allow(dead_code)]
 fn precompile_app_qml(src: &Path, install: &str, imports: &[PathBuf]) {
+    keel_precompile_qml(src, install, imports, false);
+}
+
+/// As `precompile_app_qml`, compiling more of the QML to C++: against Keel's
+/// modules (`keel_qml_imports()`) besides `imports`, and with the app's files
+/// mapped to where they are installed, so that qmlcachegen also knows the
+/// types the app's directory imports (`import "components"`) bring.
+#[allow(dead_code)]
+fn precompile_app_qml_typed(src: &Path, install: &str, imports: &[PathBuf]) {
+    let mut all = keel_qml_imports();
+    all.extend(imports.iter().cloned());
+    keel_precompile_qml(src, install, &all, true);
+}
+
+#[allow(dead_code)]
+fn keel_precompile_qml(src: &Path, install: &str, imports: &[PathBuf], map_installed: bool) {
     let out = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR")).join("keel-qmlcache");
     let _ = std::fs::remove_dir_all(&out);
     std::fs::create_dir_all(&out).expect("cannot create the qmlcache directory");
@@ -46,6 +62,23 @@ fn precompile_app_qml(src: &Path, install: &str, imports: &[PathBuf]) {
             import_args.push("-I".to_owned());
             import_args.push(dir.display().to_string());
         }
+    }
+
+    // The installed paths of the files, as a resource file that qmlcachegen
+    // reads to find what a file's directory imports name.
+    if map_installed {
+        use std::fmt::Write as _;
+        let qrc = out.join("installed.qrc");
+        let mut text = String::from("<RCC>\n<qresource prefix=\"/\">\n");
+        for file in &files {
+            let rel = file.strip_prefix(src).unwrap();
+            let installed = format!("{}/{}", install.trim_matches('/'), rel.display());
+            writeln!(text, "<file alias=\"{installed}\">{}</file>", file.display()).unwrap();
+        }
+        text += "</qresource>\n</RCC>\n";
+        std::fs::write(&qrc, text).expect("write installed.qrc");
+        import_args.push("--resource".to_owned());
+        import_args.push(qrc.display().to_string());
     }
 
     let mut units = Vec::new(); // (installed path, C++ namespace)
@@ -87,6 +120,21 @@ fn precompile_app_qml(src: &Path, install: &str, imports: &[PathBuf]) {
         "QML precompiled: {} files, {compiled} of {functions} functions and bindings as C++, the rest as bytecode",
         units.len()
     );
+}
+
+/// Keel's QML modules (Sailfish.Silica, Keel.Actions, ...) as import
+/// directories for `precompile_app_qml`: the directories in
+/// `KEEL_QML_IMPORT_PATH` (colon-separated), which
+/// tools/build/sdk/cxxqt-sailfish.sh sets from keel/tools/qml-sdk.sh for the
+/// phone's Qt. With them qmlcachegen compiles to C++ the bindings and
+/// functions that use Silica's types (Theme, Label, Page ...); without, those
+/// are bytecode. Empty when unset.
+#[allow(dead_code)]
+fn keel_qml_imports() -> Vec<PathBuf> {
+    println!("cargo:rerun-if-env-changed=KEEL_QML_IMPORT_PATH");
+    std::env::var_os("KEEL_QML_IMPORT_PATH")
+        .map(|p| std::env::split_paths(&p).filter(|d| d.is_dir()).collect())
+        .unwrap_or_default()
 }
 
 /// The .qml, .js and .mjs files under `dir`, in a stable order.

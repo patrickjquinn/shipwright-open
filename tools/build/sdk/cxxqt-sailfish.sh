@@ -81,6 +81,13 @@ CARGO_TARGET_DIR=$(cd "$CARGO_TARGET_DIR" && pwd)
 if [ "$native" = 1 ]; then
 echo "== CXX-Qt $crate for $target_name, native (Qt $("$qt/bin/qmake6" -query QT_VERSION))"
 export QMAKE=$qt/bin/qmake6
+# Keel's QML modules' type information, for the apps that compile their QML
+# against it (keel_qml_imports() in tools/keel-launcher/precompile_qml.rs).
+# Native builds only: keel/tools/qml-sdk.sh runs the target's moc.
+if [ -z "${KEEL_QML_IMPORT_PATH+set}" ]; then
+    KEEL_QML_IMPORT_PATH=$("$repo/keel/tools/qml-sdk.sh" "$CARGO_TARGET_DIR/keel-qml-sdk/$target_name")
+    export KEEL_QML_IMPORT_PATH
+fi
 else
 tools=${CXXQT_TOOLS_DIR:-$CARGO_TARGET_DIR/sailfish-qt/$target_name}
 mkdir -p "$tools"

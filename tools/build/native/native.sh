@@ -7,7 +7,10 @@
 #
 #   tools/build/native/native.sh [--release RELEASE] [spec...]
 #
-# RELEASE defaults to the newest in tools/build/releases/supported.txt.
+# RELEASE defaults to the newest in tools/build/releases/supported.txt. The
+# build is made in RELEASE's build root, the oldest supported release of its
+# MAJOR.MINOR line, and serves every release of the line
+# (tools/build/releases/README.md, "One build per line").
 #
 # Jolla's SDK packaging (the build engine and sb2) is x86-only and emulates
 # the phone; its aarch64 *target* image is an ordinary Sailfish OS root that
@@ -39,7 +42,10 @@
 # engine shipwright-pacific-engine.spec makes, see specs.conf);
 # SKIP_SPECS, WITH_VENDORID, WITH_PHASE0, MIN_FREE_GB, BUILD_WORKSPACE, CARGO_PACKAGES and
 # SOURCE_DATE_EPOCH (default: the last commit's time) go to build-rpms.sh,
-# as with sdk.sh. NATIVE_REBUILD_IMAGE=1 rebuilds the image (a new release's
+# as with sdk.sh. NATIVE_EXACT_RELEASE=1 builds in RELEASE itself.
+# NATIVE_RUST_CACHE (default ~/.cache/shipwright/native-rust): rustup and
+# cargo's registry, shared by every build container.
+# NATIVE_REBUILD_IMAGE=1 rebuilds the image (a new release's
 # updates); the container is replaced with it. NATIVE_MEMORY (default 9g)
 # and NATIVE_MEMORY_SWAP (default 11g) cap the container's memory.
 set -euo pipefail
@@ -53,6 +59,16 @@ else
     release=$(releases_newest)
 fi
 release_valid "$release" || { echo "native.sh: --release must be a four-part release" >&2; exit 2; }
+# The point releases of a MAJOR.MINOR line share one build, made in the
+# line's oldest supported release (releases/lib.sh, release_build_root):
+# --release 5.2.0.22 builds in 5.2.0.15's container into RPMS/5.2.0.15/.
+# NATIVE_EXACT_RELEASE=1 builds in the release named instead.
+if [ "${NATIVE_EXACT_RELEASE:-0}" != 1 ]; then
+    asked=$release
+    release=$(release_build_root "$asked")
+    [ "$release" = "$asked" ] ||
+        echo "native.sh: Sailfish OS $asked shares the $(release_line "$asked") line's build, made in $release (RPMS/$release/)" >&2
+fi
 [ "$(uname -m)" = aarch64 ] || { echo "native.sh: needs an aarch64 host (use tools/build/sdk/sdk.sh on x86_64)" >&2; exit 2; }
 
 root=$(cd "$here/../../.." && pwd)
@@ -73,8 +89,16 @@ name=${NATIVE_CONTAINER:-shipwright-native-$release}
 if native_image "$release" build "$image"; then
     podman rm -f "$name" >/dev/null 2>&1 || true
 fi
+# Rust's toolchains (rustup) and cargo's registry are the same for every
+# line: one copy on the host (NATIVE_RUST_CACHE, default
+# ~/.cache/shipwright/native-rust), mounted into each build container
+# instead of about 2 GB downloaded into each. Builds run one at a time, so
+# the containers never write it together.
+rust_cache=${NATIVE_RUST_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/shipwright/native-rust}
+mkdir -p "$rust_cache/rustup" "$rust_cache/cargo"
 if ! podman container exists "$name"; then
-    podman run -d --name "$name" "$image" sleep infinity >/dev/null
+    podman run -d --name "$name" -v "$rust_cache/rustup:/root/.rustup:z" -v "$rust_cache/cargo:/root/.cargo:z" \
+        "$image" sleep infinity >/dev/null
 fi
 podman start "$name" >/dev/null
 # A cap on the build's memory, so a large compile fails on its own instead of
@@ -129,7 +153,7 @@ podman exec -e SAILFISH_NATIVE=1 -e SKIP_SPECS="${SKIP_SPECS:-}" \
     -e SHIPWRIGHT_LICENCE_KEYS="${SHIPWRIGHT_LICENCE_KEYS:-}" -e PILOT_RELAY_URL="${PILOT_RELAY_URL:-}" \
     -e PACIFIC_CPU="${PACIFIC_CPU:-armv8.2}" \
     "${reef_key_env[@]}" "${engine_env[@]}" "$name" bash -lc \
-    'export PATH=/root/build/tools/build/native:$PATH; cd /root/build && tools/build/sdk/build-rpms.sh --target "$0" "$@"' \
+    'export PATH=/root/build/tools/build/native:/root/.cargo/bin:$PATH; cd /root/build && tools/build/sdk/build-rpms.sh --target "$0" "$@"' \
     "$target" "$@" || status=$?
 
 # This run's RPMs replace everything built from the same source packages
