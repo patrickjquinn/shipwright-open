@@ -23,7 +23,7 @@
 
 Name:           shipwright-reef
 Version:        0.1.0
-Release:        34
+Release:        35
 Summary:        The app store for Sailfish OS
 License:        GPL-3.0-or-later
 URL:            https://reefstore.app/
@@ -324,6 +324,8 @@ exit 0
 %ghost %attr(0644,root,root) /var/log/shipwright-reef-installer.log
 
 %changelog
+* Tue Oct 27 2026 Shipwright - 0.1.0-35
+- Reef no longer forgets which apps it installed when it cannot read its list of them: the list is left as it is instead of being written over.
 * Tue Oct 27 2026 Shipwright - 0.1.0-34
 - A new store front: collections of apps in rows, categories to browse, and every app on a page that stays quick however many there are.
 - Search puts the best matches first and finds apps even with a letter wrong.

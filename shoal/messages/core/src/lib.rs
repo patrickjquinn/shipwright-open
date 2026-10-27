@@ -89,11 +89,13 @@ fn into_c_string(value: String) -> *mut c_char {
 ///
 /// # Safety
 ///
-/// `pointer` must be NULL or a valid NUL-terminated string.
+/// `pointer` must be NULL or a valid NUL-terminated string that stays valid,
+/// unchanged, for `'a`.
 unsafe fn borrow_str<'a>(pointer: *const c_char) -> Option<&'a str> {
     if pointer.is_null() {
         return None;
     }
+    // SAFETY: non-null, so valid for 'a (the caller's promise).
     unsafe { CStr::from_ptr(pointer) }.to_str().ok()
 }
 
@@ -117,6 +119,8 @@ pub extern "C" fn xm_version() -> *mut c_char {
 #[no_mangle]
 pub unsafe extern "C" fn xm_core_new(config_json: *const c_char) -> *mut XmCore {
     let result = catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: NULL or a valid NUL-terminated string (the caller's
+        // promise), read only during this call.
         let raw = unsafe { borrow_str(config_json) }?;
         let mut config: CoreConfig = serde_json::from_str(raw).ok()?;
 
@@ -168,6 +172,8 @@ pub unsafe extern "C" fn xm_core_set_callback(
     if core.is_null() {
         return;
     }
+    // SAFETY: non-null, so a live handle from xm_core_new (the caller's
+    // promise); only shared access is taken.
     let core = unsafe { &*core };
     core.sink.set_callback(callback, user_data);
 }
@@ -184,9 +190,12 @@ pub unsafe extern "C" fn xm_core_send(core: *mut XmCore, command_json: *const c_
     if core.is_null() {
         return;
     }
+    // SAFETY: as in xm_core_set_callback.
     let core = unsafe { &*core };
 
     let _ = catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: NULL or a valid NUL-terminated string (the caller's
+        // promise), read only during this call.
         let Some(raw) = (unsafe { borrow_str(command_json) }) else {
             core.sink
                 .emit(reply_error(0, "command was not valid UTF-8"));
@@ -228,6 +237,8 @@ pub unsafe extern "C" fn xm_core_free(core: *mut XmCore) {
     if core.is_null() {
         return;
     }
+    // SAFETY: non-null, so a handle Box::into_raw made in xm_core_new,
+    // freed once (the caller's promise).
     let core = unsafe { Box::from_raw(core) };
     // Stop delivering into a front end that is going away, then let the
     // runtime wind down without blocking the caller's thread.
@@ -250,6 +261,8 @@ pub unsafe extern "C" fn xm_string_free(s: *mut c_char) {
         return;
     }
     let _ = catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: non-null, so a CString::into_raw of this library's,
+        // released once (the caller's promise).
         drop(unsafe { CString::from_raw(s) });
     }));
 }

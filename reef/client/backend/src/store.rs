@@ -113,11 +113,27 @@ impl InstallLedger {
         self.path.with_file_name("pulled-in.json")
     }
 
+    /// The names in `path`: none when the file does not exist yet. A file
+    /// that exists but cannot be read or parsed is an error, never an empty
+    /// list, so [`update`](Self::update) does not write a list built from
+    /// nothing over the person's records.
+    fn load(path: &Path) -> std::io::Result<BTreeSet<String>> {
+        match std::fs::read(path) {
+            Ok(bytes) => serde_json::from_slice(&bytes).map_err(|e| {
+                std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("{}: {e}", path.display()),
+                )
+            }),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(BTreeSet::new()),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// [`load`](Self::load) for showing what Reef installed: an unreadable
+    /// file shows as empty, and stays as it is on disk.
     fn read(path: &Path) -> BTreeSet<String> {
-        std::fs::read(path)
-            .ok()
-            .and_then(|b| serde_json::from_slice(&b).ok())
-            .unwrap_or_default()
+        Self::load(path).unwrap_or_default()
     }
 
     /// What the person installed through Reef; empty when the file is
@@ -139,8 +155,10 @@ impl InstallLedger {
         all
     }
 
+    /// Changes the list in `path` with `f` and writes it back atomically.
+    /// Refuses, leaving the file alone, when it cannot be read or parsed.
     fn update(path: &Path, f: impl FnOnce(&mut BTreeSet<String>)) -> std::io::Result<()> {
-        let mut names = Self::read(path);
+        let mut names = Self::load(path)?;
         let before = names.clone();
         f(&mut names);
         if names == before && path.exists() {
@@ -2535,6 +2553,26 @@ mod tests {
 
     /// Fix 5: the ledger is the owner's only, and a world-writable one left
     /// by an earlier Reef is repaired.
+    #[test]
+    fn an_unreadable_ledger_is_never_overwritten() {
+        let (ledger, dir) = ledger("unreadable", &["a"], &[]);
+        let path = dir.join("shipwright-reef/installed.json");
+        std::fs::write(&path, b"[\"a\", truncated").unwrap();
+        assert!(ledger.names().is_empty(), "shown as empty");
+        assert!(ledger.record("b").is_err(), "a corrupt file is not rewritten");
+        assert!(ledger.forget("a").is_err());
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            b"[\"a\", truncated",
+            "the person's records stay on disk"
+        );
+        // A missing file is a new, empty ledger.
+        std::fs::remove_file(&path).unwrap();
+        ledger.record("b").unwrap();
+        assert!(ledger.names().contains("b"));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
     #[test]
     fn the_ledger_is_private() {
         use std::os::unix::fs::PermissionsExt;

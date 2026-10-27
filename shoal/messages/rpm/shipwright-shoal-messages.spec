@@ -9,7 +9,7 @@ Summary:    Private messaging on Matrix
 # Shoal Messages' own version (semver). Upstream base: see UPSTREAM.md.
 # Must match core/Cargo.toml (scripts/build-core.sh and the .pro check it).
 Version:    0.1.0
-Release:    12
+Release:    13
 License:    ASL 2.0 and MIT and MPLv2.0 and BSD and ISC and zlib and Unicode and Boost and CC0 and CDLA-Permissive and Unlicense
 URL:        https://reefstore.app/#app-shipwright-shoal-messages
 Source0:    %{name}-%{version}.tar.bz2
@@ -148,6 +148,8 @@ strip %{buildroot}%{_bindir}/%{name}
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Tue Oct 27 2026 Shipwright - 0.1.0-13
+- Rebuilt; no change in behaviour (safety notes in the code).
 * Fri Oct 16 2026 Shipwright - 0.1.0-12
 - Pilot (and other Keel Actions clients) can bring Messages to the front, starting it if it is not running.
 * Wed Oct 14 2026 Shipwright - 0.1.0-11

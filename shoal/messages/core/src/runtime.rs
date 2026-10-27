@@ -57,9 +57,10 @@ struct CallbackSlot {
     user_data: *mut c_void,
 }
 
-// The pointer is opaque to Rust and only handed back with a message. C++ owns
-// it, keeps it alive, and its trampoline is safe from any thread.
+// SAFETY: the pointer is opaque to Rust and only handed back with a message.
+// C++ owns it, keeps it alive, and its trampoline is safe from any thread.
 unsafe impl Send for CallbackSlot {}
+// SAFETY: as for Send; the slot is only reached through Sink's mutex.
 unsafe impl Sync for CallbackSlot {}
 
 /// Delivers JSON messages to the front end.
