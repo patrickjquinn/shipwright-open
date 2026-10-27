@@ -26,9 +26,20 @@ const NOT_OPENED: &[&str] = &["shipwright-reef"];
 /// The launcher entry of `package`, by file name
 /// (`shipwright-shoal-camera.desktop`), or `None` when it has none or is
 /// not installed. `root` is the system root (`jobs::sysroot`).
+///
+/// The usual case, a launcher entry named after the package, is one file
+/// read; only otherwise is the package's file list asked of `rpm`, which
+/// took 20 to 30 ms on the GUI thread each time an installed app's page
+/// opened (Jolla Phone, 27 October 2026).
 pub fn desktop_entry(root: &Path, package: &str) -> Option<String> {
     if NOT_OPENED.contains(&package) {
         return None;
+    }
+    let own = format!("{package}.desktop");
+    if std::fs::read_to_string(root.join("usr/share/applications").join(&own))
+        .is_ok_and(|text| shown(&text))
+    {
+        return Some(own);
     }
     let out = reef_backend::c_locale(&mut Command::new("rpm"))
         .args(["-q", "--qf", "[%{FILENAMES}\\n]", package])
@@ -113,6 +124,36 @@ pub fn open(entry: &str) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_entry_named_after_the_package_needs_no_rpm() {
+        let root = std::env::temp_dir().join(format!("reef-launch-{}", std::process::id()));
+        let apps = root.join("usr/share/applications");
+        std::fs::create_dir_all(&apps).unwrap();
+        std::fs::write(
+            apps.join("shipwright-shoal-keys.desktop"),
+            "[Desktop Entry]\nType=Application\nName=Keys\n",
+        )
+        .unwrap();
+        std::fs::write(
+            apps.join("hidden-thing.desktop"),
+            "[Desktop Entry]\nType=Application\nNoDisplay=true\n",
+        )
+        .unwrap();
+        assert_eq!(
+            desktop_entry(&root, "shipwright-shoal-keys").as_deref(),
+            Some("shipwright-shoal-keys.desktop")
+        );
+        assert_eq!(
+            desktop_entry(&root, "shipwright-reef"),
+            None,
+            "Reef is open already"
+        );
+        // Hidden: not offered by the fast path (rpm, absent here, finds
+        // nothing either).
+        assert_eq!(desktop_entry(&root, "hidden-thing"), None);
+        std::fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn finds_the_shown_launcher_entry() {

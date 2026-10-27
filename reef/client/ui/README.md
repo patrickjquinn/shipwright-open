@@ -23,9 +23,12 @@ The delegates take their roles as `required property` declarations. `pragma Comp
 qml/
   shipwright-reef.qml          ApplicationWindow; refreshes on start if enabled; on becoming
                                active, fetches the licence of a pending web purchase
-  pages/CataloguePage.qml      search box, the Featured row, then packages tested on this
-                               release grouped by category; repair banner when the
-                               repository is not pinned
+  pages/CataloguePage.qml      the store's home: updates, the Featured banners, the
+                               collections as rows, the categories, All apps; repair
+                               banner when the repository is not pinned
+  pages/BrowsePage.qml         one category's, one collection's or every app, a list
+                               built as it scrolls (browseModel)
+  pages/SearchPage.qml         the search field and ranked results
   pages/PackagePage.qml        icon and publisher, screenshots, details, tested-on releases,
                                permissions and sandboxing, install / update / buy (with a
                                hint until the licence arrives), progress bar; remove
@@ -41,6 +44,10 @@ qml/
   components/PackageDelegate   a package row (ListItem, required properties): icon, title,
                                "New", publisher, summary, state
   components/FeaturedDelegate  a Featured tile: icon with the title under it
+  components/CollectionRow     a collection: a section header and a row of tiles from
+                               Reef.appRow, ending in SeeAllTile
+  components/SeeAllTile        a row's last tile: opens the whole collection
+  components/CategoryTile      a category: theme icon and name, one line
   components/AppIcon           a cached launcher icon, or the app's initial until it is
   components/Texts.js          translations of the Rust side's keys; https link rule
 ```
@@ -69,7 +76,11 @@ The UI imports `Shipwright.Reef 1.0` and uses a singleton named `Reef`. The CXX-
 | `installedModel` | model | same roles, only rows whose `installState` is not `not_installed` |
 | `featuredModel` | model | same roles, the catalogue's `featured` names that are visible, in its order |
 | `licenceModel` | model | stored licences (`LicenceStore::list`) |
-| `searchText` | string, rw | the catalogue page's search box; every whitespace-separated word must appear in a row's title, summary, category, publisher or RPM name (case-insensitive) for the row to stay in `catalogueModel` |
+| `categoriesModel` | model | `categoryId`, `label`, `icon` (a Silica theme icon name, or empty), `count`: the store index's categories that have apps shown on this phone, in its order; from a `catalogue.json`, one per category its apps name (`rows::category_rows`) |
+| `collectionsModel` | model | `collectionId`, `title`, `subtitle`, `generated`, `apps` (RPM names shown here, in order): the store index's collections with at least three apps shown here (`rows::collection_rows`, `MIN_COLLECTION_APPS`) |
+| `browseModel` | model | package roles: one category's, one collection's or every app, as `browse()` last set it |
+| `detailsLoading` | string | the app whose details `loadDetails()` is fetching, or empty |
+| `searchText` | string, rw | the search page's field; `catalogueModel` keeps the rows where every whitespace-separated word matches, best first (`rows::filter_rows`: the start of the title, a title word, a keyword, the title, the RPM name, the summary, one letter wrong in words of five or more, the publisher and category) |
 | `refreshOnStart` | bool, rw | setting |
 | `backgroundCheckDays` | int, rw | 0 (never), 1 (every few hours) or 7 (weekly); setting, read by `shipwright-reef --check-updates` (a 4-hourly systemd user timer, see `../app/README.md`) |
 | `licenceServer` | string, rw | licence service base URL; setting |
@@ -82,8 +93,11 @@ The UI imports `Shipwright.Reef 1.0` and uses a singleton named `Reef`. The CXX-
 
 | Call | Returns | Backend |
 | --- | --- | --- |
-| `refresh()` | void | fetch `RepoConfig::catalogue_url(release, arch)`, `Catalogue::parse`, `ssu lr` then `pin_state`, `Store::installed` and `Store::updates`; also refreshes subscriptions that need it and the revocation list |
+| `refresh()` | void | fetch the store index (`store/index.json`, checked with Reef's key like `repomd.xml`, never older than one seen: `jobs::fetch_index`) or, without one, `RepoConfig::catalogue_url(release, arch)` and `Catalogue::parse`; `ssu lr` then `pin_state`, `Store::installed` and `Store::updates`; also refreshes subscriptions that need it and the revocation list |
 | `packageDetails(name)` | object | `{name, title, summary, description, category, version, installState, installedVersion, updateVersion, testedOn: [string], permissions: [string], sandboxed, licenceModel, licensed, purchaseUrl, spdx, sizeText, homepage, source, keelTier, publisher, iconPath, screenshotPaths: [string], added, updated, changelogJson, servicesJson, systemChangesJson, removable}`. `servicesJson` and `systemChangesJson` are the catalogue's disclosures as JSON; `removable` is false for a package Reef shows as installed but did not install. `sizeText` is pre-formatted because Keel v1 has no `Format`. `keelTier` is the catalogue's `keel_tier` (`A`, `B`, `none`, `not-applicable`) or empty. `screenshotPaths` holds only the screenshots already cached; `added` is `YYYY-MM-DD` or empty; `updated` is the newest changelog entry's day (else `added`); `changelogJson` is the catalogue's `changelog` as a JSON string, `[{version, date, notes: [string]}]` newest first (`JSON.parse` it; a list of maps does not fit the bridge's values); `updateVersion` is the version PackageKit would update to (empty unless `installState` is `update_available`), which a cached catalogue can lag behind |
+| `browse(kind, id)` | void | fills `browseModel`: `kind` `category` (that category's apps, by title), `collection` (in its order) or `all`; it follows refreshes until the next call |
+| `appRow(name)` | object | the `catalogueModel` row of one app, `{}` when it is not shown: the home page's collection tiles (bind through `Reef.revision`) |
+| `loadDetails(name)` | void | from the store index, fetches the app's details file (checked against the index's SHA-256, cached by hash) and merges it; `revision` changes when it is in. Nothing when the details are there (a `catalogue.json`, or a repository of up to 200 apps, whose details come with the index) |
 | `install(name)` | void | changes nothing: `Store::preview_install` (PackageKit's simulation) into `pendingPlan`, then `planReady(name, plan)`; the window shows `pages/ConfirmPage.qml` |
 | `update(name)` | void | the same with `Store::preview_update`: that package's Reef update only |
 | `updateAll()` | void | the same with `Store::preview_update_all`: every Reef update, listed |

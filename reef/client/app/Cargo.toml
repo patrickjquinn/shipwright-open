@@ -68,6 +68,8 @@ ureq = { version = "3", default-features = false, features = ["rustls"] }
 
 [dev-dependencies]
 reef-licence = { path = "../../licence", features = ["sign"] }
+# The store index test hashes a details file as gen-store.py does.
+sha2 = "0.11"
 
 [build-dependencies]
 # The Keel Actions build step (actions.json, D-Bus files) from the QML.

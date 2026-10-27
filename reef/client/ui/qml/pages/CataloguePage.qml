@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // The store's home: updates waiting (when there are), the featured apps as
-// a banner, the newest and most recently updated apps, then every app from
-// A to Z. Search is in the pull-down menu, as in the Jolla Store; while it
-// is open, the list below is the answer and the rest steps aside.
+// a banner, the collections as rows (or, from a repository without a store
+// index, the newest and most recently updated apps), the categories, and
+// every app. Search is in the pull-down menu, as in the Jolla Store, on a
+// page of its own. Lists of many apps (a category, all of them, search
+// results) are pages built as they scroll; this page holds only rows.
 // Untested packages never reach these models (reef-backend hides them).
 
 pragma ComponentBehavior: Bound
@@ -18,15 +20,16 @@ import "../components/Texts.js" as Texts
 Page {
     id: page
 
-    // The search field shows while searching: opened from the pull-down
-    // menu, and kept while it holds text.
-    property bool searching: Reef.searchText.length > 0
-    // The search field in the list's header, for the pulley's Search.
-    property Item searchField
-    readonly property bool browsing: !searching
+    // Categories per row of the grid.
+    readonly property int categoryColumns: isLandscape ? 3 : 2
 
     function openApp(name) {
         pageStack.push(Qt.resolvedUrl("PackagePage.qml"), { packageName: name })
+    }
+
+    function browse(kind, browseId, title, subtitle) {
+        pageStack.push(Qt.resolvedUrl("BrowsePage.qml"),
+                       { kind: kind, browseId: browseId, title: title, subtitle: subtitle || "" })
     }
 
     // A flickable with one column (as Silica's own mixed pages): the page
@@ -39,7 +42,9 @@ Page {
         id: list
         anchors.fill: parent
         contentHeight: content.height
-        readonly property int count: rows.count
+        // Every app shown here (the search, on its own page, is cleared
+        // when that page closes).
+        readonly property int count: Reef.catalogueModel.count
 
         PullDownMenu {
             busy: Reef.busy
@@ -61,38 +66,16 @@ Page {
             MenuItem {
                 objectName: "searchItem"
                 text: qsTr("Search")
-                onDelayedClick: {
-                    page.searching = true
-                    list.scrollToTop()
-                    if (page.searchField)
-                        page.searchField.forceActiveFocus()
-                }
+                onClicked: pageStack.push(Qt.resolvedUrl("SearchPage.qml"))
             }
         }
 
         Column {
             id: content
             width: list.width
-            Component.onCompleted: page.searchField = search
 
             PageHeader {
                 title: qsTr("Reef")
-            }
-
-            SearchField {
-                id: search
-                objectName: "search"
-                width: parent.width
-                visible: page.searching
-                // Sized by its own condition, not `visible`: `visible` is also false while the page is hidden under another, and a height that followed it collapsed the page's content then (its scroll position was lost on the way back).
-                height: (page.searching) ? implicitHeight : 0
-                placeholderText: qsTr("Search apps")
-                text: Reef.searchText
-                onTextChanged: Reef.searchText = text
-                EnterKey.iconSource: "image://theme/icon-m-enter-close"
-                EnterKey.onClicked: focus = false
-                // Emptied and left: back to the home page.
-                onActiveFocusChanged: if (!activeFocus && text.length === 0) page.searching = false
             }
 
             // The repository no longer matches the installed release (an OS
@@ -123,49 +106,42 @@ Page {
             }
 
             // Updates waiting: first, with the one button that does them all.
+            // One line says how many; the line under it says what the tap
+            // shows, or that some are libraries and services (Update all
+            // lists everything before it applies anything).
             BackgroundItem {
+                id: updatesCard
                 objectName: "updatesCard"
                 width: parent.width
-                // Room for a title on up to three lines ("3 updates for
-                // libraries and services" beside the button was cut off).
-                height: (page.browsing && Reef.updateCount > 0) ? Math.max(Theme.itemSizeLarge, updatesText.height + 2 * Theme.paddingMedium) : 0
-                visible: page.browsing && Reef.updateCount > 0
+                height: (Reef.updateCount > 0) ? Math.max(Theme.itemSizeLarge, updatesText.height + 2 * Theme.paddingMedium) : 0
+                visible: Reef.updateCount > 0
                 onClicked: pageStack.push(Qt.resolvedUrl("InstalledPage.qml"))
 
                 Rectangle {
                     anchors.fill: parent
                     color: Theme.rgba(Theme.highlightBackgroundColor, Theme.highlightBackgroundOpacity * 0.6)
                 }
-                Icon {
-                    id: updatesIcon
-                    x: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    source: "image://theme/icon-m-cloud-download"
-                    color: Theme.highlightColor
-                }
                 Column {
                     id: updatesText
-                    anchors.left: updatesIcon.right
-                    anchors.leftMargin: Theme.paddingLarge
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.horizontalPageMargin
                     anchors.right: updateAll.left
-                    anchors.rightMargin: Theme.paddingMedium
+                    anchors.rightMargin: Theme.paddingLarge
                     anchors.verticalCenter: parent.verticalCenter
                     Label {
                         width: parent.width
-                        // Apps, and the libraries and services they use:
-                        // Update all lists them all before applying them.
-                        text: Texts.updatesText(Reef.appUpdateCount, Reef.updateCount)
+                        text: qsTr("%n update(s)", "", Reef.updateCount)
                         color: Theme.highlightColor
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 3
                         truncationMode: TruncationMode.Fade
                     }
                     Label {
                         width: parent.width
-                        text: qsTr("Tap to see what's new")
+                        text: Reef.appUpdateCount === Reef.updateCount
+                              ? qsTr("Tap to see what's new")
+                              : qsTr("%n for libraries and services", "", Reef.updateCount - Reef.appUpdateCount)
                         color: Theme.secondaryHighlightColor
                         font.pixelSize: Theme.fontSizeExtraSmall
-                        truncationMode: TruncationMode.Fade
+                        wrapMode: Text.Wrap
                     }
                 }
                 SecondaryButton {
@@ -174,6 +150,7 @@ Page {
                     anchors.right: parent.right
                     anchors.rightMargin: Theme.horizontalPageMargin
                     anchors.verticalCenter: parent.verticalCenter
+                    preferredWidth: Theme.buttonWidthExtraSmall
                     text: qsTr("Update all")
                     enabled: !Reef.busy
                     onClicked: Reef.updateAll()
@@ -187,8 +164,8 @@ Page {
             // on an Xperia 10 II.
             Item {
                 width: parent.width
-                height: (page.browsing && Reef.featuredModel.count > 0) ? hero.height + dots.height + Theme.paddingMedium : 0
-                visible: page.browsing && Reef.featuredModel.count > 0
+                height: (Reef.featuredModel.count > 0) ? hero.height + dots.height + Theme.paddingMedium : 0
+                visible: Reef.featuredModel.count > 0
 
                 SlideshowView {
                     id: hero
@@ -248,16 +225,31 @@ Page {
                 }
             }
 
-            // New apps and new versions, newest first.
+            // The collections, each a row (the store index's: picked ones,
+            // then new and recently updated).
+            Repeater {
+                objectName: "collections"
+                model: Reef.collectionsModel
+                delegate: CollectionRow {
+                    required property string collectionId
+                    required property string subtitle
+                    width: content.width
+                    onOpenApp: (name) => page.openApp(name)
+                    onOpenAll: page.browse("collection", collectionId, title, subtitle)
+                }
+            }
+
+            // A repository without a store index has no collections: new
+            // apps and new versions instead, newest first.
             SectionHeader {
                 text: qsTr("New and updated")
-                visible: page.browsing && Reef.recentModel.count > 0
+                visible: Reef.collectionsModel.count === 0 && Reef.recentModel.count > 0
             }
             SilicaListView {
                 objectName: "recent"
                 width: parent.width
-                height: (page.browsing && Reef.recentModel.count > 0) ? Theme.iconSizeLauncher + 2 * Theme.fontSizeExtraSmall * 1.4 + 2 * Theme.paddingMedium : 0
-                visible: page.browsing && Reef.recentModel.count > 0
+                height: (Reef.collectionsModel.count === 0 && Reef.recentModel.count > 0) ? Theme.iconSizeLauncher + 2 * Theme.fontSizeExtraSmall * 1.4 + 2 * Theme.paddingMedium : 0
+                visible: Reef.collectionsModel.count === 0 && Reef.recentModel.count > 0
                 orientation: ListView.Horizontal
                 clip: true
                 model: Reef.recentModel
@@ -267,27 +259,45 @@ Page {
                 }
             }
 
+            // Every app first, then each category; how many apps each has
+            // is on its page.
             SectionHeader {
-                text: page.searching ? qsTr("Results") : qsTr("All apps")
+                text: qsTr("Categories")
                 visible: list.count > 0
             }
-
-            Repeater {
-                id: rows
-                model: Reef.catalogueModel
-                delegate: PackageDelegate {
-                    onClicked: page.openApp(name)
+            Grid {
+                objectName: "categories"
+                width: parent.width
+                columns: page.categoryColumns
+                visible: list.count > 0
+                CategoryTile {
+                    objectName: "allApps"
+                    width: content.width / page.categoryColumns
+                    categoryId: ""
+                    label: qsTr("All apps")
+                    icon: "icon-m-menu"
+                    onClicked: page.browse("all", "", qsTr("All apps"))
                 }
+                Repeater {
+                    model: Reef.categoriesModel
+                    delegate: CategoryTile {
+                        width: content.width / page.categoryColumns
+                        onClicked: page.browse("category", categoryId, label)
+                    }
+                }
+            }
+
+            Item {
+                width: 1
+                height: Theme.paddingLarge
             }
         }
 
         ViewPlaceholder {
             enabled: list.count === 0 && !Reef.busy
-            text: Reef.searchText.length > 0 ? qsTr("No apps match")
-                : Reef.lastError.length > 0 ? qsTr("Couldn't load the apps")
-                                            : qsTr("No apps yet")
-            hintText: Reef.searchText.length > 0 ? qsTr("Try another word, or clear the search.")
-                      : Reef.lastError.length > 0
+            text: Reef.lastError.length > 0 ? qsTr("Couldn't load the apps")
+                                             : qsTr("No apps yet")
+            hintText: Reef.lastError.length > 0
                       ? Texts.message(Reef.lastError)
                       : qsTr("No apps are tested on Sailfish OS %1 yet. Pull down to refresh.").arg(Reef.installedRelease)
         }

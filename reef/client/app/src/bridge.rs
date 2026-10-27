@@ -194,10 +194,34 @@ pub mod qobject {
         #[qproperty(QString, search_text, cxx_name = "searchText")]
         #[qproperty(*mut ReefListModel, featured_model, cxx_name = "featuredModel", READ, CONSTANT)]
         #[qproperty(*mut ReefListModel, recent_model, cxx_name = "recentModel", READ, CONSTANT)]
+        #[qproperty(*mut ReefListModel, categories_model, cxx_name = "categoriesModel", READ, CONSTANT)]
+        #[qproperty(*mut ReefListModel, collections_model, cxx_name = "collectionsModel", READ, CONSTANT)]
+        #[qproperty(*mut ReefListModel, browse_model, cxx_name = "browseModel", READ, CONSTANT)]
+        #[qproperty(QString, details_loading, cxx_name = "detailsLoading", READ, NOTIFY)]
         type Reef = super::ReefRust;
 
         #[qinvokable]
         fn refresh(self: Pin<&mut Reef>);
+
+        /// Fills `browseModel` with one category's apps (`kind`
+        /// "category"), one collection's ("collection") or every app
+        /// ("all"); it follows later refreshes until the next call.
+        #[qinvokable]
+        fn browse(self: Pin<&mut Reef>, kind: &QString, id: &QString);
+
+        /// The `catalogueModel` row of one app, as a role-name map (`{}`
+        /// when it is not shown): the Discover page's collection rows.
+        #[qinvokable]
+        #[cxx_name = "appRow"]
+        fn app_row(self: &Reef, name: &QString) -> QMap_QString_QVariant;
+
+        /// Fetches an app's details (description, screenshots, what it
+        /// brings) when the store index has not given them yet;
+        /// `detailsLoading` names it meanwhile, and `revision` changes when
+        /// they arrive. Does nothing when they are there.
+        #[qinvokable]
+        #[cxx_name = "loadDetails"]
+        fn load_details(self: Pin<&mut Reef>, name: &QString);
 
         #[qinvokable]
         #[cxx_name = "packageDetails"]
@@ -509,6 +533,8 @@ pub struct Core {
     /// a search filters these instead of rebuilding everything (and
     /// re-verifying every licence) on each keystroke.
     package_rows: Vec<rows::PackageRow>,
+    /// What `browseModel` shows: kind and id (`browse`).
+    browse: (String, String),
 }
 
 #[allow(
@@ -544,6 +570,14 @@ pub struct ReefRust {
     featured_model: *mut qobject::ReefListModel,
     /// The most recently updated apps (rows.rs, `recent_rows`).
     recent_model: *mut qobject::ReefListModel,
+    /// The store's categories with apps shown here (rows.rs, `category_rows`).
+    categories_model: *mut qobject::ReefListModel,
+    /// The front page's collections (rows.rs, `collection_rows`).
+    collections_model: *mut qobject::ReefListModel,
+    /// One category's or collection's apps (`browse`).
+    browse_model: *mut qobject::ReefListModel,
+    /// The app whose details `loadDetails` is fetching; empty when none.
+    details_loading: QString,
     refresh_on_start: bool,
     background_check_days: i32,
     licence_server: QString,
@@ -580,6 +614,10 @@ impl Default for ReefRust {
             licence_model: std::ptr::null_mut(),
             featured_model: std::ptr::null_mut(),
             recent_model: std::ptr::null_mut(),
+            categories_model: std::ptr::null_mut(),
+            collections_model: std::ptr::null_mut(),
+            browse_model: std::ptr::null_mut(),
+            details_loading: QString::default(),
             refresh_on_start: settings.refresh_on_start,
             background_check_days: settings.background_check_days,
             licence_server: QString::from(settings.licence_server.as_str()),
@@ -627,21 +665,17 @@ impl cxx_qt::Initialize for qobject::Reef {
         // SAFETY: `parent` is this live Reef object; each model becomes its
         // QObject child, so Qt deletes the models with it and they live as
         // long as every method of `self` that uses the pointers.
-        let (catalogue_model, installed_model, licence_model, featured_model, recent_model) = unsafe {
-            (
-                qobject::reef_new_list_model(parent),
-                qobject::reef_new_list_model(parent),
-                qobject::reef_new_list_model(parent),
-                qobject::reef_new_list_model(parent),
-                qobject::reef_new_list_model(parent),
-            )
-        };
+        let [catalogue_model, installed_model, licence_model, featured_model, recent_model, categories_model, collections_model, browse_model] =
+            std::array::from_fn(|_| unsafe { qobject::reef_new_list_model(parent) });
         for (model, roles) in [
             (catalogue_model, PACKAGE_ROLES),
             (installed_model, PACKAGE_ROLES),
             (licence_model, LICENCE_ROLES),
             (featured_model, PACKAGE_ROLES),
             (recent_model, PACKAGE_ROLES),
+            (categories_model, rows::CATEGORY_ROLES),
+            (collections_model, rows::COLLECTION_ROLES),
+            (browse_model, PACKAGE_ROLES),
         ] {
             // SAFETY: just created above by reef_new_list_model, owned by
             // `self` (see model_mut's contract).
@@ -664,6 +698,9 @@ impl cxx_qt::Initialize for qobject::Reef {
             r.licence_model = licence_model;
             r.featured_model = featured_model;
             r.recent_model = recent_model;
+            r.categories_model = categories_model;
+            r.collections_model = collections_model;
+            r.browse_model = browse_model;
             r.refresh_on_start = settings.refresh_on_start;
             r.background_check_days = settings.background_check_days;
             r.background_check_asked = settings.background_check_asked;
@@ -849,6 +886,16 @@ impl qobject::Reef {
             .unwrap_or_default();
         let recent_rows = rows::recent_rows(&package_rows);
         let shown_rows = rows::filter_rows(&package_rows, &self.search_text.to_string());
+        let (category_rows, collection_rows, browse_rows) = catalogue
+            .map(|c| {
+                let (kind, id) = &self.core.browse;
+                (
+                    rows::category_rows(c, &package_rows),
+                    rows::collection_rows(c, &package_rows),
+                    rows::browse_rows(c, &package_rows, kind, id),
+                )
+            })
+            .unwrap_or_default();
         let licence_rows: Vec<Vec<Value>> = stored
             .iter()
             .map(|s| rows::licence_row(s, &|app| rows::title_for_app(catalogue, app)).values())
@@ -879,6 +926,10 @@ impl qobject::Reef {
                 .set_rows(featured_rows.iter().map(rows::PackageRow::values).collect());
             model_mut(self.recent_model)
                 .set_rows(recent_rows.iter().map(rows::PackageRow::values).collect());
+            model_mut(self.categories_model).set_rows(category_rows);
+            model_mut(self.collections_model).set_rows(collection_rows);
+            model_mut(self.browse_model)
+                .set_rows(browse_rows.iter().map(rows::PackageRow::values).collect());
         }
         set_notify!(self, update_count, update_count_changed, update_count);
         set_notify!(
@@ -993,6 +1044,7 @@ impl qobject::Reef {
             licence_dir: self.core.licence_dir.clone(),
             licence_server: self.licence_server.to_string(),
             cache_path: self.core.cache_path.clone(),
+            index_check: jobs::index_check(&self.core.config.alias),
         }
     }
 
@@ -1067,8 +1119,16 @@ impl qobject::Reef {
             return;
         }
         let alias = self.core.config.alias.clone();
-        let catalogue = self.core.catalogue.clone();
+        let mut catalogue = self.core.catalogue.clone();
+        let details = self.details_source();
         self.as_mut().spawn(move |thread| {
+            // What the plan shows (services, changes, the build for this
+            // processor) is in the app's details.
+            if let (Some(c), Some((base, dir))) = (catalogue.as_mut(), &details) {
+                for e in jobs::load_details(c, base, dir, &[ask.package().to_string()], false) {
+                    log::warn!("details: {e}");
+                }
+            }
             let result = jobs::preview(&ask, &alias, catalogue.as_ref());
             queue_or_log(&thread, move |mut q| match result {
                 Ok(plan) => {
@@ -1178,6 +1238,115 @@ impl qobject::Reef {
             let out = jobs::refresh(&input);
             queue_or_log(&thread, move |q| q.apply_refresh(out, true));
         });
+    }
+
+    pub fn browse(mut self: Pin<&mut Self>, kind: &QString, id: &QString) {
+        self.as_mut().rust_mut().core.browse = (kind.to_string(), id.to_string());
+        let shown = match &self.core.catalogue {
+            Some(c) => rows::browse_rows(
+                c,
+                &self.core.package_rows,
+                &kind.to_string(),
+                &id.to_string(),
+            ),
+            None => Vec::new(),
+        };
+        // SAFETY: as in rebuild_models.
+        unsafe {
+            model_mut(self.browse_model)
+                .set_rows(shown.iter().map(rows::PackageRow::values).collect());
+        }
+    }
+
+    pub fn app_row(&self, name: &QString) -> QMap<QMapPair_QString_QVariant> {
+        let name = name.to_string();
+        self.core
+            .package_rows
+            .iter()
+            .find(|r| r.name == name)
+            .map(|r| {
+                let pairs: Vec<(&str, Value)> =
+                    PACKAGE_ROLES.iter().copied().zip(r.values()).collect();
+                to_map(&pairs)
+            })
+            .unwrap_or_default()
+    }
+
+    /// The repository directory's URL and the details cache, when the
+    /// catalogue came from somewhere details can be fetched.
+    fn details_source(&self) -> Option<(String, PathBuf)> {
+        let release = self.core.release.as_ref()?;
+        let cache = self.core.cache_path.as_deref()?;
+        Some((
+            self.core.config.resolved_url(release, &self.core.arch),
+            jobs::details_dir(cache),
+        ))
+    }
+
+    pub fn load_details(mut self: Pin<&mut Self>, name: &QString) {
+        let name = name.to_string();
+        let Some(d) = self
+            .core
+            .catalogue
+            .as_ref()
+            .and_then(|c| c.packages.iter().find(|p| p.name == name))
+            .and_then(|p| p.details.clone())
+        else {
+            return;
+        };
+        let Some((base, dir)) = self.details_source() else {
+            return;
+        };
+        if !self.details_loading.is_empty() {
+            return;
+        }
+        set_notify!(
+            self,
+            details_loading,
+            details_loading_changed,
+            QString::from(name.as_str())
+        );
+        let thread = self.qt_thread();
+        let spawned = std::thread::Builder::new()
+            .name("reef-details".into())
+            .spawn(move || {
+                let result = jobs::details_bytes(&base, &dir, &d);
+                queue_or_log(&thread, move |mut q| {
+                    match result.and_then(|bytes| {
+                        match q.as_mut().rust_mut().core.catalogue.as_mut() {
+                            Some(c) => c.merge_details(&name, &bytes).map_err(|e| e.to_string()),
+                            None => Ok(()),
+                        }
+                    }) {
+                        Ok(()) => {
+                            if let (Some(path), Some(c)) =
+                                (q.core.cache_path.clone(), q.core.catalogue.clone())
+                            {
+                                if let Err(e) = jobs::write_cache(&path, &c) {
+                                    log::warn!("caching the catalogue: {e}");
+                                }
+                            }
+                        }
+                        Err(e) => log::warn!("{name}: details: {e}"),
+                    }
+                    set_notify!(
+                        q,
+                        details_loading,
+                        details_loading_changed,
+                        QString::default()
+                    );
+                    q.as_mut().rebuild_models();
+                });
+            });
+        if let Err(e) = spawned {
+            log::error!("starting a worker thread: {e}");
+            set_notify!(
+                self,
+                details_loading,
+                details_loading_changed,
+                QString::default()
+            );
+        }
     }
 
     pub fn package_details(&self, name: &QString) -> QMap<QMapPair_QString_QVariant> {

@@ -37,6 +37,11 @@ Page {
     // Why the last install, update or remove of this package failed.
     property string error
 
+    // From the store index the details (description, screenshots, what is
+    // new, what it brings) come when the page opens; Reef.revision brings
+    // them into `pkg`.
+    Component.onCompleted: Reef.loadDetails(packageName)
+
     Connections {
         target: Reef
         function onOperationFinished(name, ok, message) {
@@ -171,6 +176,8 @@ Page {
         id: line
         property string source
         property string text
+        // Static text, so the highlight colour (Silica keeps the primary
+        // colour for what can be tapped).
         property color color: Theme.highlightColor
         x: Theme.horizontalPageMargin
         width: (parent ? parent.width : 0) - 2 * Theme.horizontalPageMargin
@@ -405,11 +412,13 @@ Page {
                 visible: !page.working && page.installed
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
-                color: page.updatable ? Theme.secondaryHighlightColor : Theme.highlightColor
-                font.pixelSize: page.updatable ? Theme.fontSizeExtraSmall : Theme.fontSizeSmall
+                // Full strength only when there is something to do: the
+                // button above already says the app is installed.
+                color: page.updatable ? Theme.highlightColor : Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
                 text: page.updatable
                       ? qsTr("%1 installed, %2 available").arg(page.pkg.installedVersion).arg(page.pkg.updateVersion || page.pkg.version)
-                      : qsTr("Installed, up to date (%1)").arg(page.pkg.installedVersion)
+                      : qsTr("Up to date · %1").arg(page.pkg.installedVersion)
                 bottomPadding: Theme.paddingMedium
             }
 
@@ -485,13 +494,14 @@ Page {
 
             // Screenshots the repository ships (cached files, like the
             // icon), at the phone's proportions, two and a bit across so
-            // it shows there are more. A tap opens them full screen.
+            // it shows there are more; one alone is the same size, centred
+            // (at half the page wide it took half the screen). A tap opens
+            // them full screen.
             Flickable {
                 id: shotStrip
                 objectName: "screenshots"
-                readonly property real shotWidth: shots.count === 1
-                    ? Math.round(page.width * 0.5)
-                    : Math.round((page.width - Theme.horizontalPageMargin - 2 * Theme.paddingMedium) / 2.35)
+                readonly property real shotWidth:
+                    Math.round((page.width - Theme.horizontalPageMargin - 2 * Theme.paddingMedium) / 2.5)
                 width: parent.width
                 height: (shots.count > 0) ? Math.round(shotWidth * 2.1) + Theme.paddingLarge : 0
                 visible: shots.count > 0
@@ -538,226 +548,266 @@ Page {
                 HorizontalScrollDecorator {}
             }
 
-            // The description, five lines until asked for more.
-            SectionHeader { text: qsTr("About"); visible: !!page.pkg.description }
-            Label {
-                id: description
-                property bool expanded
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                visible: !!page.pkg.description
-                wrapMode: Text.Wrap
-                maximumLineCount: expanded ? 1000 : 5
-                elide: Text.ElideRight
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.highlightColor
-                text: page.pkg.description || ""
-            }
-            BackgroundItem {
-                objectName: "moreButton"
+            // Everything below the screenshots, built once the page has
+            // slid in, a little at a time: built with the rest, it held
+            // the push back (the page appeared some 150 ms after the tap,
+            // then slid). What shows first is all above this.
+            Loader {
+                id: details
+                objectName: "detailsLoader"
                 width: parent.width
-                height: (!!page.pkg.description && (description.truncated || description.expanded)) ? Theme.itemSizeExtraSmall : 0
-                visible: description.visible && (description.truncated || description.expanded)
-                onClicked: description.expanded = !description.expanded
-                Label {
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: description.expanded ? qsTr("Show less") : qsTr("Show more")
-                    color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeSmall
-                }
-            }
+                active: page.status === PageStatus.Active || item !== null
+                asynchronous: true
+                sourceComponent: Column {
+                    width: details.width
 
-            // What changed in the newest version; the earlier ones folded
-            // away under "Version history".
-            SectionHeader { text: qsTr("What's new"); visible: page.changes.length > 0 }
-            ChangeEntry {
-                objectName: "whatsNew"
-                visible: page.changes.length > 0
-                change: page.changes.length > 0 ? page.changes[0] : ({})
-            }
-            Item { width: 1; height: Theme.paddingMedium; visible: page.changes.length > 1 }
-            ExpandingSection {
-                objectName: "versionHistory"
-                width: parent.width
-                visible: page.changes.length > 1
-                title: qsTr("Version history")
-                content.sourceComponent: Column {
-                    width: parent ? parent.width : page.width
-                    spacing: Theme.paddingLarge
-                    bottomPadding: Theme.paddingMedium
-                    Repeater {
-                        model: page.changes.slice(1)
-                        ChangeEntry {
-                            required property var modelData
-                            change: modelData
-                        }
+                    // The description, five lines until asked for more.
+                    SectionHeader { text: qsTr("About"); visible: !!page.pkg.description }
+                    Label {
+                        id: description
+                        property bool expanded
+                        x: Theme.horizontalPageMargin
+                        width: parent.width - 2 * Theme.horizontalPageMargin
+                        visible: !!page.pkg.description
+                        wrapMode: Text.Wrap
+                        maximumLineCount: expanded ? 1000 : 5
+                        elide: Text.ElideRight
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.highlightColor
+                        text: page.pkg.description || ""
                     }
-                }
-            }
-
-            // What it brings that runs by itself, and what it changes on
-            // the phone beyond its own files, from the RPMs (gen-catalogue):
-            // in the warning style, before install.
-            SectionHeader {
-                text: qsTr("Runs in the background")
-                visible: page.services.length > 0
-            }
-            Column {
-                width: parent.width
-                spacing: Theme.paddingSmall
-                Repeater {
-                    model: page.services
-                    IconLine {
-                        required property var modelData
-                        objectName: "serviceLine"
-                        source: "image://theme/icon-s-warning"
-                        text: qsTr("%1 (%2)").arg(modelData.description || modelData.name)
-                                             .arg(Texts.startsText(modelData.starts))
-                    }
-                }
-            }
-            SectionHeader {
-                text: qsTr("Changes to your phone")
-                visible: page.systemChanges.length > 0
-            }
-            // Lines that share a head (each package's install scripts)
-            // under it once, what each does indented below; a gap between
-            // separate lines.
-            Column {
-                width: parent.width
-                spacing: Theme.paddingSmall
-                Repeater {
-                    model: Texts.groupLines(page.systemChanges.map(function(c) { return c.description }))
-                    Column {
-                        id: changeGroup
-                        required property var modelData
+                    BackgroundItem {
+                        objectName: "moreButton"
                         width: parent.width
-                        IconLine {
-                            objectName: "systemChangeLine"
-                            source: "image://theme/icon-s-warning"
-                            text: changeGroup.modelData.items.length > 0
-                                  ? qsTr("%1:").arg(changeGroup.modelData.text) : changeGroup.modelData.text
+                        height: (!!page.pkg.description && (description.truncated || description.expanded)) ? Theme.itemSizeExtraSmall : 0
+                        visible: description.visible && (description.truncated || description.expanded)
+                        onClicked: description.expanded = !description.expanded
+                        Label {
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.horizontalPageMargin
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: description.expanded ? qsTr("Show less") : qsTr("Show more")
+                            color: parent.highlighted ? Theme.highlightColor : Theme.primaryColor
+                            font.pixelSize: Theme.fontSizeSmall
                         }
-                        Repeater {
-                            model: changeGroup.modelData.items
-                            // A bullet with its lines hanging after it.
-                            Item {
-                                id: changeItem
-                                required property string modelData
-                                x: Theme.horizontalPageMargin + Theme.iconSizeSmallPlus + Theme.paddingMedium
-                                width: parent.width - x - Theme.horizontalPageMargin
-                                height: itemText.height + Theme.paddingSmall
-                                Label {
-                                    id: bullet
-                                    text: "•"
-                                    color: Theme.highlightColor
-                                    font.pixelSize: Theme.fontSizeSmall
-                                }
-                                Label {
-                                    id: itemText
-                                    objectName: "systemChangeItem"
-                                    x: bullet.width + Theme.paddingSmall
-                                    width: parent.width - x
-                                    text: changeItem.modelData
-                                    wrapMode: Text.Wrap
-                                    color: Theme.highlightColor
-                                    font.pixelSize: Theme.fontSizeSmall
+                    }
+
+                    // What changed in the newest version; the earlier ones folded
+                    // away under "Version history".
+                    SectionHeader { text: qsTr("What's new"); visible: page.changes.length > 0 }
+                    ChangeEntry {
+                        objectName: "whatsNew"
+                        visible: page.changes.length > 0
+                        change: page.changes.length > 0 ? page.changes[0] : ({})
+                    }
+                    Item { width: 1; height: Theme.paddingMedium; visible: page.changes.length > 1 }
+                    ExpandingSection {
+                        objectName: "versionHistory"
+                        width: parent.width
+                        visible: page.changes.length > 1
+                        title: qsTr("Version history")
+                        content.sourceComponent: Column {
+                            width: parent ? parent.width : page.width
+                            spacing: Theme.paddingLarge
+                            bottomPadding: Theme.paddingMedium
+                            Repeater {
+                                model: page.changes.slice(1)
+                                ChangeEntry {
+                                    required property var modelData
+                                    change: modelData
                                 }
                             }
                         }
                     }
-                }
-            }
 
-            // What it may reach on the phone, from the app's own desktop
-            // file: before install, in words.
-            SectionHeader { text: qsTr("Permissions") }
-            Column {
-                objectName: "permissions"
-                width: parent.width
-                spacing: Theme.paddingSmall
+                    // What it brings that runs by itself, and what it changes on
+                    // the phone beyond its own files, from the RPMs (gen-catalogue):
+                    // in the warning style, before install.
+                    SectionHeader {
+                        text: qsTr("Runs in the background")
+                        visible: page.services.length > 0
+                    }
+                    Column {
+                        width: parent.width
+                        spacing: Theme.paddingSmall
+                        Repeater {
+                            model: page.services
+                            IconLine {
+                                required property var modelData
+                                objectName: "serviceLine"
+                                source: "image://theme/icon-s-warning"
+                                text: qsTr("%1 (%2)").arg(modelData.description || modelData.name)
+                                                     .arg(Texts.startsText(modelData.starts))
+                            }
+                        }
+                    }
+                    SectionHeader {
+                        text: qsTr("Changes to your phone")
+                        visible: page.systemChanges.length > 0
+                    }
+                    // Lines that share a head (each package's install scripts)
+                    // under it once, what each does indented below; a gap between
+                    // separate lines.
+                    Column {
+                        width: parent.width
+                        spacing: Theme.paddingSmall
+                        Repeater {
+                            model: Texts.groupLines(page.systemChanges.map(function(c) { return c.description }))
+                            Column {
+                                id: changeGroup
+                                required property var modelData
+                                width: parent.width
+                                IconLine {
+                                    objectName: "systemChangeLine"
+                                    source: "image://theme/icon-s-warning"
+                                    text: changeGroup.modelData.items.length > 0
+                                          ? qsTr("%1:").arg(changeGroup.modelData.text) : changeGroup.modelData.text
+                                }
+                                Repeater {
+                                    model: changeGroup.modelData.items
+                                    // A bullet with its lines hanging after it.
+                                    Item {
+                                        id: changeItem
+                                        required property string modelData
+                                        x: Theme.horizontalPageMargin + Theme.iconSizeSmallPlus + Theme.paddingMedium
+                                        width: parent.width - x - Theme.horizontalPageMargin
+                                        height: itemText.height + Theme.paddingSmall
+                                        Label {
+                                            id: bullet
+                                            text: "•"
+                                            color: Theme.secondaryHighlightColor
+                                            font.pixelSize: Theme.fontSizeSmall
+                                        }
+                                        Label {
+                                            id: itemText
+                                            objectName: "systemChangeItem"
+                                            x: bullet.width + Theme.paddingSmall
+                                            width: parent.width - x
+                                            text: changeItem.modelData
+                                            wrapMode: Text.Wrap
+                                            color: Theme.highlightColor
+                                            font.pixelSize: Theme.fontSizeSmall
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
 
-                IconLine {
-                    source: page.pkg.sandboxed === false ? "image://theme/icon-s-warning" : "image://theme/icon-s-secure"
-                    text: page.pkg.sandboxed === false
-                          ? qsTr("Parts of it run outside the Sailfish OS sandbox, with your access to files and data.")
-                          : (page.pkg.permissions || []).length > 0
-                            ? qsTr("Runs in the Sailfish OS sandbox, and may use:")
-                            : qsTr("Runs in the Sailfish OS sandbox, and asks for no extra permissions.")
-                    color: page.pkg.sandboxed === false ? Theme.highlightColor : Theme.secondaryHighlightColor
-                }
-                Repeater {
-                    model: page.pkg.permissions || []
+                    // What it may reach on the phone, from the app's own desktop
+                    // file: before install, in words.
+                    SectionHeader { text: qsTr("Permissions") }
+                    Column {
+                        id: permissionList
+                        objectName: "permissions"
+                        // The first few, the rest a tap away: twenty lines of
+                        // permissions buried the rest of the page.
+                        readonly property var all: page.pkg.permissions || []
+                        readonly property int firstFew: 5
+                        property bool showAll
+                        width: parent.width
+                        spacing: Theme.paddingSmall
+
+                        IconLine {
+                            source: page.pkg.sandboxed === false ? "image://theme/icon-s-warning" : "image://theme/icon-s-secure"
+                            text: page.pkg.sandboxed === false
+                                  ? qsTr("Parts of it run outside the Sailfish OS sandbox, with your access to files and data.")
+                                  : (page.pkg.permissions || []).length > 0
+                                    ? qsTr("Runs in the Sailfish OS sandbox, and may use:")
+                                    : qsTr("Runs in the Sailfish OS sandbox, and asks for no extra permissions.")
+                            color: page.pkg.sandboxed === false ? Theme.highlightColor : Theme.secondaryHighlightColor
+                        }
+                        Repeater {
+                            model: permissionList.showAll ? permissionList.all
+                                                          : permissionList.all.slice(0, permissionList.firstFew)
+                            IconLine {
+                                required property string modelData
+                                source: Texts.permission(modelData).icon
+                                text: Texts.permission(modelData).label
+                            }
+                        }
+                    }
+                    BackgroundItem {
+                        id: morePermissions
+                        objectName: "morePermissions"
+                        width: parent.width
+                        height: permissionList.all.length > permissionList.firstFew ? Theme.itemSizeExtraSmall : 0
+                        visible: permissionList.all.length > permissionList.firstFew
+                        onClicked: permissionList.showAll = !permissionList.showAll
+                        Label {
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.horizontalPageMargin
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: permissionList.showAll ? qsTr("Show fewer")
+                                                         : qsTr("Show all %n permission(s)", "", permissionList.all.length)
+                            color: morePermissions.highlighted ? Theme.highlightColor : Theme.primaryColor
+                            font.pixelSize: Theme.fontSizeSmall
+                        }
+                    }
+
+                    SectionHeader { text: qsTr("Compatibility") }
                     IconLine {
-                        required property string modelData
-                        source: Texts.permission(modelData).icon
-                        text: Texts.permission(modelData).label
+                        objectName: "testedOn"
+                        source: page.pkg.deviceTested === false ? "image://theme/icon-s-warning" : "image://theme/icon-s-accept"
+                        text: page.pkg.deviceTested === false
+                              ? qsTr("Built for Sailfish OS %1, the version on this phone, but not yet tested on a phone running it. "
+                                     + "If something doesn't work, please report it.").arg(Reef.installedRelease)
+                              : qsTr("Tested on Sailfish OS %1, the version on this phone.").arg(Reef.installedRelease)
+                    }
+                    Label {
+                        x: Theme.horizontalPageMargin
+                        width: parent.width - 2 * Theme.horizontalPageMargin
+                        readonly property var others: (page.pkg.testedOn || []).filter(function(r) { return r !== Reef.installedRelease })
+                        visible: page.pkg.deviceTested !== false && others.length > 0
+                        text: qsTr("Also tested on %1").arg(others.join(", "))
+                        wrapMode: Text.Wrap
+                        color: Theme.secondaryHighlightColor
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        leftPadding: Theme.iconSizeSmallPlus + Theme.paddingMedium
+                    }
+
+                    SectionHeader { text: qsTr("Information") }
+                    DetailItem { label: qsTr("Version"); value: page.pkg.version || "" }
+                    DetailItem {
+                        label: qsTr("Installed")
+                        value: page.pkg.installedVersion || ""
+                        // Only when it is not the version above (an update waits).
+                        visible: page.installed && page.pkg.installedVersion !== page.pkg.version
+                    }
+                    DetailItem { label: qsTr("Publisher"); value: page.pkg.publisher || ""; visible: !!page.pkg.publisher }
+                    DetailItem { label: qsTr("Licence"); value: Texts.licence(page.pkg.spdx); visible: !!page.pkg.spdx }
+                    DetailItem {
+                        label: qsTr("First published")
+                        value: Texts.date(page.pkg.added)
+                        visible: !!page.pkg.added && page.changes.length > 0
+                    }
+                    DetailItem {
+                        // The catalogue's keel_tier, the tier keel-compat measures
+                        // (docs/plan.md, "Compatibility target", where B is the
+                        // higher): how much of the app runs on Keel, Sailfish's Qt 6.
+                        label: qsTr("Qt 6 (Keel)")
+                        value: page.pkg.keelTier === "B" ? qsTr("Fully supported")
+                             : page.pkg.keelTier === "A" ? qsTr("Mostly supported")
+                             : page.pkg.keelTier === "none" ? qsTr("Not supported yet")
+                             : page.pkg.keelTier === "not-applicable" ? qsTr("Not needed")
+                             : (page.pkg.keelTier || "")
+                        visible: !!page.pkg.keelTier
+                    }
+
+                    Item { width: 1; height: Theme.paddingLarge }
+                    LinkItem {
+                        objectName: "homepageLink"
+                        iconSource: "image://theme/icon-m-website"
+                        text: qsTr("Website")
+                        url: page.pkg.homepage || ""
+                    }
+                    LinkItem {
+                        objectName: "sourceLink"
+                        iconSource: "image://theme/icon-m-developer-mode"
+                        text: qsTr("Source code")
+                        url: page.pkg.source || ""
                     }
                 }
-            }
-
-            SectionHeader { text: qsTr("Compatibility") }
-            IconLine {
-                objectName: "testedOn"
-                source: page.pkg.deviceTested === false ? "image://theme/icon-s-warning" : "image://theme/icon-s-accept"
-                text: page.pkg.deviceTested === false
-                      ? qsTr("Built for Sailfish OS %1, the version on this phone, but not yet tested on a phone running it. "
-                             + "If something doesn't work, please report it.").arg(Reef.installedRelease)
-                      : qsTr("Tested on Sailfish OS %1, the version on this phone.").arg(Reef.installedRelease)
-            }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                readonly property var others: (page.pkg.testedOn || []).filter(function(r) { return r !== Reef.installedRelease })
-                visible: page.pkg.deviceTested !== false && others.length > 0
-                text: qsTr("Also tested on %1").arg(others.join(", "))
-                wrapMode: Text.Wrap
-                color: Theme.secondaryHighlightColor
-                font.pixelSize: Theme.fontSizeExtraSmall
-                leftPadding: Theme.iconSizeSmallPlus + Theme.paddingMedium
-            }
-
-            SectionHeader { text: qsTr("Information") }
-            DetailItem { label: qsTr("Version"); value: page.pkg.version || "" }
-            DetailItem {
-                label: qsTr("Installed")
-                value: page.pkg.installedVersion || ""
-                visible: page.installed
-            }
-            DetailItem { label: qsTr("Publisher"); value: page.pkg.publisher || ""; visible: !!page.pkg.publisher }
-            DetailItem { label: qsTr("Licence"); value: Texts.licence(page.pkg.spdx); visible: !!page.pkg.spdx }
-            DetailItem {
-                label: qsTr("First published")
-                value: Texts.date(page.pkg.added)
-                visible: !!page.pkg.added && page.changes.length > 0
-            }
-            DetailItem {
-                // The catalogue's keel_tier, the tier keel-compat measures
-                // (docs/plan.md, "Compatibility target", where B is the
-                // higher): how much of the app runs on Keel, Sailfish's Qt 6.
-                label: qsTr("Qt 6 (Keel)")
-                value: page.pkg.keelTier === "B" ? qsTr("Fully supported")
-                     : page.pkg.keelTier === "A" ? qsTr("Mostly supported")
-                     : page.pkg.keelTier === "none" ? qsTr("Not supported yet")
-                     : page.pkg.keelTier === "not-applicable" ? qsTr("Not needed")
-                     : (page.pkg.keelTier || "")
-                visible: !!page.pkg.keelTier
-            }
-
-            Item { width: 1; height: Theme.paddingLarge }
-            LinkItem {
-                objectName: "homepageLink"
-                iconSource: "image://theme/icon-m-website"
-                text: qsTr("Website")
-                url: page.pkg.homepage || ""
-            }
-            LinkItem {
-                objectName: "sourceLink"
-                iconSource: "image://theme/icon-m-developer-mode"
-                text: qsTr("Source code")
-                url: page.pkg.source || ""
             }
         }
 

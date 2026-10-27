@@ -152,6 +152,10 @@ pub fn on_unmetered() -> Option<bool> {
 /// chose "Never", the timer should not be running at all: if it is (left
 /// from an older Reef, or a failed `systemctl` when they chose), the check
 /// turns it off and does nothing else.
+#[allow(
+    clippy::too_many_lines,
+    reason = "the background check's steps in order, in one place"
+)]
 pub fn run() -> i32 {
     let settings = Settings::default_path()
         .as_deref()
@@ -190,8 +194,10 @@ pub fn run() -> i32 {
         .as_deref()
         .and_then(|p| std::fs::read(p).ok())
         .and_then(|b| Catalogue::parse(&b, &arch).ok());
+    let config = jobs::repo_config(&root);
     let out = jobs::refresh(&RefreshInput {
-        config: jobs::repo_config(&root),
+        index_check: jobs::index_check(&config.alias),
+        config,
         release: Some(release),
         arch,
         previous,

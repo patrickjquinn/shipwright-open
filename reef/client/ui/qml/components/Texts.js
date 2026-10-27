@@ -204,6 +204,13 @@ function licence(spdx) {
         return qsTr("Proprietary (Shipwright)")
     if (spdx.indexOf("LicenseRef-") === 0)
         return qsTr("Proprietary")
+    // A bundle of many ("ASL 2.0 and MIT and MPLv2.0 and ...", a Rust
+    // app's dependencies) is cut to the first two: seven lines of it
+    // buried the page.
+    var parts = spdx.split(/ (?:and|AND) /)
+    var shown = parts.slice(0, 2).map(function(p) { return p.replace(/-or-later$/, "+").replace(/-only$/, "") })
+    if (parts.length > 3)
+        return qsTr("%1 and %n more", "", parts.length - 2).arg(shown.join(", "))
     return spdx.replace(/-or-later$/, "+").replace(/-only$/, "")
 }
 

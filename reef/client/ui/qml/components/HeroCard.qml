@@ -37,14 +37,20 @@ BackgroundItem {
         }
     }
 
-    // The app: its screenshot as a card, cut off by the banner's bottom.
+    // The app: its screenshot as a card, its whole width shown and only its
+    // foot cut off by the banner's bottom (a screenshot cropped at the
+    // sides read as broken).
     Rectangle {
         id: phone
         readonly property real cardWidth: Math.round(card.width * 0.36)
         x: card.width - width - Theme.horizontalPageMargin
         y: Theme.paddingLarge * 2
+        // The picture's height over its width, read once it has loaded:
+        // bound to the image's own size instead, the card's height and the
+        // fitted image fed each other (a binding loop on every layout).
+        property real aspect: 2.2
         width: cardWidth
-        height: Math.round(cardWidth * 2.2)
+        height: Math.round(cardWidth * aspect)
         radius: Theme.paddingMedium
         color: Theme.rgba(Theme.overlayBackgroundColor, 0.6)
         border.color: Theme.rgba(Theme.highlightColor, 0.4)
@@ -56,12 +62,16 @@ BackgroundItem {
             anchors.fill: parent
             anchors.margins: parent.border.width
             source: card.heroPath.length > 0 ? "file://" + card.heroPath : ""
-            sourceSize.width: width
-            sourceSize.height: height
-            fillMode: Image.PreserveAspectCrop
+            // Decoded at the card's width; its height follows the picture.
+            sourceSize.width: phone.cardWidth
+            fillMode: Image.PreserveAspectFit
             verticalAlignment: Image.AlignTop
             asynchronous: true
             smooth: true
+            onStatusChanged: {
+                if (status === Image.Ready && implicitWidth > 0)
+                    phone.aspect = implicitHeight / implicitWidth
+            }
         }
     }
     AppIcon {

@@ -16,7 +16,7 @@ ListItem {
     required property string name
     required property string title
     required property string summary
-    required property string category
+    required property string categoryLabel
     required property string installState
     required property string installedVersion
     required property string version
@@ -54,7 +54,9 @@ ListItem {
             left: appIcon.right
             right: stateLabel.left
             leftMargin: Theme.paddingLarge
-            rightMargin: Theme.paddingMedium
+            // Room before the price, so a long summary fades out well
+            // short of it.
+            rightMargin: 2 * Theme.paddingLarge
             verticalCenter: parent.verticalCenter
         }
 
@@ -75,13 +77,13 @@ ListItem {
         Label {
             width: parent.width
             text: [row.isNew && row.installState === "not_installed" ? qsTr("New") : "",
-                   row.category,
+                   row.categoryLabel,
                    row.publisher !== "Shipwright" ? row.publisher : ""]
                   .filter(function(s) { return s.length > 0 }).join(" · ")
-            color: row.isNew && row.installState === "not_installed"
-                   ? Theme.highlightColor
-                   : (row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor)
-            opacity: row.isNew && row.installState === "not_installed" ? 1.0 : Theme.opacityHigh
+            // Plain like the rest of the row: an update waiting (on the
+            // right) is the one thing a row highlights.
+            color: row.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
+            opacity: Theme.opacityHigh
             font.pixelSize: Theme.fontSizeTiny
             truncationMode: TruncationMode.Fade
         }

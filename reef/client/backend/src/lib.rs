@@ -13,6 +13,8 @@
 //!   update.
 //! * [`catalogue`]: the per-release, per-arch catalogue, hiding packages not
 //!   tested on this release.
+//! * [`index`]: the store index (catalogue v2): the same catalogue from a
+//!   signed index, each app's details merged when they are fetched.
 //! * [`packagekit`]: resolve, install, update and remove through `PackageKit`
 //!   over D-Bus, with progress.
 //! * [`licences`]: storage and offline verification of licence tokens.
@@ -28,6 +30,7 @@
 
 pub mod catalogue;
 pub mod claim_codes;
+pub mod index;
 pub mod licenced;
 pub mod licences;
 pub mod metadata;

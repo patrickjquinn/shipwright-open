@@ -109,26 +109,45 @@ impl MetadataCheck {
         }
         verify_signature(&self.gpg, &self.gpgv, &self.key, &repomd, &asc)?;
         let seen = revision(&xml).unwrap_or(0);
-        let accepted = std::fs::read_to_string(&self.state)
-            .ok()
-            .and_then(|s| s.trim().parse::<u64>().ok())
-            .unwrap_or(0);
-        if seen < accepted {
-            return Err(MetaError::Rollback { seen, accepted });
-        }
-        if seen > accepted {
-            if let Some(parent) = self.state.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
-            let tmp = self
-                .state
-                .with_extension(format!("{}.tmp", std::process::id()));
-            if std::fs::write(&tmp, seen.to_string()).is_ok() {
-                let _ = std::fs::rename(tmp, &self.state);
-            }
-        }
+        accept_revision(&self.state, seen)?;
         Ok(seen)
     }
+
+    /// Checks a downloaded store index (`store/index.json`, `crate::index`)
+    /// the same way: its detached signature `sig` with Reef's key, and its
+    /// `revision` (from the index, read after this check passes) against
+    /// the highest accepted, kept beside the metadata's.
+    pub fn verify_index(&self, index: &Path, sig: &Path) -> Result<(), MetaError> {
+        verify_signature(&self.gpg, &self.gpgv, &self.key, index, sig)
+    }
+
+    /// Refuses an index revision older than one accepted before, and
+    /// remembers a newer one.
+    pub fn accept_index_revision(&self, seen: u64) -> Result<(), MetaError> {
+        accept_revision(&self.state.with_file_name("index-revision"), seen)
+    }
+}
+
+/// The rollback rule: `seen` below the revision stored in `state` is
+/// refused; above it, it is stored.
+fn accept_revision(state: &Path, seen: u64) -> Result<(), MetaError> {
+    let accepted = std::fs::read_to_string(state)
+        .ok()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .unwrap_or(0);
+    if seen < accepted {
+        return Err(MetaError::Rollback { seen, accepted });
+    }
+    if seen > accepted {
+        if let Some(parent) = state.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let tmp = state.with_extension(format!("{}.tmp", std::process::id()));
+        if std::fs::write(&tmp, seen.to_string()).is_ok() {
+            let _ = std::fs::rename(tmp, state);
+        }
+    }
+    Ok(())
 }
 
 /// zypp's metadata directory from `zypp.conf`: `metadatadir`, else
@@ -335,6 +354,10 @@ mod tests {
     /// genuine passes, tampered and other-key fail, and an older revision
     /// after a newer one is refused. Skipped without gpg.
     #[test]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one key, then the metadata's and the index's checks in turn"
+    )]
     fn checks_signature_and_rollback_with_real_gpg() {
         let gpg = ["gpg2", "gpg"]
             .into_iter()
@@ -439,5 +462,44 @@ mod tests {
         assert_eq!(check.verify(), Ok(250));
         std::fs::remove_file(repodata.join("repomd.xml.asc")).unwrap();
         assert!(matches!(check.verify(), Err(MetaError::Missing(_))));
+
+        // The store index: the same key, its own rollback record.
+        let index = t.path().join("index.json");
+        let sig = t.path().join("index.json.asc");
+        let sign_index = |body: &str, who: &str| {
+            std::fs::write(&index, body).unwrap();
+            let _ = std::fs::remove_file(&sig);
+            g(&[
+                "--local-user",
+                who,
+                "--armor",
+                "--detach-sign",
+                "--output",
+                sig.to_str().unwrap(),
+                index.to_str().unwrap(),
+            ]);
+        };
+        sign_index("{\"revision\": 7}", "t@example.com");
+        assert_eq!(check.verify_index(&index, &sig), Ok(()));
+        std::fs::write(&index, "{\"revision\": 8}").unwrap();
+        assert!(matches!(
+            check.verify_index(&index, &sig),
+            Err(MetaError::BadSignature(_))
+        ));
+        sign_index("{\"revision\": 9}", "o@example.com");
+        assert!(matches!(
+            check.verify_index(&index, &sig),
+            Err(MetaError::BadSignature(_))
+        ));
+        assert_eq!(check.accept_index_revision(7), Ok(()));
+        assert_eq!(
+            check.accept_index_revision(6),
+            Err(MetaError::Rollback {
+                seen: 6,
+                accepted: 7
+            })
+        );
+        // Separate from the metadata's record (250).
+        assert_eq!(check.accept_index_revision(8), Ok(()));
     }
 }

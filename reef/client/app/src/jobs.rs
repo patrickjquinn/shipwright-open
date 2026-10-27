@@ -14,7 +14,9 @@ use std::time::Duration;
 use futures_lite::future::block_on;
 use reef_backend::catalogue::Catalogue;
 use reef_backend::claim_codes::{PendingClaim, PendingClaims};
+use reef_backend::index::parse_index;
 use reef_backend::licences::{LicenceStore, EMBEDDED_KEYS};
+use reef_backend::metadata::MetadataCheck;
 use reef_backend::packagekit::dbus::PackageKitClient;
 use reef_backend::packagekit::{PackageInfo, PackageManager, Progress};
 use reef_backend::plan::Plan;
@@ -147,11 +149,16 @@ pub fn is_image(bytes: &[u8]) -> bool {
     bytes.starts_with(b"\x89PNG\r\n\x1a\n") || bytes.starts_with(&[0xFF, 0xD8, 0xFF])
 }
 
-/// Every icon and screenshot the catalogue names, once each, in order.
+/// Every icon and screenshot the catalogue names, once each, in order,
+/// and the banner of each featured app.
 pub fn catalogue_assets(catalogue: &Catalogue) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for p in &catalogue.packages {
-        for a in p.icon.iter().chain(p.screenshots.iter()) {
+        let hero = p
+            .hero
+            .iter()
+            .filter(|_| catalogue.featured.contains(&p.name));
+        for a in p.icon.iter().chain(p.screenshots.iter()).chain(hero) {
             if !out.contains(a) {
                 out.push(a.clone());
             }
@@ -200,6 +207,137 @@ pub fn fetch_assets(base: &str, dir: &Path, rels: &[String]) -> Vec<String> {
         for entry in entries.flatten() {
             if !keep.contains(&entry.path()) {
                 let _ = std::fs::remove_file(entry.path());
+            }
+        }
+    }
+    errors
+}
+
+/// Up to this many apps' details are fetched with the index; above it,
+/// only the featured apps', and the others' when needed.
+pub const EAGER_DETAILS: usize = 200;
+
+/// Where the downloaded index and its signature are kept for `gpgv`:
+/// beside the catalogue cache.
+pub fn index_dir(cache_path: &Path) -> PathBuf {
+    cache_path.with_file_name("store")
+}
+
+/// Where apps' details files are cached, by SHA-256: beside the catalogue
+/// cache.
+pub fn details_dir(cache_path: &Path) -> PathBuf {
+    cache_path.with_file_name("details")
+}
+
+/// The store index of the repository directory `base` (ending in `/`):
+/// downloaded with its signature into `dir`, checked with `check` (the
+/// signature, then the revision), parsed. `Ok(None)` when the repository
+/// has no index (published before it existed).
+pub fn fetch_index(
+    base: &str,
+    arch: &str,
+    check: &MetadataCheck,
+    dir: &Path,
+) -> Result<Option<Catalogue>, String> {
+    let body = match fetch(&format!("{base}store/index.json")) {
+        Ok(f) => f.body,
+        Err(FetchError::Status(404)) => return Ok(None),
+        Err(e) => return Err(e.to_string()),
+    };
+    let sig = fetch(&format!("{base}store/index.json.asc"))
+        .map_err(|e| format!("index.json.asc: {e}"))?
+        .body;
+    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let index = dir.join("index.json");
+    let asc = dir.join("index.json.asc");
+    std::fs::write(&index, &body)
+        .and_then(|()| std::fs::write(&asc, &sig))
+        .map_err(|e| format!("{}: {e}", dir.display()))?;
+    check
+        .verify_index(&index, &asc)
+        .map_err(|e| e.to_string())?;
+    let (catalogue, revision) = parse_index(&body, arch).map_err(|e| e.to_string())?;
+    check
+        .accept_index_revision(revision)
+        .map_err(|e| e.to_string())?;
+    Ok(Some(catalogue))
+}
+
+/// One app's details file: from the cache in `dir` (by SHA-256), else
+/// fetched from `base` + `store/` and cached. Not checked here:
+/// `Catalogue::merge_details` checks it against the index.
+pub fn details_bytes(
+    base: &str,
+    dir: &Path,
+    d: &reef_backend::catalogue::DetailsRef,
+) -> Result<Vec<u8>, String> {
+    let file = dir.join(format!("{}.json", d.sha256));
+    if let Ok(b) = std::fs::read(&file) {
+        return Ok(b);
+    }
+    let body = fetch(&format!("{base}store/{}", d.path))
+        .map_err(|e| e.to_string())?
+        .body;
+    let _ = std::fs::create_dir_all(dir);
+    let tmp = file.with_extension(format!("{}.tmp", std::process::id()));
+    if std::fs::write(&tmp, &body)
+        .and_then(|()| std::fs::rename(&tmp, &file))
+        .is_err()
+    {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    Ok(body)
+}
+
+/// Merges apps' details into `catalogue`: those of `names` (all pending
+/// ones when empty). A cached file (in `dir`, by SHA-256) is used as it
+/// is; a missing one is fetched from `base` + `store/` when `fetch_missing`.
+/// With `prune`, cached files no longer named by the catalogue are removed.
+/// Returns what failed: that app keeps waiting for its details.
+pub fn load_details(
+    catalogue: &mut Catalogue,
+    base: &str,
+    dir: &Path,
+    names: &[String],
+    prune: bool,
+) -> Vec<String> {
+    let mut errors = Vec::new();
+    let wanted: Vec<(String, reef_backend::catalogue::DetailsRef)> = catalogue
+        .pending_details()
+        .into_iter()
+        .filter(|(n, _)| names.is_empty() || names.iter().any(|x| x == n))
+        .map(|(n, d)| (n.to_owned(), d.clone()))
+        .collect();
+    let keep: std::collections::HashSet<String> = catalogue
+        .pending_details()
+        .into_iter()
+        .map(|(_, d)| format!("{}.json", d.sha256))
+        .collect();
+    if let Err(e) = std::fs::create_dir_all(dir) {
+        return vec![format!("{}: {e}", dir.display())];
+    }
+    for (name, d) in wanted {
+        let bytes = match details_bytes(base, dir, &d) {
+            Ok(b) => b,
+            Err(e) => {
+                errors.push(format!("{name}: {e}"));
+                continue;
+            }
+        };
+        if let Err(e) = catalogue.merge_details(&name, &bytes) {
+            // A corrupt cached file is fetched again next time.
+            let _ = std::fs::remove_file(dir.join(format!("{}.json", d.sha256)));
+            errors.push(e.to_string());
+        }
+    }
+    if prune {
+        // Kept: the files of every app the index names (merged or not: the
+        // next refresh parses the index afresh and merges them again).
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                if !keep.contains(&*entry.file_name().to_string_lossy()) {
+                    let _ = std::fs::remove_file(entry.path());
+                }
             }
         }
     }
@@ -283,6 +421,9 @@ pub struct RefreshInput {
     pub licence_server: String,
     /// Where a downloaded catalogue is cached for the next start.
     pub cache_path: Option<PathBuf>,
+    /// How the store index's signature is checked (`MetadataCheck::device`
+    /// on a phone). `None`: the index is not used, only `catalogue.json`.
+    pub index_check: Option<MetadataCheck>,
 }
 
 /// Result of a refresh. Each part is independent: a failed download still
@@ -295,6 +436,31 @@ pub struct RefreshOutput {
     pub errors: Vec<String>,
 }
 
+/// With a cache: the catalogue's details (every app's when there are
+/// few, so each page and the install plans then work offline; else the
+/// featured apps', the rest when their page opens), then the catalogue
+/// itself and its images, from this repository directory and nowhere
+/// else (a failure is a blank image). On the worker, not the GUI thread.
+fn cache_catalogue(input: &RefreshInput, base: &str, c: &mut Catalogue) {
+    let Some(path) = &input.cache_path else {
+        return;
+    };
+    let names: Vec<String> = if c.pending_details().len() <= EAGER_DETAILS {
+        Vec::new()
+    } else {
+        c.featured.clone()
+    };
+    for e in load_details(c, base, &details_dir(path), &names, true) {
+        log::warn!("details: {e}");
+    }
+    if let Err(e) = write_cache(path, c) {
+        log::warn!("caching the catalogue in {}: {e}", path.display());
+    }
+    for e in fetch_assets(base, &asset_dir(path), &catalogue_assets(c)) {
+        log::warn!("asset: {e}");
+    }
+}
+
 /// `refresh()`: catalogue, `ssu lr`, installed and updates, licences.
 pub fn refresh(input: &RefreshInput) -> RefreshOutput {
     let mut out = RefreshOutput::default();
@@ -303,33 +469,38 @@ pub fn refresh(input: &RefreshInput) -> RefreshOutput {
         return out;
     };
 
-    let url = input.config.catalogue_url(release, &input.arch);
-    match fetch(&url) {
-        Ok(f) => match Catalogue::parse(&f.body, &input.arch) {
-            Ok(c) => {
-                // Cached here, on the worker, not on the GUI thread.
-                if let Some(path) = &input.cache_path {
-                    if let Err(e) = write_cache(path, &c) {
-                        log::warn!("caching the catalogue in {}: {e}", path.display());
-                    }
-                    // Icons and screenshots, from this repository directory
-                    // and nowhere else; a failure is a blank image.
-                    let base = input.config.resolved_url(release, &input.arch);
-                    for e in fetch_assets(&base, &asset_dir(path), &catalogue_assets(&c)) {
-                        log::warn!("asset: {e}");
-                    }
-                }
-                out.catalogue = Some(c);
-            }
-            Err(e) => out.errors.push(e.to_string()),
+    // The signed store index first; a repository published before it
+    // existed, or an index that does not verify, falls back to
+    // catalogue.json (unsigned, as every client read it until then).
+    let base = input.config.resolved_url(release, &input.arch);
+    let mut from_index = None;
+    if let Some(check) = &input.index_check {
+        let dir = input
+            .cache_path
+            .as_deref()
+            .map_or_else(std::env::temp_dir, index_dir);
+        match fetch_index(&base, &input.arch, check, &dir) {
+            Ok(found) => from_index = found,
+            Err(e) => log::warn!("store index: {e}; reading catalogue.json"),
+        }
+    }
+    let fetched = match from_index {
+        Some(c) => Ok(c),
+        None => match fetch(&input.config.catalogue_url(release, &input.arch)) {
+            Ok(f) => Catalogue::parse(&f.body, &input.arch).map_err(|e| e.to_string()),
+            Err(FetchError::Status(404)) => Err(message(
+                "catalogue_missing",
+                &[&release.full(), &input.arch],
+            )),
+            Err(e) => Err(message("catalogue_download_failed", &[&e.to_string()])),
         },
-        Err(FetchError::Status(404)) => out.errors.push(message(
-            "catalogue_missing",
-            &[&release.full(), &input.arch],
-        )),
-        Err(e) => out
-            .errors
-            .push(message("catalogue_download_failed", &[&e.to_string()])),
+    };
+    match fetched {
+        Ok(mut c) => {
+            cache_catalogue(input, &base, &mut c);
+            out.catalogue = Some(c);
+        }
+        Err(e) => out.errors.push(e),
     }
 
     let mut pinned = false;
@@ -726,6 +897,20 @@ pub fn local_state(alias: &str, catalogue: Option<&Catalogue>) -> Result<PkState
     .map_err(|e| e.to_string())
 }
 
+/// How the store index's signature is checked on this phone
+/// (`MetadataCheck::device`), with Reef's key read under [`sysroot`], so a
+/// test root carries its own.
+pub fn index_check(alias: &str) -> Option<MetadataCheck> {
+    let mut check = MetadataCheck::device(alias)?;
+    let key = check
+        .key
+        .strip_prefix("/")
+        .unwrap_or(&check.key)
+        .to_path_buf();
+    check.key = sysroot().join(key);
+    Some(check)
+}
+
 /// The root the release files are read from: `/`, or `$REEF_SYSROOT`
 /// (tests and development only; never set on a phone).
 pub fn sysroot() -> PathBuf {
@@ -835,6 +1020,7 @@ mod tests {
             licence_dir: None,
             licence_server: String::new(),
             cache_path: None,
+            index_check: None,
         });
         assert!(out.catalogue.is_none() && out.repos.is_none() && out.pk.is_none());
         assert_eq!(out.errors.len(), 1);
@@ -1051,6 +1237,7 @@ mod tests {
             licence_dir: None,
             licence_server: String::new(),
             cache_path: Some(cache.clone()),
+            index_check: None,
         });
         assert!(out.catalogue.is_some(), "{:?}", out.errors);
         let cached = std::fs::read(&cache).unwrap();
@@ -1104,6 +1291,7 @@ mod tests {
             licence_dir: None,
             licence_server: String::new(),
             cache_path: Some(cache.clone()),
+            index_check: None,
         });
         let c = out.catalogue.expect("catalogue");
         assert_eq!(
@@ -1222,5 +1410,160 @@ mod tests {
             plan,
         };
         assert_eq!(op.package(), "b");
+    }
+
+    /// The signed store index is read first, its details merged and cached;
+    /// an index that does not verify, or goes backwards, falls back to
+    /// catalogue.json.
+    #[test]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one scenario: a signed index, then forged, rolled back, newer"
+    )]
+    fn store_index_signed_details_and_fallback() {
+        use sha2::{Digest, Sha256};
+        let gpg = ["gpg2", "gpg"].into_iter().find(|g| {
+            std::process::Command::new(g)
+                .arg("--version")
+                .output()
+                .is_ok()
+        });
+        let gpgv = ["gpgv2", "gpgv"].into_iter().find(|g| {
+            std::process::Command::new(g)
+                .arg("--version")
+                .output()
+                .is_ok()
+        });
+        let (Some(gpg), Some(gpgv)) = (gpg, gpgv) else {
+            eprintln!("no gpg; skipped");
+            return;
+        };
+        let dir = scratch("index");
+        let home = dir.join("gnupg");
+        std::fs::create_dir_all(&home).unwrap();
+        let g = |args: &[&str]| {
+            let out = std::process::Command::new(gpg)
+                .arg("--batch")
+                .arg("--homedir")
+                .arg(&home)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                out.status.success(),
+                "{}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+            out.stdout
+        };
+        g(&[
+            "--passphrase",
+            "",
+            "--quick-gen-key",
+            "Reef Test <t@example.com>",
+            "rsa2048",
+            "sign",
+            "never",
+        ]);
+        let key = dir.join("key.asc");
+        std::fs::write(&key, g(&["--armor", "--export", "t@example.com"])).unwrap();
+
+        let repo = dir.join("repo/sailfishos/5.2.0.22/aarch64");
+        std::fs::create_dir_all(repo.join("store/apps")).unwrap();
+        std::fs::write(
+            repo.join("catalogue.json"),
+            br#"{"schema":1,"release":"5.2.0.22","arch":"aarch64","packages":[
+                {"name":"fx","version":"1-1","title":"From v1","summary":"s",
+                 "tested_on":["5.2.0.22"],"licence":{"model":"free"}}]}"#,
+        )
+        .unwrap();
+        let details = br#"{"name":"fx","version":"1-1","title":"From index","summary":"s","description":"Long","tested_on":["5.2.0.22"],"licence":{"model":"free"}}"#;
+        std::fs::write(repo.join("store/apps/fx.abc.json"), details).unwrap();
+        let sha = Sha256::digest(details)
+            .iter()
+            .fold(String::new(), |mut s, b| {
+                use std::fmt::Write as _;
+                let _ = write!(s, "{b:02x}");
+                s
+            });
+        let publish = |title: &str, revision: u64, sign: bool| {
+            let index = format!(
+                r#"{{"schema":2,"release":"5.2.0.22","arch":"aarch64","revision":{revision},
+                "categories":[{{"id":"Utilities","label":"Utilities","icon":"icon-m-flashlight","count":1}}],
+                "collections":[{{"id":"picks","title":"Picks","apps":["fx"]}}],
+                "apps":[{{"id":"fx","title":"{title}","summary":"s","version":"1-1",
+                  "licence":{{"model":"free"}},"tested_on":["5.2.0.22"],"keywords":["torch"],
+                  "sources":[{{"kind":"rpm","package":"fx"}}],
+                  "details":{{"path":"apps/fx.abc.json","sha256":"{sha}","size":{}}}}}]}}"#,
+                details.len()
+            );
+            let path = repo.join("store/index.json");
+            std::fs::write(&path, index).unwrap();
+            if sign {
+                let asc = repo.join("store/index.json.asc");
+                let _ = std::fs::remove_file(&asc);
+                g(&[
+                    "--local-user",
+                    "t@example.com",
+                    "--armor",
+                    "--detach-sign",
+                    "--output",
+                    asc.to_str().unwrap(),
+                    path.to_str().unwrap(),
+                ]);
+            }
+        };
+        let cache = dir.join("cache/shipwright-reef/catalogue.json");
+        let check = MetadataCheck {
+            zypp_conf: dir.join("zypp.conf"),
+            alias: "shipwright-reef".into(),
+            key,
+            state: dir.join("state/metadata-revision"),
+            gpg: gpg.into(),
+            gpgv: gpgv.into(),
+        };
+        let run = || {
+            refresh(&RefreshInput {
+                config: RepoConfig {
+                    url_template: format!(
+                        "file://{}/repo/sailfishos/{{release}}/{{arch}}/",
+                        dir.display()
+                    ),
+                    ..RepoConfig::default()
+                },
+                release: SailfishRelease::parse("5.2.0.22"),
+                arch: "aarch64".into(),
+                previous: None,
+                licence_dir: None,
+                licence_server: String::new(),
+                cache_path: Some(cache.clone()),
+                index_check: Some(check.clone()),
+            })
+            .catalogue
+            .expect("catalogue")
+        };
+
+        publish("From index", 200, true);
+        let c = run();
+        let p = &c.packages[0];
+        assert_eq!(p.title, "From index");
+        assert_eq!(p.description, "Long", "details merged");
+        assert_eq!(p.keywords, ["torch"]);
+        assert!(p.details.is_none());
+        assert_eq!(c.collections[0].apps, ["fx"]);
+        assert!(details_dir(&cache).join(format!("{sha}.json")).is_file());
+        let cached = Catalogue::parse(&std::fs::read(&cache).unwrap(), "aarch64").unwrap();
+        assert_eq!(cached.categories.len(), 1);
+
+        // Changed after signing: catalogue.json instead.
+        publish("Forged", 300, false);
+        assert_eq!(run().packages[0].title, "From v1");
+        // Signed, but older than what was accepted: the same.
+        publish("Old", 100, true);
+        assert_eq!(run().packages[0].title, "From v1");
+        // Newer and signed: the index again (the title its details give).
+        publish("Newer", 300, true);
+        assert_eq!(run().packages[0].title, "From index");
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

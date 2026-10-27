@@ -46,7 +46,60 @@ pub struct Catalogue {
     /// catalogues generated before it existed.
     #[serde(default)]
     pub components: BTreeMap<String, Component>,
+    /// The store's categories, in the order it lists them, each with how
+    /// many apps it holds (the store index, `gen-store.py`). Empty for a
+    /// `catalogue.json`: the store then lists the categories its apps name.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub categories: Vec<Category>,
+    /// Rows of the store's front page: editorial ones, then generated ones
+    /// (new, recently updated). `parse` drops apps not in `packages` and
+    /// collections left empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub collections: Vec<Collection>,
 }
+
+/// One of the store's categories (`tools/build/reef/categories.json`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Category {
+    pub id: String,
+    pub label: String,
+    /// A Silica theme icon name (`icon-m-music`).
+    #[serde(default)]
+    pub icon: String,
+    #[serde(default)]
+    pub count: u32,
+}
+
+/// A row of apps on the store's front page.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Collection {
+    pub id: String,
+    pub title: String,
+    #[serde(default)]
+    pub subtitle: String,
+    /// Made by the publisher (new, recently updated), not picked.
+    #[serde(default)]
+    pub generated: bool,
+    pub apps: Vec<String>,
+}
+
+/// Where a package's details are, for one from the store index: a file
+/// relative to the index's directory, with its SHA-256 and size (covered
+/// by the index's signature).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DetailsRef {
+    pub path: String,
+    pub sha256: String,
+    pub size: u64,
+}
+
+/// Most collections and categories kept, and apps per collection.
+pub const MAX_COLLECTIONS: usize = 64;
+pub const MAX_COLLECTION_APPS: usize = 200;
+pub const MAX_CATEGORIES: usize = 64;
+/// Search keywords kept per package, and characters per keyword.
+pub const MAX_KEYWORDS: usize = 10;
+pub const MAX_KEYWORD_CHARS: usize = 32;
 
 /// One RPM of the repository, as gen-catalogue found it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -235,6 +288,23 @@ pub struct Package {
     /// transitively).
     #[serde(default)]
     pub requires: Vec<String>,
+    /// Words search finds the app by besides its title and summary.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub keywords: Vec<String>,
+    /// The day of its newest change, `YYYY-MM-DD` (the store index carries
+    /// it before the changelog is fetched).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated: Option<String>,
+    /// The banner of a featured app: its first screenshot, a relative path
+    /// like `icon`, known before the screenshots are.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hero: Option<String>,
+    /// For a package from the store index whose details (description,
+    /// screenshots, changelog, what it brings) are not fetched yet: where
+    /// they are. `None` once merged ([`Catalogue::merge_details`]) and for
+    /// every package of a `catalogue.json`, which has them all.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<DetailsRef>,
 }
 
 /// How a package is paid for (docs/plan.md, "Pricing model").
@@ -332,90 +402,159 @@ impl Catalogue {
                 found: cat.arch,
             });
         }
+        cat.sanitize()?;
+        Ok(cat)
+    }
+
+    /// The checks `parse` makes, for a catalogue built another way (the
+    /// store index, `crate::index`).
+    pub(crate) fn sanitize(&mut self) -> Result<(), CatalogueError> {
+        let cat = self;
         let mut names: Vec<&str> = cat.packages.iter().map(|p| p.name.as_str()).collect();
         names.sort_unstable();
         if let Some(w) = names.windows(2).find(|w| w[0] == w[1]) {
             return Err(CatalogueError::DuplicatePackage(w[0].to_string()));
         }
         for p in &mut cat.packages {
-            p.category = display_category(&p.category);
-            let invalid = |why: &str| CatalogueError::InvalidPackage {
-                name: p.name.clone(),
-                why: why.into(),
-            };
-            if let LicenceModel::OneOff {
-                app_id,
-                purchase_url,
-            }
-            | LicenceModel::Subscription {
-                app_id,
-                purchase_url,
-            } = &p.licence
-            {
-                if !reef_licence::handoff::valid_app_id(app_id) {
-                    return Err(invalid("licence app_id is not a valid app id"));
-                }
-                if !is_https_url(purchase_url) {
-                    return Err(invalid("purchase_url is not an https:// URL"));
-                }
-            }
-            for link in [&mut p.homepage, &mut p.source] {
-                if link.as_deref().is_some_and(|u| !is_https_url(u)) {
-                    *link = None;
-                }
-            }
-            if p.icon.as_deref().is_some_and(|s| !is_asset_path(s)) {
-                p.icon = None;
-            }
-            p.screenshots.retain(|s| is_asset_path(s));
-            p.screenshots.truncate(MAX_SCREENSHOTS);
-            if p.added.as_deref().is_some_and(|d| parse_date(d).is_none()) {
-                p.added = None;
-            }
-            cap_services(&mut p.services);
-            p.system_changes
-                .retain(|c| !c.description.trim().is_empty());
-            p.system_changes.truncate(MAX_DISCLOSURES);
-            for c in &mut p.system_changes {
-                cap_chars(&mut c.description);
-            }
-            p.requires.truncate(MAX_DISCLOSURES * 4);
-            p.variants.retain(|g| !g.is_empty());
-            p.variants.truncate(MAX_DISCLOSURES);
-            for g in &mut p.variants {
-                g.truncate(MAX_DISCLOSURES);
-            }
-            p.permissions.truncate(MAX_DISCLOSURES);
-            p.changelog.retain(|c| parse_date(&c.date).is_some());
-            p.changelog.truncate(MAX_CHANGES);
-            for c in &mut p.changelog {
-                if c.version.chars().count() > 64 {
-                    c.version = c.version.chars().take(64).collect();
-                }
-                c.notes.retain(|n| !n.trim().is_empty());
-                c.notes.truncate(MAX_NOTES);
-                for n in &mut c.notes {
-                    if n.chars().count() > MAX_NOTE_CHARS {
-                        *n = n.chars().take(MAX_NOTE_CHARS).collect();
-                    }
-                }
-            }
+            sanitize_package(p)?;
         }
-        for c in cat.components.values_mut() {
-            cap_services(&mut c.services);
-            c.system_changes.retain(|d| !d.trim().is_empty());
-            c.system_changes.truncate(MAX_DISCLOSURES);
-            c.system_changes.iter_mut().for_each(cap_chars);
-            c.permissions.truncate(MAX_DISCLOSURES);
-            cap_chars(&mut c.summary);
-        }
+        cat.components.values_mut().for_each(sanitize_component);
         let packages = &cat.packages;
         let mut seen = std::collections::HashSet::new();
         cat.featured
             .retain(|n| packages.iter().any(|p| &p.name == n) && seen.insert(n.clone()));
-        Ok(cat)
+        let mut ids = std::collections::HashSet::new();
+        cat.collections
+            .retain(|c| !c.id.is_empty() && !c.title.trim().is_empty() && ids.insert(c.id.clone()));
+        cat.collections.truncate(MAX_COLLECTIONS);
+        for c in &mut cat.collections {
+            let mut seen = std::collections::HashSet::new();
+            c.apps
+                .retain(|n| packages.iter().any(|p| &p.name == n) && seen.insert(n.clone()));
+            c.apps.truncate(MAX_COLLECTION_APPS);
+            cap_chars(&mut c.title);
+            cap_chars(&mut c.subtitle);
+        }
+        cat.collections.retain(|c| !c.apps.is_empty());
+        let mut ids = std::collections::HashSet::new();
+        cat.categories
+            .retain(|c| !c.label.trim().is_empty() && ids.insert(c.id.clone()));
+        cat.categories.truncate(MAX_CATEGORIES);
+        for c in &mut cat.categories {
+            c.id = display_category(&c.id);
+            cap_chars(&mut c.label);
+            if !is_theme_icon(&c.icon) {
+                c.icon.clear();
+            }
+        }
+        Ok(())
     }
+}
 
+/// The caps every component gets.
+pub(crate) fn sanitize_component(c: &mut Component) {
+    cap_services(&mut c.services);
+    c.system_changes.retain(|d| !d.trim().is_empty());
+    c.system_changes.truncate(MAX_DISCLOSURES);
+    c.system_changes.iter_mut().for_each(cap_chars);
+    c.permissions.truncate(MAX_DISCLOSURES);
+    cap_chars(&mut c.summary);
+}
+
+/// The checks every package gets, from a catalogue or the store index, and
+/// again when its details are merged.
+pub(crate) fn sanitize_package(p: &mut Package) -> Result<(), CatalogueError> {
+    p.category = display_category(&p.category);
+    let invalid = |why: &str| CatalogueError::InvalidPackage {
+        name: p.name.clone(),
+        why: why.into(),
+    };
+    if let LicenceModel::OneOff {
+        app_id,
+        purchase_url,
+    }
+    | LicenceModel::Subscription {
+        app_id,
+        purchase_url,
+    } = &p.licence
+    {
+        if !reef_licence::handoff::valid_app_id(app_id) {
+            return Err(invalid("licence app_id is not a valid app id"));
+        }
+        if !is_https_url(purchase_url) {
+            return Err(invalid("purchase_url is not an https:// URL"));
+        }
+    }
+    for link in [&mut p.homepage, &mut p.source] {
+        if link.as_deref().is_some_and(|u| !is_https_url(u)) {
+            *link = None;
+        }
+    }
+    if p.icon.as_deref().is_some_and(|s| !is_asset_path(s)) {
+        p.icon = None;
+    }
+    p.screenshots.retain(|s| is_asset_path(s));
+    p.screenshots.truncate(MAX_SCREENSHOTS);
+    if p.added.as_deref().is_some_and(|d| parse_date(d).is_none()) {
+        p.added = None;
+    }
+    cap_services(&mut p.services);
+    p.system_changes
+        .retain(|c| !c.description.trim().is_empty());
+    p.system_changes.truncate(MAX_DISCLOSURES);
+    for c in &mut p.system_changes {
+        cap_chars(&mut c.description);
+    }
+    p.requires.truncate(MAX_DISCLOSURES * 4);
+    p.variants.retain(|g| !g.is_empty());
+    p.variants.truncate(MAX_DISCLOSURES);
+    for g in &mut p.variants {
+        g.truncate(MAX_DISCLOSURES);
+    }
+    p.permissions.truncate(MAX_DISCLOSURES);
+    p.changelog.retain(|c| parse_date(&c.date).is_some());
+    p.changelog.truncate(MAX_CHANGES);
+    for c in &mut p.changelog {
+        if c.version.chars().count() > 64 {
+            c.version = c.version.chars().take(64).collect();
+        }
+        c.notes.retain(|n| !n.trim().is_empty());
+        c.notes.truncate(MAX_NOTES);
+        for n in &mut c.notes {
+            if n.chars().count() > MAX_NOTE_CHARS {
+                *n = n.chars().take(MAX_NOTE_CHARS).collect();
+            }
+        }
+    }
+    p.keywords.retain(|k| !k.trim().is_empty());
+    p.keywords.truncate(MAX_KEYWORDS);
+    for k in &mut p.keywords {
+        if k.chars().count() > MAX_KEYWORD_CHARS {
+            *k = k.chars().take(MAX_KEYWORD_CHARS).collect();
+        }
+    }
+    if p.updated
+        .as_deref()
+        .is_some_and(|d| parse_date(d).is_none())
+    {
+        p.updated = None;
+    }
+    if p.hero.as_deref().is_some_and(|s| !is_asset_path(s)) {
+        p.hero = None;
+    }
+    if p.details
+        .as_ref()
+        .is_some_and(|d| !is_details_path(&d.path) || !is_sha256(&d.sha256))
+    {
+        return Err(CatalogueError::InvalidPackage {
+            name: p.name.clone(),
+            why: "details is not a store file with a SHA-256".into(),
+        });
+    }
+    Ok(())
+}
+
+impl Catalogue {
     /// The featured packages that are visible on this release, in the
     /// catalogue's order.
     pub fn featured_visible(&self, release: &SailfishRelease) -> Vec<&Package> {
@@ -577,6 +716,36 @@ pub fn is_asset_path(path: &str) -> bool {
         && [".png", ".jpg", ".jpeg"]
             .iter()
             .any(|ext| lower.ends_with(ext))
+}
+
+/// A store details file, relative to the index: `apps/<segment>.json`,
+/// the segment as in [`is_asset_path`], at most 200 bytes.
+pub fn is_details_path(path: &str) -> bool {
+    path.strip_prefix("apps/")
+        .and_then(|rest| rest.strip_suffix(".json"))
+        .is_some_and(|stem| {
+            path.len() <= 200
+                && !stem.is_empty()
+                && !stem.starts_with('.')
+                && stem
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, b'.' | b'_' | b'-' | b'+'))
+        })
+}
+
+/// 64 lower-case hex digits.
+pub fn is_sha256(s: &str) -> bool {
+    s.len() == 64 && s.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
+}
+
+/// A Silica theme icon name (`icon-m-music`): the store shows it as
+/// `image://theme/<name>`, so nothing but the theme's own icons.
+pub fn is_theme_icon(name: &str) -> bool {
+    name.len() <= 64
+        && name.starts_with("icon-")
+        && name
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
 }
 
 /// `YYYY-MM-DD` as days since 1970-01-01, or `None` when malformed.

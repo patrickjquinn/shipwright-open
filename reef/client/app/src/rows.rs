@@ -62,6 +62,7 @@ pub const PACKAGE_ROLES: &[&str] = &[
     "isNew",
     "updated",
     "heroPath",
+    "categoryLabel",
 ];
 
 /// How many apps the home page's "New and updated" row shows.
@@ -102,6 +103,11 @@ pub struct PackageRow {
     /// Local path of the first cached screenshot (the home page's banner
     /// for a featured app), or empty.
     pub hero_path: String,
+    /// Search keywords (not a role: [`filter_rows`] reads them).
+    pub keywords: Vec<String>,
+    /// The category's name as the store shows it (`Music and audio` for
+    /// `Audio`): the catalogue's category list, else the category itself.
+    pub category_label: String,
 }
 
 impl PackageRow {
@@ -123,6 +129,7 @@ impl PackageRow {
             self.is_new.into(),
             self.updated.as_str().into(),
             self.hero_path.as_str().into(),
+            self.category_label.as_str().into(),
         ]
     }
 }
@@ -139,22 +146,106 @@ pub fn is_new(added: Option<&str>, today: i64) -> bool {
         .is_some_and(|day| (0..=NEW_DAYS).contains(&(today - day)))
 }
 
-/// The rows whose title, summary, category, publisher or RPM name contain
-/// every whitespace-separated word of `query`, case-insensitively; all rows
-/// for a blank query.
+/// The search results for `query`, best first: rows where every
+/// whitespace-separated word matches (case-insensitively) the title, a
+/// keyword, the RPM name, the summary, the publisher or the category, or,
+/// for a word of five letters or more, a title word or keyword with one
+/// letter wrong, missing, extra or two swapped. A word counts most at the
+/// start of the title, then at the start of a title word, then anywhere in
+/// it, then as a keyword, and so on ([`word_score`]); equal scores keep
+/// the rows' order. All rows, in order, for a blank query.
 pub fn filter_rows(rows: &[PackageRow], query: &str) -> Vec<PackageRow> {
     let words: Vec<String> = query.split_whitespace().map(str::to_lowercase).collect();
-    rows.iter()
-        .filter(|r| {
-            let hay = format!(
-                "{}\n{}\n{}\n{}\n{}",
-                r.title, r.summary, r.category, r.publisher, r.name
-            )
-            .to_lowercase();
-            words.iter().all(|w| hay.contains(w.as_str()))
+    if words.is_empty() {
+        return rows.to_vec();
+    }
+    let mut scored: Vec<(u32, usize)> = rows
+        .iter()
+        .enumerate()
+        .filter_map(|(i, r)| {
+            let mut total = 0;
+            for w in &words {
+                let s = word_score(r, w);
+                if s == 0 {
+                    return None;
+                }
+                total += s;
+            }
+            Some((total, i))
         })
-        .cloned()
-        .collect()
+        .collect();
+    scored.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+    scored.into_iter().map(|(_, i)| rows[i].clone()).collect()
+}
+
+/// How well one lower-case query word matches a row (0: not at all).
+pub fn word_score(r: &PackageRow, w: &str) -> u32 {
+    let title = r.title.to_lowercase();
+    let title_words: Vec<&str> = title
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|t| !t.is_empty())
+        .collect();
+    let keywords: Vec<String> = r.keywords.iter().map(|k| k.to_lowercase()).collect();
+    let summary = r.summary.to_lowercase();
+    if title.starts_with(w) {
+        100
+    } else if title_words.iter().any(|t| t.starts_with(w)) {
+        80
+    } else if keywords.iter().any(|k| k == w) {
+        70
+    } else if title.contains(w) {
+        60
+    } else if keywords.iter().any(|k| k.starts_with(w)) {
+        50
+    } else if r.name.to_lowercase().contains(w) {
+        40
+    } else if summary
+        .split(|c: char| !c.is_alphanumeric())
+        .any(|t| t.starts_with(w))
+    {
+        30
+    } else if w.chars().count() >= 5
+        && title_words
+            .iter()
+            .copied()
+            .chain(keywords.iter().map(String::as_str))
+            .any(|t| one_edit(t, w))
+    {
+        25
+    } else if summary.contains(w) {
+        20
+    } else if r.publisher.to_lowercase().contains(w) || r.category.to_lowercase().contains(w) {
+        15
+    } else {
+        0
+    }
+}
+
+/// Whether `a` and `b` differ by at most one letter changed, added or
+/// removed, or two neighbours swapped.
+pub fn one_edit(a: &str, b: &str) -> bool {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    if a == b {
+        return true;
+    }
+    let (la, lb) = (a.len(), b.len());
+    if la.abs_diff(lb) > 1 {
+        return false;
+    }
+    let first = a.iter().zip(&b).take_while(|(x, y)| x == y).count();
+    match la.cmp(&lb) {
+        // One changed, or the first difference and the next swapped.
+        std::cmp::Ordering::Equal => {
+            a[first + 1..] == b[first + 1..]
+                || (first + 1 < la
+                    && a[first] == b[first + 1]
+                    && a[first + 1] == b[first]
+                    && a[first + 2..] == b[first + 2..])
+        }
+        std::cmp::Ordering::Greater => a[first + 1..] == b[first..],
+        std::cmp::Ordering::Less => a[first..] == b[first + 1..],
+    }
 }
 
 /// `recentModel`: the most recently updated rows, newest first (by
@@ -182,6 +273,109 @@ pub fn featured_rows(rows: &[PackageRow], catalogue: &Catalogue) -> Vec<PackageR
         .filter_map(|n| rows.iter().find(|r| &r.name == n))
         .cloned()
         .collect()
+}
+
+/// Roles of `categoriesModel`, in column order (`id` is QML's own word).
+pub const CATEGORY_ROLES: &[&str] = &["categoryId", "label", "icon", "count"];
+
+/// Roles of `collectionsModel`, in column order.
+pub const COLLECTION_ROLES: &[&str] = &["collectionId", "title", "subtitle", "generated", "apps"];
+
+/// `categoriesModel`: the store's categories that have apps this phone is
+/// shown, in the store's order, with how many. A catalogue without a
+/// category list (a `catalogue.json`) gets one row per category its apps
+/// name, by name, with no icon.
+pub fn category_rows(catalogue: &Catalogue, rows: &[PackageRow]) -> Vec<Vec<Value>> {
+    let count = |id: &str| {
+        rows.iter()
+            .filter(|r| r.category.eq_ignore_ascii_case(id))
+            .count()
+    };
+    let row = |id: &str, label: &str, icon: &str, n: usize| {
+        vec![
+            id.into(),
+            label.into(),
+            icon.into(),
+            Value::Int(i64::try_from(n).unwrap_or(i64::MAX)),
+        ]
+    };
+    if catalogue.categories.is_empty() {
+        let mut names: Vec<&str> = rows.iter().map(|r| r.category.as_str()).collect();
+        names.sort_unstable();
+        names.dedup();
+        return names.into_iter().map(|n| row(n, n, "", count(n))).collect();
+    }
+    catalogue
+        .categories
+        .iter()
+        .map(|c| (c, count(&c.id)))
+        .filter(|(_, n)| *n > 0)
+        .map(|(c, n)| row(&c.id, &c.label, &c.icon, n))
+        .collect()
+}
+
+/// A collection shows as a row on the home page with at least this many
+/// apps shown here: a row of one or two is mostly empty space. Fewer, it
+/// is left out (its page still opens from a link).
+pub const MIN_COLLECTION_APPS: usize = 3;
+
+/// `collectionsModel`: the catalogue's collections, each with the apps of
+/// it this phone is shown, in order; collections with fewer than
+/// [`MIN_COLLECTION_APPS`] of them are dropped.
+pub fn collection_rows(catalogue: &Catalogue, rows: &[PackageRow]) -> Vec<Vec<Value>> {
+    catalogue
+        .collections
+        .iter()
+        .filter_map(|c| {
+            let apps: Vec<String> = c
+                .apps
+                .iter()
+                .filter(|n| rows.iter().any(|r| &r.name == *n))
+                .cloned()
+                .collect();
+            (apps.len() >= MIN_COLLECTION_APPS).then(|| {
+                vec![
+                    c.id.as_str().into(),
+                    c.title.as_str().into(),
+                    c.subtitle.as_str().into(),
+                    c.generated.into(),
+                    Value::List(apps),
+                ]
+            })
+        })
+        .collect()
+}
+
+/// `browseModel`: the rows of one category (`kind` "category", by title),
+/// one collection ("collection", in its order) or every app ("all", by
+/// title). Nothing for an unknown kind or id.
+pub fn browse_rows(
+    catalogue: &Catalogue,
+    rows: &[PackageRow],
+    kind: &str,
+    id: &str,
+) -> Vec<PackageRow> {
+    match kind {
+        "all" => rows.to_vec(),
+        "category" => rows
+            .iter()
+            .filter(|r| r.category.eq_ignore_ascii_case(id))
+            .cloned()
+            .collect(),
+        "collection" => catalogue
+            .collections
+            .iter()
+            .find(|c| c.id == id)
+            .map(|c| {
+                c.apps
+                    .iter()
+                    .filter_map(|n| rows.iter().find(|r| &r.name == n))
+                    .cloned()
+                    .collect()
+            })
+            .unwrap_or_default(),
+        _ => Vec::new(),
+    }
 }
 
 /// `installState` and `installedVersion`.
@@ -249,6 +443,11 @@ pub fn package_rows(
                 title: e.package.title.clone(),
                 summary: e.package.summary.clone(),
                 category: e.package.category.clone(),
+                category_label: catalogue
+                    .categories
+                    .iter()
+                    .find(|c| c.id.eq_ignore_ascii_case(&e.package.category))
+                    .map_or_else(|| e.package.category.clone(), |c| c.label.clone()),
                 version: e.package.version.clone(),
                 install_state: state,
                 installed_version,
@@ -263,15 +462,18 @@ pub fn package_rows(
                     .changelog
                     .first()
                     .map(|c| c.date.clone())
+                    .or_else(|| e.package.updated.clone())
                     .or_else(|| e.package.added.clone())
                     .unwrap_or_default(),
                 hero_path: e
                     .package
-                    .screenshots
+                    .hero
                     .iter()
+                    .chain(e.package.screenshots.iter())
                     .map(|s| asset(s))
                     .find(|p| !p.is_empty())
                     .unwrap_or_default(),
+                keywords: e.package.keywords.clone(),
             }
         })
         .collect();
@@ -824,6 +1026,157 @@ mod tests {
     }
 
     #[test]
+    fn categories_collections_and_browsing() {
+        let row = |name: &str, category: &str| PackageRow {
+            name: name.into(),
+            title: name.to_uppercase(),
+            summary: String::new(),
+            category: category.into(),
+            version: String::new(),
+            install_state: "not_installed",
+            installed_version: String::new(),
+            licence_model: "free",
+            licensed: false,
+            publisher: String::new(),
+            icon_path: String::new(),
+            featured: false,
+            is_new: false,
+            updated: String::new(),
+            hero_path: String::new(),
+            keywords: Vec::new(),
+            category_label: String::new(),
+        };
+        // Rows are what this phone is shown: "hidden" is not among them.
+        let rows = [
+            row("a", "Audio"),
+            row("b", "Utilities"),
+            row("c", "Utilities"),
+        ];
+        let mut cat = cat();
+        assert_eq!(
+            category_rows(&cat, &rows),
+            [
+                vec!["Audio".into(), "Audio".into(), "".into(), Value::Int(1)],
+                vec![
+                    "Utilities".into(),
+                    "Utilities".into(),
+                    "".into(),
+                    Value::Int(2)
+                ],
+            ],
+            "no list: the apps' own categories"
+        );
+        cat.categories = vec![
+            reef_backend::catalogue::Category {
+                id: "Utilities".into(),
+                label: "Utilities".into(),
+                icon: "icon-m-flashlight".into(),
+                count: 9,
+            },
+            reef_backend::catalogue::Category {
+                id: "Games".into(),
+                label: "Games".into(),
+                icon: "icon-m-game-controller".into(),
+                count: 3,
+            },
+            reef_backend::catalogue::Category {
+                id: "Audio".into(),
+                label: "Music and audio".into(),
+                icon: "icon-m-music".into(),
+                count: 1,
+            },
+        ];
+        let got = category_rows(&cat, &rows);
+        assert_eq!(got.len(), 2, "Games has nothing shown here");
+        assert_eq!(got[0][3], Value::Int(2), "counted from what is shown");
+        assert_eq!(got[1][1], Value::Str("Music and audio".into()));
+        cat.collections = vec![
+            reef_backend::catalogue::Collection {
+                id: "picks".into(),
+                title: "Picks".into(),
+                subtitle: String::new(),
+                generated: false,
+                apps: vec!["c".into(), "hidden".into(), "b".into(), "a".into()],
+            },
+            reef_backend::catalogue::Collection {
+                id: "gone".into(),
+                title: "Gone".into(),
+                subtitle: String::new(),
+                generated: true,
+                apps: vec!["hidden".into()],
+            },
+        ];
+        let got = collection_rows(&cat, &rows);
+        assert_eq!(got.len(), 1, "a row needs three apps shown here");
+        assert_eq!(
+            got[0][4],
+            Value::List(vec!["c".into(), "b".into(), "a".into()])
+        );
+        let names = |kind: &str, id: &str| -> Vec<String> {
+            browse_rows(&cat, &rows, kind, id)
+                .into_iter()
+                .map(|r| r.name)
+                .collect()
+        };
+        assert_eq!(names("collection", "picks"), ["c", "b", "a"]);
+        // Its page opens whatever the home page shows.
+        assert_eq!(names("collection", "gone"), Vec::<String>::new());
+        assert_eq!(names("category", "utilities"), ["b", "c"]);
+        assert_eq!(names("all", ""), ["a", "b", "c"]);
+        assert!(names("category", "Games").is_empty() && names("nope", "x").is_empty());
+    }
+
+    #[test]
+    fn search_ranks_and_forgives_one_typo() {
+        let row = |name: &str, title: &str, summary: &str, keywords: &[&str]| PackageRow {
+            name: name.into(),
+            title: title.into(),
+            summary: summary.into(),
+            category: "Utilities".into(),
+            version: String::new(),
+            install_state: "not_installed",
+            installed_version: String::new(),
+            licence_model: "free",
+            licensed: false,
+            publisher: "Shipwright".into(),
+            icon_path: String::new(),
+            featured: false,
+            is_new: false,
+            updated: String::new(),
+            hero_path: String::new(),
+            keywords: keywords.iter().map(|k| (*k).to_string()).collect(),
+            category_label: String::new(),
+        };
+        let rows = [
+            row("notes", "Notes", "Write down a browser link", &[]),
+            row(
+                "pacific",
+                "Pacific",
+                "A web browser that blocks trackers",
+                &["browser", "web"],
+            ),
+            row("webcam", "Web camera", "Use the phone as a webcam", &[]),
+            row("mail", "Shoal Mail", "Email for your accounts", &[]),
+        ];
+        let names = |q: &str| -> Vec<String> {
+            filter_rows(&rows, q).into_iter().map(|r| r.name).collect()
+        };
+        // A keyword outranks a summary word.
+        assert_eq!(names("browser"), ["pacific", "notes"]);
+        // The start of the title first, then a title word.
+        assert_eq!(names("web"), ["webcam", "pacific"]);
+        assert_eq!(names("mail"), ["mail"]);
+        // One letter wrong, missing or swapped, in words of five or more.
+        assert_eq!(names("broswer"), ["pacific"]);
+        assert_eq!(names("pacfic"), ["pacific"]);
+        assert!(names("mial").is_empty(), "too short to guess");
+        // Every word must match; blank keeps everything in order.
+        assert_eq!(names("web phone"), ["webcam"]);
+        assert_eq!(names("  ").len(), 4);
+        assert!(one_edit("browser", "browsr") && one_edit("abc", "acb") && !one_edit("abc", "cab"));
+    }
+
+    #[test]
     fn recent_rows_are_newest_first() {
         let row = |title: &str, updated: &str| PackageRow {
             name: title.to_lowercase(),
@@ -841,6 +1194,8 @@ mod tests {
             is_new: false,
             updated: updated.into(),
             hero_path: String::new(),
+            keywords: Vec::new(),
+            category_label: String::new(),
         };
         let rows = [
             row("Keys", "2026-10-08"),

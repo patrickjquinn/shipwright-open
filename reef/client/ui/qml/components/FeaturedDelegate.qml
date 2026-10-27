@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Patrick Quinn
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// One tile of the home page's "New and updated" row: the icon, the title,
-// and whether it is new or when it was last updated (or that an update is
-// waiting). Same roles as PackageDelegate (recentModel).
+// One tile of a row of apps on the home page: the icon, the title, and
+// one line under it, the app's category, or "Update" (highlighted, the
+// only emphasis a tile has) when an update is waiting. Same roles as
+// PackageDelegate (recentModel, and a collection's apps through appRow).
 
 import QtQuick
 import Sailfish.Silica 1.0
-import "Texts.js" as Texts
 
 ListItem {
     id: tile
@@ -15,8 +15,7 @@ ListItem {
     required property string name
     required property string title
     required property string iconPath
-    required property bool isNew
-    required property string updated
+    required property string categoryLabel
     required property string installState
 
     width: Theme.iconSizeLauncher + 2 * Theme.paddingLarge + Theme.paddingMedium
@@ -37,12 +36,13 @@ ListItem {
         anchors.topMargin: Theme.paddingSmall
         width: parent.width - 2 * Theme.paddingSmall
         anchors.horizontalCenter: parent.horizontalCenter
-        // Centred while it fits; too long, it starts at the left and fades out.
-        horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
+        // Always centred, a long one shortened with an ellipsis: a row of
+        // tiles keeps one alignment.
+        horizontalAlignment: Text.AlignHCenter
         text: tile.title
         color: tile.highlighted ? Theme.highlightColor : Theme.primaryColor
         font.pixelSize: Theme.fontSizeExtraSmall
-        truncationMode: TruncationMode.Fade
+        elide: Text.ElideRight
     }
 
     Label {
@@ -50,13 +50,13 @@ ListItem {
         anchors.top: titleLabel.bottom
         width: parent.width - 2 * Theme.paddingSmall
         anchors.horizontalCenter: parent.horizontalCenter
-        // Centred while it fits; too long, it starts at the left and fades out.
-        horizontalAlignment: implicitWidth > width ? Text.AlignLeft : Text.AlignHCenter
-        text: tile.installState === "update_available" ? qsTr("Update")
-            : tile.isNew ? qsTr("New")
-            : Texts.date(tile.updated).replace(/\s*\d{4}$/, "")
-        color: tile.installState === "update_available" || tile.isNew ? Theme.highlightColor : Theme.secondaryColor
+        // Always centred, a long one shortened with an ellipsis: a row of
+        // tiles keeps one alignment.
+        horizontalAlignment: Text.AlignHCenter
+        text: tile.installState === "update_available" ? qsTr("Update") : tile.categoryLabel
+        color: tile.installState === "update_available" ? Theme.highlightColor
+             : tile.highlighted ? Theme.secondaryHighlightColor : Theme.secondaryColor
         font.pixelSize: Theme.fontSizeTiny
-        truncationMode: TruncationMode.Fade
+        elide: Text.ElideRight
     }
 }
