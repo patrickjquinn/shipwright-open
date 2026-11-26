@@ -62,6 +62,19 @@ QUrl KeelPageStackGestureArea::resolveImportPage(const QString &source) const
     return QUrl(source);
 }
 
+// The pointer's way from the press, in the current page's frame: pages turn
+// themselves to their orientation while the stack stays in the screen's, so
+// in landscape the stack's own axes are the page's turned by 90 degrees (a
+// swipe along the page was a swipe across it, and scrolling a list could
+// navigate back).
+QPointF KeelPageStackGestureArea::deltaTo(const QPointF &scenePos) const
+{
+    const QQuickItem *frame = qobject_cast<QQuickItem *>(property("currentPage").value<QObject *>());
+    if (!frame)
+        frame = this;
+    return frame->mapFromScene(scenePos) - frame->mapFromScene(m_pressScenePos);
+}
+
 bool KeelPageStackGestureArea::wantsDrag(const QPointF &delta) const
 {
     const qreal threshold = keel::themeValue(this, "startDragDistance",
@@ -95,7 +108,7 @@ bool KeelPageStackGestureArea::childMouseEventFilter(QQuickItem *item, QEvent *e
         auto *pe = static_cast<QPointerEvent *>(event);
         if (pe->pointCount() < 1 || m_pressed)
             return false;
-        m_pressPos = mapFromScene(pe->point(0).scenePosition());
+        m_pressScenePos = pe->point(0).scenePosition();
         m_pointId = pe->point(0).id();
         m_tracking = true;
         return false;
@@ -119,7 +132,7 @@ bool KeelPageStackGestureArea::childMouseEventFilter(QQuickItem *item, QEvent *e
         if (auto *grabItem = qobject_cast<const QQuickItem *>(grabber); grabItem && grabItem != this
                 && (grabItem->keepMouseGrab() || grabItem->keepTouchGrab()))
             return false;
-        const QPointF delta = mapFromScene(point->scenePosition()) - m_pressPos;
+        const QPointF delta = deltaTo(point->scenePosition());
         if (!wantsDrag(delta))
             return false;
         // Take the point the event carries (a touch point on a phone, also
@@ -150,7 +163,7 @@ void KeelPageStackGestureArea::mouseMoveEvent(QMouseEvent *event)
         event->ignore();
         return;
     }
-    setDelta(mapFromScene(event->scenePosition()) - m_pressPos);
+    setDelta(deltaTo(event->scenePosition()));
 }
 
 void KeelPageStackGestureArea::finish(bool release)
@@ -176,7 +189,7 @@ void KeelPageStackGestureArea::mouseReleaseEvent(QMouseEvent *event)
         event->ignore();
         return;
     }
-    setDelta(mapFromScene(event->scenePosition()) - m_pressPos);
+    setDelta(deltaTo(event->scenePosition()));
     finish(true);
     ungrabMouse();
 }
@@ -195,7 +208,7 @@ void KeelPageStackGestureArea::touchEvent(QTouchEvent *event)
     for (const QEventPoint &point : event->points()) {
         if (point.id() != m_pointId)
             continue;
-        setDelta(mapFromScene(point.scenePosition()) - m_pressPos);
+        setDelta(deltaTo(point.scenePosition()));
         if (point.state() == QEventPoint::Released) {
             finish(true);
             ungrabTouchPoints();
