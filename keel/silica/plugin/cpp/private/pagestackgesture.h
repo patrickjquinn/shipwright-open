@@ -85,11 +85,12 @@ protected:
     void touchUngrabEvent() override;
 
 private:
+    QPointF deltaTo(const QPointF &scenePos) const;
     bool wantsDrag(const QPointF &delta) const;
     void setDelta(const QPointF &delta);
     void finish(bool release);
 
-    QPointF m_pressPos;
+    QPointF m_pressScenePos;
     int m_pointId = -1;
     QPointF m_delta;
     bool m_tracking = false;
